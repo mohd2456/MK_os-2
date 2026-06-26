@@ -1,0 +1,25 @@
+# ==============================================================================
+# MK_OS ADVANCED KNOWLEDGE DATASET MATRIX (Linguistic & Core Context)
+# Format Schema: KEY | PART_OF_SPEECH | DOMAIN | CONTEXT_WEIGHT | DESCRIPTION/KNOWLEDGE_BLOCK
+# ==============================================================================
+
+# --- LINGUISTIC / ENGLISH FOUNDATIONS ---
+hello|noun|linguistics|1.0|A universal human greeting used to initialize a synchronous communication protocol.
+english|noun|linguistics|0.9|A West Germanic language acting as the global standard for cross-compiled human-to-computer interface rings.
+grammar|noun|linguistics|0.8|The structural rules governing the composition of clauses, phrases, and words in any natural language stream.
+noun|noun|linguistics|0.7|A linguistic token used as the name of a specific object, place, person, or abstract system concept.
+verb|noun|linguistics|0.7|A functional word class representing an action, state, or operational transition within a parsed sentence.
+
+# --- HARDWARE & ARCHITECTURE ---
+computer|noun|hardware|1.0|A programmable electronic macro-matrix designed to execute complex mathematical computations and sequential binary instruction sets.
+processor|noun|hardware|0.9|The physical silicon execution engine (CPU) that cycles instructions, manipulates registers, and calculates logic gates.
+memory|noun|hardware|0.9|Volatile or non-volatile physical storage blocks mapped by the system MMU for holding transient instruction states.
+
+# --- SYSTEM SOFTWARE ---
+operating system|noun|software|1.0|The master control software layer that abstracts physical hardware resources into protected execution rings and user-space boundaries.
+kernel|noun|software|0.9|The privileged core of the operating system that directly hooks hardware interrupts, memory spaces, and thread schedulers.
+c++|noun|software|0.8|A statically-typed, multi-paradigm compiled language optimized for low-level system mapping and high-performance bare-metal builds.
+
+# --- GENERAL COGNITION / CONCEPTS ---
+apple|noun|general|0.5|A crisp, round edible pomaceous fruit harvested from trees, or an alternative technology corporation utilizing UNIX-based operating kernels.
+knowledge|noun|cognition|1.0|The aggregated collection of processed data, context patterns, and relational rules held within an entity's storage matrix.
