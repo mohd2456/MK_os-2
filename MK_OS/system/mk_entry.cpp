@@ -67,6 +67,14 @@ namespace Color {
 #include "../ai_core/knowledge_integrator.cpp"
 #include "../ai_core/self_improver.cpp"
 #include "../mk_brain/personality/response_style.cpp"
+#include "../mk_brain/learning/learning_engine.cpp"
+#include "../mk_brain/memory/brain_memory.cpp"
+#include "../mk_brain/embeddings/embeddings_eng.cpp"
+#include "../mk_brain/vector_search/ann_search.cpp"
+#include "../mk_brain/cashe/cache_mgr.cpp"
+#include "../mk_brain/daily_briefing.cpp"
+#include "../mk_brain/fact_extractor/biographical.cpp"
+#include "../mk_brain/reasoning/reasoning_engine.cpp"
 
 // ============================================================
 // Global state
@@ -113,6 +121,14 @@ struct MKSystem {
     MKDeepReasoner reasoner;
     MKReasoningChains chains;
     MKComposer composer;
+    MKLearningEngine learningEngine;
+    MKBrainMemory brainMemory;
+    MKEmbeddingsEngine embeddings;
+    MKANNSearch vectorSearch;
+    MKCacheManager cacheManager;
+    MKDailyBriefing dailyBriefing;
+    MKBiographicalExtractor factExtractor;
+    MKReasoningEngine reasoningEngine;
 
     MKSystem()
         : graph("ai_core/hre/knowledge_files"),
@@ -125,7 +141,15 @@ struct MKSystem {
           style(),
           reasoner(10),
           chains("ai_core/hre/knowledge_files"),
-          composer(MKComposerMode::FRIENDLY) {}
+          composer(MKComposerMode::FRIENDLY),
+          learningEngine(),
+          brainMemory(20),
+          embeddings(),
+          vectorSearch(128),
+          cacheManager(8),
+          dailyBriefing(),
+          factExtractor(),
+          reasoningEngine() {}
 };
 
 // ============================================================
@@ -160,6 +184,7 @@ static void cmd_help() {
         << "\n"
         << Color::BOLD << Color::YELLOW << "  🖥️  SYSTEM" << Color::RESET << "\n"
         << "    " << Color::GREEN << "/status" << Color::RESET << "            Full system diagnostics\n"
+        << "    " << Color::GREEN << "/briefing" << Color::RESET << "          Daily system briefing report\n"
         << "    " << Color::GREEN << "/sync" << Color::RESET << "              Sync knowledge with GitHub\n"
         << "    " << Color::GREEN << "/quit" << Color::RESET << "              Save and exit\n"
         << "\n"
@@ -182,6 +207,7 @@ static void show_slash_suggestions(const std::string& partial) {
         {"/time",    "Current time"},
         {"/news",    "Tech headlines"},
         {"/status",  "System diagnostics"},
+        {"/briefing","Daily briefing report"},
         {"/sync",    "Sync knowledge with GitHub"},
         {"/help",    "Show all commands"},
         {"/quit",    "Save and exit"},
@@ -281,6 +307,7 @@ static void cmd_learn(MKSystem& sys, const std::string& fact) {
             return;
         }
         sys.graph.persistNewFact(source, relation, target, 1.0f);
+        sys.learningEngine.learnFact(source, relation, target);
         std::cout << "\n  " << Color::BGREEN << "✓" << Color::RESET << " Learned: " 
                   << Color::BOLD << source << Color::RESET << " " 
                   << Color::CYAN << relation << Color::RESET << " " 
@@ -438,6 +465,33 @@ static void cmd_think(MKSystem& sys, const std::string& topic) {
     }
 }
 
+static void cmd_briefing(MKSystem& sys) {
+    MKSystemSnapshot snapshot;
+    snapshot.cpuTempC = 42.0f;
+    snapshot.batteryPercent = 100.0f;
+    snapshot.onAC = true;
+    snapshot.diskUsedPercent = 35.0f;
+    snapshot.freeStorageMB = 50000;
+    snapshot.activeProcesses = 12;
+    snapshot.uptimeHours = 1;
+
+    MKBuildProgress builds;
+    builds.totalBuilds = 1;
+    builds.successfulBuilds = 1;
+    builds.lastBuildFile = "mk_os";
+    builds.lastBuildStatus = "OK";
+    builds.lastBuildTime = std::time(nullptr);
+
+    MKLearningProgress learning;
+    learning.factsLearnedToday = sys.learningEngine.factCount();
+    learning.totalFacts = (int)sys.graph.edgeCount() + sys.learningEngine.factCount();
+    learning.uncertainFacts = 0;
+    learning.recentTopics = {"system", "knowledge", "ai"};
+
+    std::string briefing = sys.dailyBriefing.generate("User", snapshot, builds, learning);
+    std::cout << "\n" << briefing << "\n";
+}
+
 // ============================================================
 // Natural Language Routing
 // ============================================================
@@ -539,6 +593,19 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
                     response = input + " is " + pathResult.answer;
                     confidence = pathResult.confidence;
                     answered = true;
+                } else {
+                    // Fallback to vector search
+                    auto vecResults = sys.vectorSearch.search(input, 3);
+                    if (!vecResults.empty() && vecResults[0].score > 0.3f) {
+                        response = "";
+                        for (const auto& vr : vecResults) {
+                            if (vr.score > 0.3f) {
+                                response += vr.sourceText + " ";
+                            }
+                        }
+                        confidence = vecResults[0].score;
+                        answered = !response.empty();
+                    }
                 }
             }
             break;
@@ -635,6 +702,9 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
     if (answered) {
         sys.memory.recordQA(input, response, confidence);
     }
+
+    // Passively extract biographical facts from user input
+    sys.factExtractor.extractFromMessage(input);
 }
 
 // ============================================================
@@ -667,6 +737,16 @@ int main(int argc, char* argv[]) {
 
     // Step 4: Load knowledge
     sys.graph.loadAllKnowledge();
+
+    // Step 4b: Restore learning engine knowledge
+    sys.learningEngine.restore();
+
+    // Step 4c: Check if daily briefing should be generated
+    if (sys.dailyBriefing.shouldGenerate()) {
+        std::cout << "\n  " << Color::BMAGENTA << "📋" << Color::RESET 
+                  << Color::BOLD << " Daily Briefing Available" << Color::RESET
+                  << Color::DIM << " — type /briefing to view" << Color::RESET << "\n";
+    }
 
     // Step 5: Load persistent memory
     sys.memory.loadFromDisk();
@@ -774,6 +854,8 @@ int main(int argc, char* argv[]) {
                 cmd_think(sys, trim(input.substr(7))); commandFound = true;
             } else if (input == "/think") {
                 cmd_think(sys, ""); commandFound = true;
+            } else if (input == "/briefing") {
+                cmd_briefing(sys); commandFound = true;
             }
 
             if (!commandFound) {
@@ -787,6 +869,9 @@ int main(int argc, char* argv[]) {
             // Natural language routing
             handle_natural_query(sys, input);
         }
+
+        // Track dialog context for all interactions
+        sys.brainMemory.commitToShortTerm("user", input);
 
         // Periodic auto-save every N interactions to limit data loss on crash
         interaction_count++;
@@ -802,7 +887,8 @@ int main(int argc, char* argv[]) {
     std::cout << "\n  " << Color::YELLOW << "⏻" << Color::RESET << " Shutting down...\n";
     sys.memory.saveToDisk();
     sys.improver.saveLog();
-    std::cout << "  " << Color::GREEN << "✓" << Color::RESET << " Memory saved. Improvement log saved.\n";
+    sys.learningEngine.persist();
+    std::cout << "  " << Color::GREEN << "✓" << Color::RESET << " Memory saved. Improvement log saved. Knowledge persisted.\n";
     std::cout << "  " << Color::BOLD << Color::CYAN << "MK OS shut down cleanly. Goodbye." 
               << Color::RESET << "\n\n";
 
