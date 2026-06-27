@@ -220,8 +220,79 @@ static void cmd_weather(MKSystem& sys, const std::string& city) {
     }
 }
 
+// Helper: extract timezone from natural language text
+static std::string extract_timezone(const std::string& text) {
+    // Map of common city/region names to IANA timezone identifiers
+    struct TZMapping {
+        const char* keyword;
+        const char* tz;
+    };
+    static const TZMapping mappings[] = {
+        {"tokyo", "Asia/Tokyo"},
+        {"japan", "Asia/Tokyo"},
+        {"london", "Europe/London"},
+        {"uk", "Europe/London"},
+        {"paris", "Europe/Paris"},
+        {"france", "Europe/Paris"},
+        {"berlin", "Europe/Berlin"},
+        {"germany", "Europe/Berlin"},
+        {"sydney", "Australia/Sydney"},
+        {"australia", "Australia/Sydney"},
+        {"los angeles", "America/Los_Angeles"},
+        {"la", "America/Los_Angeles"},
+        {"california", "America/Los_Angeles"},
+        {"pacific", "America/Los_Angeles"},
+        {"chicago", "America/Chicago"},
+        {"central", "America/Chicago"},
+        {"denver", "America/Denver"},
+        {"mountain", "America/Denver"},
+        {"new york", "America/New_York"},
+        {"eastern", "America/New_York"},
+        {"dubai", "Asia/Dubai"},
+        {"mumbai", "Asia/Kolkata"},
+        {"india", "Asia/Kolkata"},
+        {"kolkata", "Asia/Kolkata"},
+        {"beijing", "Asia/Shanghai"},
+        {"shanghai", "Asia/Shanghai"},
+        {"china", "Asia/Shanghai"},
+        {"seoul", "Asia/Seoul"},
+        {"korea", "Asia/Seoul"},
+        {"moscow", "Europe/Moscow"},
+        {"russia", "Europe/Moscow"},
+        {"cairo", "Africa/Cairo"},
+        {"singapore", "Asia/Singapore"},
+        {"hong kong", "Asia/Hong_Kong"},
+        {"toronto", "America/Toronto"},
+        {"utc", "UTC"},
+        {"gmt", "UTC"},
+    };
+
+    std::string lower = text;
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+
+    for (const auto& m : mappings) {
+        if (lower.find(m.keyword) != std::string::npos) {
+            return m.tz;
+        }
+    }
+
+    // If the text contains a slash (like "America/Chicago"), treat it as a raw timezone
+    if (text.find('/') != std::string::npos) {
+        return trim(text);
+    }
+
+    return "";
+}
+
 static void cmd_time(MKSystem& sys, const std::string& timezone) {
     std::string tz = timezone.empty() ? "America/New_York" : timezone;
+    // Try to resolve natural language timezone if it doesn't look like an IANA identifier
+    if (!timezone.empty() && timezone.find('/') == std::string::npos) {
+        std::string resolved = extract_timezone(timezone);
+        if (!resolved.empty()) {
+            tz = resolved;
+        }
+    }
     auto data = sys.realtimeApis.getCurrentTime(tz);
     if (data.valid) {
         std::cout << "\n  Time (" << data.timezone << "): " << data.datetime << "\n";
@@ -286,6 +357,22 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
                 size_t inPos = lower.find(" in ");
                 if (inPos != std::string::npos) {
                     city = input.substr(inPos + 4);
+                    // Strip trailing noise words
+                    static const std::vector<std::string> noise = {
+                        " today", " tonight", " now", " right now",
+                        " this week", " this weekend", " tomorrow",
+                        " currently", " please", " lately"
+                    };
+                    std::string cityLower = city;
+                    std::transform(cityLower.begin(), cityLower.end(), cityLower.begin(), ::tolower);
+                    for (const auto& word : noise) {
+                        size_t pos = cityLower.find(word);
+                        if (pos != std::string::npos) {
+                            city = city.substr(0, pos);
+                            cityLower = cityLower.substr(0, pos);
+                        }
+                    }
+                    city = trim(city);
                 }
                 auto data = sys.realtimeApis.getWeather(trim(city));
                 if (data.valid) {
@@ -295,7 +382,12 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
                     answered = true;
                 }
             } else if (lower.find("time") != std::string::npos || lower.find("clock") != std::string::npos) {
-                auto data = sys.realtimeApis.getCurrentTime("America/New_York");
+                // Try to extract timezone from the natural language query
+                std::string tz = extract_timezone(input);
+                if (tz.empty()) {
+                    tz = "America/New_York"; // default fallback
+                }
+                auto data = sys.realtimeApis.getCurrentTime(tz);
                 if (data.valid) {
                     response = "Current time (" + data.timezone + "): " + data.datetime;
                     confidence = 0.95f;
@@ -361,6 +453,8 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             break;
         }
         case MKRouteType::REASON: {
+            // Enrich the graph with rule-based inferences before deep reasoning
+            sys.chains.deriveAll(sys.graph);
             auto chain = sys.reasoner.think(input, sys.graph);
             if (!chain.finalAnswer.empty()) {
                 response = chain.finalAnswer;
@@ -477,6 +571,9 @@ int main(int argc, char* argv[]) {
     // ============================================================
     // Main REPL Loop
     // ============================================================
+    unsigned int interaction_count = 0;
+    const unsigned int AUTO_SAVE_INTERVAL = 50;
+
     while (g_running) {
         std::cout << "\n  MK > ";
         std::cout.flush();
@@ -502,26 +599,42 @@ int main(int argc, char* argv[]) {
                 cmd_news(sys);
             } else if (input.size() > 5 && input.substr(0, 5) == "/ask ") {
                 cmd_ask(sys, trim(input.substr(5)));
+            } else if (input == "/ask") {
+                cmd_ask(sys, "");
             } else if (input.size() > 8 && input.substr(0, 8) == "/search ") {
                 cmd_search(sys, trim(input.substr(8)));
+            } else if (input == "/search") {
+                cmd_search(sys, "");
             } else if (input.size() > 7 && input.substr(0, 7) == "/learn ") {
                 cmd_learn(sys, trim(input.substr(7)));
+            } else if (input == "/learn") {
+                cmd_learn(sys, "");
             } else if (input.size() > 9 && input.substr(0, 9) == "/weather ") {
                 cmd_weather(sys, trim(input.substr(9)));
+            } else if (input == "/weather") {
+                cmd_weather(sys, "");
             } else if (input.size() > 6 && input.substr(0, 6) == "/time ") {
                 cmd_time(sys, trim(input.substr(6)));
             } else if (input == "/time") {
                 cmd_time(sys, "");
             } else if (input.size() > 7 && input.substr(0, 7) == "/think ") {
                 cmd_think(sys, trim(input.substr(7)));
+            } else if (input == "/think") {
+                cmd_think(sys, "");
             } else {
                 std::cout << "\n  Unknown command. Type /help for options.\n";
             }
-            continue;
+        } else {
+            // Natural language routing
+            handle_natural_query(sys, input);
         }
 
-        // Natural language routing
-        handle_natural_query(sys, input);
+        // Periodic auto-save every N interactions to limit data loss on crash
+        interaction_count++;
+        if (interaction_count % AUTO_SAVE_INTERVAL == 0) {
+            sys.memory.saveToDisk();
+            sys.improver.saveLog();
+        }
     }
 
     // ============================================================

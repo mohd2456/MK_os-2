@@ -28,5 +28,5 @@
     "cd /projects/sandbox/MK_os-2/MK_OS && clang++ -std=c++17 -O2 system/mk_entry.cpp -o mk_os -lcurl"
   ],
   "blocked_reason": null,
-  "findings": "Compilation succeeds with zero errors. Two pre-existing warnings from pattern_graph.cpp (cache_hits unused) and deep_reasoner.cpp (deepDives unused) are in unmodified module files. Full link with -lcurl also passes. The MKDeepReasoner takes only maxSearchDepth int (no graph pointer in constructor); graph is passed to think() method directly. MKReasoningChains takes a rules directory string. MKComposer takes MKComposerMode enum."
+  "findings": "All 5 review issues addressed: (1) bare commands now show usage instead of 'Unknown command', (2) INSTANT route city extraction strips trailing noise words, (3) MKReasoningChains.deriveAll() wired into REASON route before deep reasoning, (4) periodic auto-save every 50 interactions added, (5) timezone extraction from natural language for /time and INSTANT time route. Compilation passes with zero errors (two pre-existing warnings from pattern_graph.cpp and deep_reasoner.cpp remain). Full link with -lcurl also passes."
 }
