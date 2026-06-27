@@ -1,0 +1,210 @@
+IF X is_a Y AND Y is_a Z THEN X is_a Z
+IF X is_a Y AND Y can Z THEN X can Z
+IF X is_a Y AND Y has_property Z THEN X has_property Z
+IF X is_a Y AND Y needs Z THEN X needs Z
+IF X is_a Y AND Y lives_in Z THEN X lives_in Z
+IF X is_a mammal THEN X is warm-blooded
+IF X is_a mammal THEN X produces milk
+IF X is_a mammal THEN X has hair or fur
+IF X is_a bird THEN X has feathers
+IF X is_a bird THEN X has a beak
+IF X is_a fish THEN X lives in water
+IF X is_a fish THEN X has gills
+IF X is_a reptile THEN X is cold-blooded
+IF X is_a reptile THEN X has scales
+IF X is_a insect THEN X has six legs
+IF X is_a insect THEN X has an exoskeleton
+IF X is_a plant THEN X needs sunlight
+IF X is_a plant THEN X performs photosynthesis
+IF X is_a living_thing THEN X needs energy
+IF X is_a living_thing THEN X can reproduce
+IF X is_a living_thing THEN X responds to environment
+IF X is_a living_thing THEN X grows
+IF X is_a vehicle THEN X is used for transportation
+IF X is_a tool THEN X is used to perform work
+IF X is_a food THEN X provides energy
+IF X is_a liquid THEN X flows
+IF X is_a gas THEN X expands to fill container
+IF X is_a solid THEN X has fixed shape
+IF X is_a metal THEN X conducts electricity
+IF X is_a metal THEN X conducts heat
+IF X is_bigger_than Y AND Y is_bigger_than Z THEN X is_bigger_than Z
+IF X is_heavier_than Y AND Y is_heavier_than Z THEN X is_heavier_than Z
+IF X is_faster_than Y AND Y is_faster_than Z THEN X is_faster_than Z
+IF X is_older_than Y AND Y is_older_than Z THEN X is_older_than Z
+IF X is_taller_than Y AND Y is_taller_than Z THEN X is_taller_than Z
+IF X is_north_of Y AND Y is_north_of Z THEN X is_north_of Z
+IF X is_ancestor_of Y AND Y is_ancestor_of Z THEN X is_ancestor_of Z
+IF X contains Y AND Y contains Z THEN X contains Z
+IF X is_part_of Y AND Y is_part_of Z THEN X is_part_of Z
+IF X causes Y AND Y causes Z THEN X indirectly_causes Z
+IF X implies Y AND Y implies Z THEN X implies Z
+IF X precedes Y AND Y precedes Z THEN X precedes Z
+IF X is hot THEN X can burn things
+IF X is sharp THEN X can cut things
+IF X is heavy THEN X is hard to lift
+IF X is fragile THEN X breaks easily
+IF X is flammable THEN X can catch fire
+IF X is transparent THEN X allows light through
+IF X is waterproof THEN water cannot pass through X
+IF X is edible THEN X can be eaten safely
+IF X is poisonous THEN X is dangerous to consume
+IF X is conductive THEN X allows electricity to flow
+IF X is magnetic THEN X attracts iron
+IF X is elastic THEN X returns to shape after stretching
+IF X is soluble THEN X dissolves in liquid
+IF X is volatile THEN X evaporates easily
+IF X is biodegradable THEN X decomposes naturally
+IF X is renewable THEN X can be replenished
+IF X is portable THEN X can be carried
+IF X is fragile AND X is dropped THEN X likely breaks
+IF X is alive AND X has no water THEN X will die
+IF X is alive AND X has no food THEN X will starve
+IF X is inside Y THEN X is not outside Y
+IF X is above Y THEN Y is below X
+IF X is left_of Y THEN Y is right_of X
+IF X is in_front_of Y THEN Y is behind X
+IF X is near Y THEN Y is near X
+IF X is inside Y AND Y is inside Z THEN X is inside Z
+IF X is on_top_of Y AND Y is on_top_of Z THEN X is above Z
+IF X is between Y and Z THEN X is near both Y and Z
+IF X is adjacent_to Y THEN there is no gap between X and Y
+IF X blocks path to Y THEN Y is not directly accessible
+IF X is surrounded_by Y THEN X cannot leave without passing Y
+IF X fits_inside Y THEN X is smaller than Y
+IF X is stacked_on Y THEN removing Y makes X fall
+IF X happens before Y THEN Y happens after X
+IF X happens during Y THEN X starts after Y starts
+IF X happens during Y THEN X ends before Y ends
+IF X starts AND X has not ended THEN X is ongoing
+IF X ended THEN X is in the past
+IF X has not started THEN X is in the future
+IF X always precedes Y THEN Y never happens without X first
+IF today is Monday THEN tomorrow is Tuesday
+IF today is January 31 THEN tomorrow is February 1
+IF X is morning THEN it is before noon
+IF X is afternoon THEN it is after noon
+IF season is winter in north THEN season is summer in south
+IF sun has set THEN it is night or evening
+IF sun has risen THEN it is day
+IF X is heated above boiling point THEN X evaporates
+IF X is cooled below freezing point THEN X solidifies
+IF X has no fuel THEN X cannot produce fire
+IF X has no power source THEN X cannot operate
+IF road is icy THEN driving is dangerous
+IF person has no money THEN person cannot buy things
+IF container is full THEN nothing more can be added
+IF container is empty THEN it has nothing inside
+IF door is locked THEN it cannot be opened without key
+IF battery is dead THEN device cannot function
+IF bridge is broken THEN vehicles cannot cross
+IF person is sleeping THEN person is not aware
+IF person is unconscious THEN person cannot respond
+IF object is moving THEN force was applied to it
+IF object is accelerating THEN net force acts on it
+IF X > Y AND Y > Z THEN X > Z
+IF X = Y AND Y = Z THEN X = Z
+IF X > 0 AND Y > 0 THEN X + Y > 0
+IF X > 0 AND Y > 0 THEN X * Y > 0
+IF X is even AND Y is even THEN X + Y is even
+IF X is odd AND Y is odd THEN X + Y is even
+IF X is even AND Y is odd THEN X + Y is odd
+IF X is divisible by Y AND Y is divisible by Z THEN X is divisible by Z
+IF X is a multiple of Y THEN X / Y is an integer
+IF X is prime AND X > 2 THEN X is odd
+IF X^2 is negative THEN X is not a real number
+IF X + Y = Z AND X is known AND Y is known THEN Z is known
+IF angle A + angle B + angle C = 180 THEN they form a triangle
+IF all sides are equal THEN shape is regular
+IF opposite sides are parallel THEN shape is parallelogram
+IF X is a predator of Y THEN Y is prey of X
+IF X eats only plants THEN X is herbivore
+IF X eats only animals THEN X is carnivore
+IF X eats plants and animals THEN X is omnivore
+IF X is nocturnal THEN X is active at night
+IF X is diurnal THEN X is active during day
+IF X hibernates THEN X sleeps through winter
+IF X migrates THEN X moves seasonally
+IF X is extinct THEN no living specimens exist
+IF X is endangered THEN X population is critically low
+IF X can photosynthesize THEN X can make its own food
+IF X has chlorophyll THEN X can photosynthesize
+IF X has no nucleus THEN X is prokaryote
+IF X has membrane-bound nucleus THEN X is eukaryote
+IF X is warm-blooded THEN X maintains constant body temperature
+IF X is cold-blooded THEN X temperature varies with environment
+IF X produces milk THEN X is mammal
+IF X lays eggs AND X has feathers THEN X is bird
+IF X has gills THEN X breathes underwater
+IF X has lungs THEN X breathes air
+IF store is closed THEN you cannot buy from it
+IF person is certified THEN person has passed requirements
+IF traffic light is red THEN vehicles must stop
+IF traffic light is green THEN vehicles may proceed
+IF person is under 18 THEN person is a minor
+IF person is over 65 THEN person is senior citizen
+IF food is expired THEN food should not be consumed
+IF person is ill THEN person should rest
+IF weather is stormy THEN outdoor activities are risky
+IF road is flooded THEN road is impassable
+IF airplane is grounded THEN it cannot fly
+IF person has appointment THEN person should arrive on time
+IF item is on sale THEN item costs less than usual
+IF person broke the law THEN person may face consequences
+IF exam is tomorrow THEN student should study today
+IF rent is due THEN payment must be made
+IF contract is signed THEN both parties are obligated
+IF warranty expired THEN repairs may cost money
+IF reservation is made THEN spot is held
+IF deadline passed THEN submission is late
+IF X is a conductor AND X is in circuit THEN current can flow through X
+IF X is an insulator THEN current cannot flow through X
+IF X is opaque THEN light cannot pass through X
+IF X is transparent AND X is clean THEN objects behind X are visible
+IF X is frozen THEN X is below freezing temperature
+IF X is boiling THEN X is at boiling temperature
+IF X is a gas at room temperature THEN X has low boiling point
+IF X is a solid at room temperature THEN X has high melting point
+IF X has high density THEN X sinks in less dense fluids
+IF X has low density THEN X floats in denser fluids
+IF X is acidic THEN X has pH less than 7
+IF X is basic THEN X has pH greater than 7
+IF X is neutral THEN X has pH equal to 7
+IF reaction is exothermic THEN heat is released
+IF reaction is endothermic THEN heat is absorbed
+IF X is a catalyst THEN X speeds up reaction without being consumed
+IF X is a reactant THEN X is consumed in reaction
+IF X is a product THEN X is formed in reaction
+IF system is in equilibrium THEN forward rate equals reverse rate
+IF concentration of reactant increases THEN reaction rate increases
+IF temperature increases THEN reaction rate increases
+IF X is soluble in water THEN X dissolves when added to water
+IF solution is saturated THEN no more solute can dissolve
+IF X is volatile THEN X evaporates easily at room temperature
+IF X is a noble gas THEN X is chemically inert
+IF X is an alkali metal THEN X reacts vigorously with water
+IF circuit is open THEN no current flows
+IF circuit is closed THEN current can flow
+IF switch is off THEN circuit is open
+IF switch is on THEN circuit is closed
+IF X is a semiconductor THEN X conductivity varies with conditions
+IF X is superconducting THEN X has zero electrical resistance
+IF light frequency exceeds threshold THEN photoelectric effect occurs
+IF wavelength decreases THEN frequency increases
+IF wavelength increases THEN frequency decreases
+IF object moves toward observer THEN frequency appears higher (blueshift)
+IF object moves away from observer THEN frequency appears lower (redshift)
+IF person is adult AND person is employed THEN person earns income
+IF person earns income AND person lives in country THEN person pays taxes
+IF person has degree THEN person completed university education
+IF student passes all courses THEN student advances to next level
+IF applicant meets all requirements THEN applicant is eligible
+IF contract is valid AND terms are breached THEN legal action is possible
+IF X is a democracy THEN citizens can vote for leaders
+IF X is a monarchy THEN power is held by royal family
+IF X is a republic THEN power is held by elected representatives
+IF population exceeds food supply THEN famine risk increases
+IF technology improves THEN productivity increases
+IF communication improves THEN coordination improves
+IF infrastructure is damaged THEN economic activity decreases
+IF trust is broken THEN relationships deteriorate

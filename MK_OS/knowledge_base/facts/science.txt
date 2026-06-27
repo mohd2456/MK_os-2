@@ -1,0 +1,565 @@
+speed_of_light|equals|299792458 meters per second|1.0
+gravity_acceleration|equals|9.81 m/s^2 on Earth|1.0
+planck_constant|equals|6.626e-34 joule seconds|1.0
+boltzmann_constant|equals|1.381e-23 J/K|1.0
+avogadro_number|equals|6.022e23 particles per mole|1.0
+electron_charge|equals|1.602e-19 coulombs|1.0
+electron_mass|equals|9.109e-31 kg|1.0
+proton_mass|equals|1.673e-27 kg|1.0
+neutron_mass|equals|1.675e-27 kg|1.0
+gravitational_constant|equals|6.674e-11 N m^2/kg^2|1.0
+coulomb_constant|equals|8.988e9 N m^2/C^2|1.0
+speed_of_sound_air|equals|343 meters per second at 20C|0.95
+atmospheric_pressure|equals|101325 pascals at sea level|1.0
+absolute_zero|equals|-273.15 degrees Celsius|1.0
+boiling_point_water|equals|100 degrees Celsius at 1 atm|1.0
+freezing_point_water|equals|0 degrees Celsius at 1 atm|1.0
+newton_first_law|states|object at rest stays at rest unless acted on by force|1.0
+newton_second_law|states|force equals mass times acceleration|1.0
+newton_third_law|states|every action has equal and opposite reaction|1.0
+kinetic_energy|formula|0.5 times mass times velocity squared|1.0
+potential_energy_gravity|formula|mass times g times height|1.0
+momentum|formula|mass times velocity|1.0
+work|formula|force times displacement times cosine theta|1.0
+power|formula|work divided by time|1.0
+ohms_law|states|voltage equals current times resistance|1.0
+coulombs_law|states|force proportional to product of charges divided by distance squared|1.0
+faraday_law|states|induced EMF equals negative rate of change of magnetic flux|1.0
+ampere_law|states|magnetic field around conductor proportional to current|1.0
+gauss_law|states|electric flux through closed surface proportional to enclosed charge|1.0
+maxwell_equations|describe|unified theory of electricity and magnetism|1.0
+special_relativity|states|laws of physics same in all inertial frames|1.0
+time_dilation|occurs_when|object moves at speeds approaching light|0.95
+length_contraction|occurs_when|object moves at relativistic speeds|0.95
+mass_energy_equivalence|formula|E equals mc squared|1.0
+general_relativity|states|gravity is curvature of spacetime|1.0
+gravitational_waves|are|ripples in spacetime fabric|0.95
+black_hole|has_property|event horizon from which nothing escapes|0.95
+hawking_radiation|is|thermal radiation emitted by black holes|0.9
+quantum_mechanics|describes|behavior of matter at atomic scale|1.0
+heisenberg_uncertainty|states|cannot know position and momentum simultaneously with precision|1.0
+schrodinger_equation|describes|time evolution of quantum state|1.0
+wave_particle_duality|states|matter exhibits both wave and particle properties|1.0
+photoelectric_effect|demonstrates|light consists of photons|1.0
+quantum_tunneling|allows|particles to pass through energy barriers|0.95
+quantum_entanglement|is|correlation between separated quantum particles|0.95
+superposition|states|quantum system exists in multiple states simultaneously|1.0
+pauli_exclusion|states|no two fermions can occupy same quantum state|1.0
+strong_nuclear_force|binds|quarks together in protons and neutrons|1.0
+weak_nuclear_force|responsible_for|radioactive beta decay|1.0
+electromagnetic_force|mediates|interactions between charged particles|1.0
+gravitational_force|is|weakest of four fundamental forces|1.0
+higgs_boson|gives|mass to other particles|0.95
+standard_model|describes|fundamental particles and three of four forces|1.0
+quarks|come_in|six flavors up down charm strange top bottom|1.0
+leptons|include|electron muon tau and their neutrinos|1.0
+photon|is|carrier of electromagnetic force|1.0
+gluon|is|carrier of strong nuclear force|1.0
+w_z_bosons|are|carriers of weak nuclear force|1.0
+thermodynamics_first_law|states|energy cannot be created or destroyed|1.0
+thermodynamics_second_law|states|entropy of isolated system always increases|1.0
+thermodynamics_third_law|states|entropy approaches zero as temperature approaches absolute zero|1.0
+entropy|is|measure of disorder in a system|1.0
+heat_engine|converts|thermal energy to mechanical work|0.95
+carnot_efficiency|equals|1 minus Tc over Th|1.0
+doppler_effect|is|change in frequency due to relative motion|1.0
+refraction|is|bending of light passing between media|1.0
+diffraction|is|spreading of waves around obstacles|1.0
+interference|is|superposition of two or more waves|1.0
+polarization|is|orientation of electromagnetic wave oscillation|0.95
+snells_law|relates|angles of incidence and refraction|1.0
+total_internal_reflection|occurs_when|light hits boundary at angle beyond critical angle|0.95
+electromagnetic_spectrum|ranges_from|radio waves to gamma rays|1.0
+visible_light|has_wavelength|380 to 700 nanometers|1.0
+xrays|have_wavelength|0.01 to 10 nanometers|0.95
+gamma_rays|have_wavelength|less than 0.01 nanometers|0.95
+infrared|has_wavelength|700 nm to 1 mm|0.95
+ultraviolet|has_wavelength|10 to 380 nanometers|0.95
+radioactivity_alpha|is|emission of helium nucleus|1.0
+radioactivity_beta|is|emission of electron or positron|1.0
+radioactivity_gamma|is|emission of high energy photon|1.0
+half_life|is|time for half of radioactive sample to decay|1.0
+nuclear_fission|is|splitting of heavy nucleus into lighter nuclei|1.0
+nuclear_fusion|is|combining of light nuclei into heavier nucleus|1.0
+nuclear_fusion|powers|the sun and other stars|1.0
+centripetal_force|required_for|circular motion|1.0
+angular_momentum|is|conserved in absence of external torque|1.0
+moment_of_inertia|depends_on|mass distribution relative to axis|1.0
+simple_harmonic_motion|has_property|restoring force proportional to displacement|1.0
+resonance|occurs_when|driving frequency equals natural frequency|0.95
+standing_wave|formed_by|superposition of two waves traveling opposite directions|0.95
+bernoulli_principle|states|faster fluid has lower pressure|0.95
+pascal_law|states|pressure applied to confined fluid transmits equally|1.0
+archimedes_principle|states|buoyant force equals weight of displaced fluid|1.0
+viscosity|is|measure of fluid resistance to flow|0.9
+surface_tension|is|tendency of liquid surface to minimize area|0.9
+capillary_action|is|ability of liquid to flow in narrow spaces|0.9
+ideal_gas_law|formula|PV equals nRT|1.0
+boyles_law|states|pressure inversely proportional to volume at constant temperature|1.0
+charles_law|states|volume proportional to temperature at constant pressure|1.0
+stefan_boltzmann_law|states|radiated power proportional to fourth power of temperature|1.0
+wien_displacement_law|relates|peak wavelength to temperature of blackbody|0.95
+photoelectric_threshold|is|minimum frequency to eject electrons|1.0
+compton_scattering|is|photon losing energy when scattering off electron|0.95
+de_broglie_wavelength|formula|h divided by momentum|1.0
+spin|is|intrinsic angular momentum of quantum particles|1.0
+fermion|has|half-integer spin|1.0
+boson|has|integer spin|1.0
+hydrogen|atomic_number|1|1.0
+helium|atomic_number|2|1.0
+lithium|atomic_number|3|1.0
+beryllium|atomic_number|4|1.0
+boron|atomic_number|5|1.0
+carbon|atomic_number|6|1.0
+nitrogen|atomic_number|7|1.0
+oxygen|atomic_number|8|1.0
+fluorine|atomic_number|9|1.0
+neon|atomic_number|10|1.0
+sodium|atomic_number|11|1.0
+magnesium|atomic_number|12|1.0
+aluminum|atomic_number|13|1.0
+silicon|atomic_number|14|1.0
+phosphorus|atomic_number|15|1.0
+sulfur|atomic_number|16|1.0
+chlorine|atomic_number|17|1.0
+argon|atomic_number|18|1.0
+potassium|atomic_number|19|1.0
+calcium|atomic_number|20|1.0
+iron|atomic_number|26|1.0
+copper|atomic_number|29|1.0
+zinc|atomic_number|30|1.0
+silver|atomic_number|47|1.0
+gold|atomic_number|79|1.0
+platinum|atomic_number|78|1.0
+mercury|atomic_number|80|1.0
+lead|atomic_number|82|1.0
+uranium|atomic_number|92|1.0
+plutonium|atomic_number|94|1.0
+water|chemical_formula|H2O|1.0
+carbon_dioxide|chemical_formula|CO2|1.0
+methane|chemical_formula|CH4|1.0
+ammonia|chemical_formula|NH3|1.0
+sulfuric_acid|chemical_formula|H2SO4|1.0
+hydrochloric_acid|chemical_formula|HCl|1.0
+sodium_hydroxide|chemical_formula|NaOH|1.0
+glucose|chemical_formula|C6H12O6|1.0
+ethanol|chemical_formula|C2H5OH|1.0
+acetic_acid|chemical_formula|CH3COOH|1.0
+sodium_chloride|chemical_formula|NaCl|1.0
+calcium_carbonate|chemical_formula|CaCO3|1.0
+iron_oxide|chemical_formula|Fe2O3|1.0
+hydrogen_peroxide|chemical_formula|H2O2|1.0
+nitric_acid|chemical_formula|HNO3|1.0
+covalent_bond|is|sharing of electrons between atoms|1.0
+ionic_bond|is|transfer of electrons between atoms|1.0
+metallic_bond|is|sharing of delocalized electrons in metals|1.0
+hydrogen_bond|is|weak attraction between H and electronegative atom|0.95
+van_der_waals_forces|are|weak intermolecular forces|0.9
+electronegativity|measures|atom tendency to attract electrons|1.0
+oxidation|is|loss of electrons|1.0
+reduction|is|gain of electrons|1.0
+acid|has_property|pH less than 7|1.0
+base|has_property|pH greater than 7|1.0
+neutral_solution|has_property|pH equal to 7|1.0
+catalyst|speeds_up|chemical reaction without being consumed|1.0
+exothermic_reaction|releases|heat energy|1.0
+endothermic_reaction|absorbs|heat energy|1.0
+mole|equals|6.022e23 particles|1.0
+periodic_table|organizes|elements by atomic number and properties|1.0
+noble_gases|have_property|full outer electron shell|1.0
+alkali_metals|have_property|one electron in outer shell|1.0
+halogens|have_property|seven electrons in outer shell|1.0
+isotope|has|same protons but different neutrons|1.0
+ion|is|atom with net electric charge|1.0
+cation|is|positively charged ion|1.0
+anion|is|negatively charged ion|1.0
+polymer|is|large molecule made of repeating units|0.95
+organic_chemistry|studies|carbon-containing compounds|1.0
+photosynthesis|converts|CO2 and water to glucose and oxygen|1.0
+combustion|is|rapid oxidation producing heat and light|1.0
+electrolysis|uses|electricity to drive non-spontaneous reaction|0.95
+molarity|is|moles of solute per liter of solution|1.0
+stoichiometry|is|calculation of quantities in chemical reactions|1.0
+le_chatelier_principle|states|system at equilibrium resists change|1.0
+activation_energy|is|minimum energy needed to start reaction|1.0
+electron_configuration|describes|distribution of electrons in orbitals|1.0
+orbital|is|region of space where electron is likely found|1.0
+s_orbital|has_shape|spherical|1.0
+p_orbital|has_shape|dumbbell|1.0
+valence_electrons|determine|chemical bonding behavior|1.0
+lewis_structure|shows|bonding and lone pair electrons|0.95
+VSEPR_theory|predicts|molecular geometry|0.95
+sp3_hybridization|produces|tetrahedral geometry|0.95
+sp2_hybridization|produces|trigonal planar geometry|0.95
+sp_hybridization|produces|linear geometry|0.95
+cell|is|basic unit of life|1.0
+DNA|stores|genetic information|1.0
+RNA|helps|translate DNA into proteins|1.0
+mitochondria|is|powerhouse of the cell|1.0
+mitochondria|produces|ATP through cellular respiration|1.0
+nucleus|contains|DNA in eukaryotic cells|1.0
+ribosome|synthesizes|proteins from mRNA|1.0
+cell_membrane|is|semipermeable phospholipid bilayer|1.0
+chloroplast|performs|photosynthesis in plant cells|1.0
+endoplasmic_reticulum|transports|proteins and lipids|0.95
+golgi_apparatus|modifies|and packages proteins|0.95
+lysosome|contains|digestive enzymes|0.95
+vacuole|stores|water and nutrients in cells|0.9
+cytoplasm|is|jelly-like substance inside cell|0.95
+prokaryote|lacks|membrane-bound nucleus|1.0
+eukaryote|has|membrane-bound nucleus|1.0
+mitosis|is|cell division producing identical cells|1.0
+meiosis|is|cell division producing gametes with half chromosomes|1.0
+DNA_replication|is|semi-conservative process|1.0
+transcription|converts|DNA to mRNA|1.0
+translation|converts|mRNA to protein|1.0
+codon|is|three nucleotide sequence coding amino acid|1.0
+gene|is|segment of DNA encoding protein|1.0
+chromosome|is|condensed DNA structure|1.0
+human_genome|contains|approximately 20000 to 25000 genes|0.95
+human_cells|contain|46 chromosomes|1.0
+adenine|pairs_with|thymine in DNA|1.0
+guanine|pairs_with|cytosine in DNA|1.0
+evolution|driven_by|natural selection|1.0
+natural_selection|favors|organisms better adapted to environment|1.0
+mutation|is|change in DNA sequence|1.0
+photosynthesis|equation|6CO2 + 6H2O + light -> C6H12O6 + 6O2|1.0
+cellular_respiration|equation|C6H12O6 + 6O2 -> 6CO2 + 6H2O + ATP|1.0
+ATP|is|energy currency of cells|1.0
+enzyme|is|biological catalyst|1.0
+enzyme|has_property|substrate specificity|0.95
+homeostasis|is|maintenance of stable internal conditions|1.0
+nervous_system|controls|body functions through electrical signals|1.0
+neuron|transmits|electrical impulses|1.0
+synapse|is|gap between neurons|0.95
+heart|pumps|blood throughout body|1.0
+lungs|exchange|oxygen and carbon dioxide|1.0
+liver|detoxifies|blood and produces bile|0.95
+kidney|filters|blood and produces urine|0.95
+brain|controls|all body functions and consciousness|1.0
+immune_system|defends|body against pathogens|1.0
+antibody|binds|specific antigen|0.95
+white_blood_cell|fights|infection|1.0
+red_blood_cell|carries|oxygen with hemoglobin|1.0
+hemoglobin|contains|iron and binds oxygen|1.0
+insulin|regulates|blood glucose levels|1.0
+diabetes|involves|impaired insulin function|0.95
+virus|is|non-living infectious agent|0.95
+bacteria|is|single-celled prokaryotic organism|1.0
+antibiotic|kills|bacteria but not viruses|0.95
+vaccine|stimulates|immune response without causing disease|0.95
+ecology|studies|interactions between organisms and environment|1.0
+ecosystem|includes|all living and non-living components in area|1.0
+food_chain|shows|transfer of energy between organisms|1.0
+producer|makes|own food through photosynthesis|1.0
+consumer|obtains|energy by eating other organisms|1.0
+decomposer|breaks_down|dead organic matter|1.0
+biodiversity|is|variety of life in an ecosystem|0.95
+extinction|is|complete disappearance of a species|1.0
+endangered_species|faces|risk of extinction|0.95
+carbon_cycle|describes|movement of carbon through ecosystems|0.95
+nitrogen_cycle|describes|conversion of nitrogen between forms|0.95
+water_cycle|includes|evaporation precipitation and runoff|1.0
+symbiosis|is|close relationship between different species|0.95
+mutualism|benefits|both organisms in relationship|0.95
+parasitism|benefits|one organism at expense of other|0.95
+commensalism|benefits|one organism without affecting other|0.9
+adaptation|is|trait that improves survival in environment|1.0
+speciation|is|formation of new species|0.95
+taxonomy|classifies|organisms into hierarchical groups|0.95
+domain|is|highest level of biological classification|0.95
+kingdom|is|major division below domain|0.95
+species|is|group of organisms that can interbreed|1.0
+binomial_nomenclature|uses|genus and species names|0.95
+homo_sapiens|is|scientific name for humans|1.0
+vertebrate|has|backbone or spinal column|1.0
+invertebrate|lacks|backbone|1.0
+mammal|has_property|warm-blooded and produces milk|1.0
+reptile|has_property|cold-blooded with scales|1.0
+amphibian|lives|in water and on land|0.95
+bird|has_property|feathers and hollow bones|1.0
+fish|has_property|gills and lives in water|1.0
+insect|has_property|six legs and exoskeleton|1.0
+plant_cell|has|cell wall made of cellulose|1.0
+animal_cell|lacks|cell wall and chloroplasts|1.0
+sun|is|G-type main sequence star|1.0
+sun|diameter|1.39 million kilometers|1.0
+sun|surface_temperature|5778 Kelvin|1.0
+sun|age|approximately 4.6 billion years|1.0
+sun|composition|primarily hydrogen and helium|1.0
+mercury|is|closest planet to sun|1.0
+venus|is|hottest planet in solar system|1.0
+earth|is|third planet from sun|1.0
+earth|diameter|12742 kilometers|1.0
+earth|distance_from_sun|149.6 million kilometers|1.0
+mars|is|fourth planet from sun|1.0
+mars|called|the red planet|0.95
+jupiter|is|largest planet in solar system|1.0
+jupiter|has|at least 95 known moons|0.95
+saturn|known_for|prominent ring system|1.0
+uranus|has_property|rotates on its side|0.95
+neptune|is|farthest planet from sun|1.0
+pluto|reclassified_as|dwarf planet in 2006|1.0
+moon|is|Earths natural satellite|1.0
+moon|distance_from_earth|384400 kilometers|1.0
+light_year|equals|9.461 trillion kilometers|1.0
+milky_way|is|spiral galaxy containing our solar system|1.0
+milky_way|contains|100 to 400 billion stars|0.95
+andromeda|is|nearest large galaxy to milky way|0.95
+universe_age|approximately|13.8 billion years|0.95
+big_bang|is|theory of origin of universe|0.95
+cosmic_microwave_background|is|radiation from early universe|0.95
+dark_matter|makes_up|approximately 27 percent of universe|0.9
+dark_energy|makes_up|approximately 68 percent of universe|0.9
+neutron_star|is|extremely dense stellar remnant|0.95
+pulsar|is|rotating neutron star emitting radiation beams|0.95
+supernova|is|explosive death of massive star|1.0
+white_dwarf|is|remnant of low-mass star|0.95
+red_giant|is|evolved star with expanded outer layers|0.95
+main_sequence|is|longest phase of stellar evolution|0.95
+hertzsprung_russell_diagram|plots|stellar luminosity vs temperature|0.95
+constellation|is|pattern of stars as seen from earth|0.9
+orbit|is|path of object around another in space|1.0
+kepler_first_law|states|orbits are elliptical|1.0
+kepler_second_law|states|line to planet sweeps equal areas in equal times|1.0
+kepler_third_law|relates|orbital period to semi-major axis|1.0
+asteroid_belt|located|between mars and jupiter|1.0
+kuiper_belt|located|beyond neptune orbit|0.95
+oort_cloud|is|sphere of icy objects surrounding solar system|0.9
+comet|is|icy body that develops tail near sun|0.95
+meteor|is|streak of light from space debris burning in atmosphere|0.95
+meteorite|is|space debris that reaches earths surface|0.95
+io|is|most volcanically active body in solar system|0.95
+europa|may_have|liquid water ocean beneath ice|0.9
+titan|has|thick atmosphere with methane lakes|0.95
+ganymede|is|largest moon in solar system|0.95
+solar_wind|is|stream of charged particles from sun|0.95
+aurora|caused_by|solar wind interacting with atmosphere|0.95
+eclipse_solar|occurs_when|moon passes between earth and sun|1.0
+eclipse_lunar|occurs_when|earth passes between sun and moon|1.0
+exoplanet|is|planet orbiting star other than sun|0.95
+habitable_zone|is|region where liquid water can exist|0.95
+parsec|equals|3.26 light years|1.0
+redshift|indicates|object moving away from observer|0.95
+hubble_law|states|galaxies recede faster with greater distance|0.95
+quasar|is|extremely luminous active galactic nucleus|0.9
+galaxy_types|include|spiral elliptical and irregular|0.95
+international_space_station|orbits|earth at about 408 km altitude|0.95
+escape_velocity_earth|equals|11.2 km per second|1.0
+speed_of_light|travel_time_to_sun|8 minutes 20 seconds|0.95
+angular_velocity|formula|omega equals delta_theta over delta_t|1.0
+torque|formula|r cross F|1.0
+moment_of_inertia_sphere|formula|two_fifths times m times r_squared|1.0
+moment_of_inertia_cylinder|formula|one_half times m times r_squared|1.0
+elastic_collision|conserves|both kinetic energy and momentum|1.0
+inelastic_collision|conserves|only momentum|1.0
+hookes_law|states|force proportional to displacement in spring|1.0
+spring_constant|measured_in|newtons per meter|0.95
+pendulum_period|formula|2pi times sqrt of L over g|1.0
+wave_speed|formula|frequency times wavelength|1.0
+frequency|measured_in|hertz|1.0
+wavelength|measured_in|meters|1.0
+decibel|measures|sound intensity level|0.95
+mach_number|is|ratio of speed to speed of sound|0.95
+buoyancy|depends_on|density of fluid and volume displaced|0.95
+reynolds_number|predicts|flow regime laminar or turbulent|0.9
+venturi_effect|is|reduction in pressure when fluid speeds up|0.9
+magnetic_field|measured_in|tesla|1.0
+electric_field|measured_in|volts per meter|1.0
+capacitance|measured_in|farads|1.0
+inductance|measured_in|henrys|1.0
+resistance|measured_in|ohms|1.0
+kirchhoffs_voltage_law|states|sum of voltages around loop equals zero|1.0
+kirchhoffs_current_law|states|sum of currents at node equals zero|1.0
+RC_circuit|has|time constant equals RC|0.95
+RL_circuit|has|time constant equals L over R|0.95
+transformer|changes|voltage level using electromagnetic induction|0.95
+semiconductor|has|conductivity between conductor and insulator|0.95
+diode|allows|current flow in one direction|0.95
+transistor|can|amplify or switch electronic signals|0.95
+LED|emits|light when current passes through|0.95
+laser|produces|coherent monochromatic light|0.95
+fiber_optics|uses|total internal reflection to transmit light|0.95
+superconductor|has|zero electrical resistance below critical temperature|0.95
+piezoelectric_effect|converts|mechanical stress to electric charge|0.9
+thermoelectric_effect|converts|temperature difference to voltage|0.9
+hall_effect|produces|voltage across conductor in magnetic field|0.9
+plasma|is|fourth state of matter with ionized gas|0.95
+bose_einstein_condensate|is|fifth state of matter near absolute zero|0.9
+superfluidity|is|zero viscosity fluid state|0.9
+string_theory|proposes|fundamental particles are vibrating strings|0.8
+dark_matter|interacts|gravitationally but not electromagnetically|0.9
+antimatter|has|opposite charge to normal matter|0.95
+positron|is|antiparticle of electron|0.95
+pair_production|creates|particle antiparticle pair from photon|0.9
+annihilation|occurs_when|particle meets antiparticle|0.95
+cherenkov_radiation|emitted_when|particle exceeds light speed in medium|0.9
+synchrotron_radiation|emitted_by|charged particles in circular motion|0.9
+cosmic_rays|are|high energy particles from space|0.9
+neutrino|has|very small mass and weak interaction|0.95
+muon|is|heavier version of electron|0.9
+tau_particle|is|heaviest charged lepton|0.9
+titration|determines|concentration of unknown solution|0.95
+pH_scale|ranges_from|0 to 14|1.0
+buffer_solution|resists|changes in pH|0.95
+solubility|depends_on|temperature and pressure|0.95
+saturated_solution|contains|maximum dissolved solute|0.95
+colligative_properties|depend_on|number of solute particles|0.9
+osmosis|is|movement of solvent through semipermeable membrane|1.0
+diffusion|is|movement of particles from high to low concentration|1.0
+chromatography|separates|mixtures based on different properties|0.9
+distillation|separates|mixtures based on boiling points|0.95
+crystallization|purifies|solids from solution|0.9
+allotrope|is|different structural form of same element|0.9
+diamond|is|allotrope of carbon with tetrahedral structure|0.95
+graphite|is|allotrope of carbon with layered structure|0.95
+fullerene|is|spherical allotrope of carbon|0.9
+graphene|is|single layer of graphite|0.9
+atomic_radius|increases|going down periodic table group|0.95
+ionization_energy|increases|going across periodic table period|0.95
+electron_affinity|is|energy change when atom gains electron|0.9
+electronegativity|increases|toward upper right of periodic table|0.95
+transition_metals|have_property|variable oxidation states|0.95
+lanthanides|are|rare earth elements 57 to 71|0.9
+actinides|are|radioactive elements 89 to 103|0.9
+alkene|has|carbon carbon double bond|1.0
+alkyne|has|carbon carbon triple bond|1.0
+alkane|has|only carbon carbon single bonds|1.0
+alcohol|has|hydroxyl OH functional group|1.0
+aldehyde|has|CHO functional group|0.95
+ketone|has|carbonyl between two carbons|0.95
+carboxylic_acid|has|COOH functional group|1.0
+ester|formed_from|acid and alcohol condensation|0.95
+amine|has|nitrogen bonded to carbon|0.95
+amide|has|carbonyl bonded to nitrogen|0.9
+aromatic_compound|contains|benzene ring|0.95
+benzene|has|six carbon ring with delocalized electrons|1.0
+isomer|has|same formula different structure|1.0
+chirality|is|non-superimposable mirror images|0.9
+enantiomer|is|mirror image stereoisomer|0.9
+racemic_mixture|contains|equal amounts of enantiomers|0.85
+polymerization|is|joining monomers into polymer chain|0.95
+addition_polymerization|forms|polymer without byproduct|0.9
+condensation_polymerization|forms|polymer with water byproduct|0.9
+amino_acid|has|amino group and carboxyl group|1.0
+peptide_bond|links|amino acids in proteins|1.0
+protein_primary_structure|is|sequence of amino acids|0.95
+protein_secondary_structure|includes|alpha helix and beta sheet|0.95
+protein_tertiary_structure|is|three dimensional folding|0.95
+protein_quaternary_structure|is|multiple subunit arrangement|0.9
+enzyme_active_site|binds|specific substrate|0.95
+michaelis_menten|describes|enzyme kinetics|0.9
+DNA_double_helix|has|sugar phosphate backbone|1.0
+nucleotide|consists_of|base sugar and phosphate|1.0
+ATP_hydrolysis|releases|approximately 30.5 kJ per mole|0.9
+krebs_cycle|produces|CO2 NADH FADH2 and GTP|0.9
+glycolysis|breaks_down|glucose to pyruvate|0.95
+electron_transport_chain|produces|most ATP in cellular respiration|0.95
+fermentation|produces|ethanol or lactate without oxygen|0.95
+stem_cell|can|differentiate into many cell types|0.95
+cancer|is|uncontrolled cell division|1.0
+oncogene|promotes|cell growth when mutated|0.9
+tumor_suppressor|prevents|uncontrolled cell division|0.9
+apoptosis|is|programmed cell death|0.95
+telomere|protects|chromosome ends during replication|0.95
+epigenetics|studies|heritable changes without DNA sequence changes|0.9
+CRISPR|is|gene editing tool using guide RNA|0.95
+PCR|amplifies|specific DNA sequences|0.95
+gel_electrophoresis|separates|DNA fragments by size|0.95
+recombinant_DNA|is|DNA from different sources combined|0.9
+plasmid|is|small circular DNA in bacteria|0.95
+restriction_enzyme|cuts|DNA at specific sequences|0.95
+genotype|is|genetic makeup of organism|1.0
+phenotype|is|observable characteristics of organism|1.0
+dominant_allele|expressed_when|one or two copies present|1.0
+recessive_allele|expressed_when|two copies present|1.0
+codominance|shows|both alleles equally in phenotype|0.9
+incomplete_dominance|shows|blended phenotype|0.9
+polygenic_inheritance|involves|multiple genes affecting one trait|0.9
+sex_linked_trait|carried_on|X or Y chromosome|0.95
+punnett_square|predicts|offspring genotype ratios|0.95
+crossing_over|increases|genetic variation during meiosis|0.95
+independent_assortment|means|genes on different chromosomes sort independently|0.95
+genetic_drift|is|random change in allele frequency|0.9
+gene_flow|is|transfer of alleles between populations|0.9
+founder_effect|is|genetic drift in new population from few individuals|0.9
+bottleneck_effect|reduces|genetic diversity after population crash|0.9
+convergent_evolution|produces|similar traits in unrelated species|0.9
+divergent_evolution|produces|different traits from common ancestor|0.9
+coevolution|is|reciprocal evolution of interacting species|0.9
+vestigial_structure|is|reduced remnant of ancestral feature|0.9
+homologous_structure|indicates|common ancestry|0.95
+analogous_structure|indicates|convergent evolution not common ancestry|0.9
+fossil_record|provides|evidence of evolution|0.95
+biogeography|studies|geographic distribution of species|0.9
+biome|is|large scale ecosystem type|0.95
+tundra|is|cold biome with permafrost|0.9
+taiga|is|boreal forest biome|0.9
+temperate_forest|has|deciduous and coniferous trees|0.9
+tropical_rainforest|has|highest biodiversity on land|0.95
+desert|receives|less than 25 cm rainfall per year|0.9
+savanna|is|tropical grassland with scattered trees|0.9
+coral_reef|is|marine ecosystem built by coral polyps|0.95
+phytoplankton|produces|most of earths oxygen|0.9
+photosynthesis_light_reactions|occur_in|thylakoid membranes|0.95
+photosynthesis_dark_reactions|occur_in|stroma of chloroplast|0.95
+calvin_cycle|fixes|carbon dioxide into glucose|0.95
+chlorophyll|absorbs|red and blue light|0.95
+stomata|allow|gas exchange in leaves|0.95
+xylem|transports|water upward in plants|0.95
+phloem|transports|sugars in plants|0.95
+transpiration|is|water loss from plant leaves|0.95
+tropism|is|plant growth response to stimulus|0.9
+auxin|is|plant hormone promoting cell elongation|0.9
+gibberellin|promotes|stem elongation and seed germination|0.85
+cytokinin|promotes|cell division in plants|0.85
+abscisic_acid|promotes|dormancy and stomatal closure|0.85
+ethylene|promotes|fruit ripening|0.9
+proxima_centauri|is|closest star to sun at 4.24 light years|0.95
+sirius|is|brightest star in night sky|0.95
+betelgeuse|is|red supergiant in orion constellation|0.9
+polaris|is|current north star|0.95
+vega|is|brightest star in lyra constellation|0.9
+solar_flare|is|sudden release of energy from sun|0.9
+sunspot|is|cooler dark area on sun surface|0.9
+solar_cycle|lasts|approximately 11 years|0.9
+corona|is|outermost atmosphere of sun|0.9
+chromosphere|is|layer of sun above photosphere|0.9
+photosphere|is|visible surface of sun|0.95
+stellar_nucleosynthesis|creates|elements heavier than hydrogen|0.95
+red_dwarf|is|most common type of star|0.9
+blue_giant|has|very high temperature and luminosity|0.9
+binary_star|is|system of two stars orbiting each other|0.9
+variable_star|changes|brightness over time|0.9
+cepheid_variable|used_for|measuring cosmic distances|0.9
+type_Ia_supernova|used_as|standard candle for distances|0.9
+event_horizon|is|boundary of black hole|0.95
+singularity|is|point of infinite density in black hole|0.9
+schwarzschild_radius|defines|size of non-rotating black hole|0.9
+spaghettification|occurs_near|black hole due to tidal forces|0.85
+sagittarius_A_star|is|supermassive black hole at milky way center|0.95
+galaxy_cluster|contains|hundreds to thousands of galaxies|0.9
+supercluster|is|cluster of galaxy clusters|0.9
+cosmic_web|is|large scale structure of universe|0.9
+observable_universe|radius|46.5 billion light years|0.9
+hubble_constant|approximately|70 km per s per Mpc|0.9
+inflation|was|rapid expansion in early universe|0.9
+nucleosynthesis_big_bang|produced|hydrogen helium and lithium|0.95
+cosmic_microwave_background|temperature|2.725 kelvin|0.95
+mars_olympus_mons|is|largest volcano in solar system|0.95
+mars_valles_marineris|is|largest canyon in solar system|0.95
+jupiters_great_red_spot|is|giant storm larger than earth|0.95
+saturns_rings|composed_of|ice and rock particles|0.95
+enceladus|has|water geysers at south pole|0.9
+triton|orbits|neptune in retrograde direction|0.9
+ceres|is|largest object in asteroid belt|0.95
+voyager_1|is|farthest human-made object from earth|0.95
+james_webb_telescope|observes|in infrared wavelengths|0.9
+hubble_telescope|launched|1990 into low earth orbit|0.95
+apollo_11|first|manned moon landing 1969|1.0
+ISS|orbits_at|approximately 408 km altitude|0.95
+speed_of_light|is|universal speed limit|1.0
+gravitational_lensing|bends|light around massive objects|0.95
+tidal_forces|caused_by|differential gravitational pull|0.9
+roche_limit|is|distance within which moon would be torn apart|0.9
+lagrange_points|are|gravitationally stable positions|0.9

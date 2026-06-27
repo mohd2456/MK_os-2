@@ -1,0 +1,200 @@
+IF temperature drops below 0C THEN water freezes into ice
+IF temperature rises above 100C THEN water boils into steam
+IF pressure increases THEN boiling point rises
+IF pressure decreases THEN boiling point drops
+IF object is dropped THEN gravity pulls it down
+IF force is applied to object THEN object accelerates
+IF friction acts on moving object THEN object slows down
+IF heat is applied to metal THEN metal expands
+IF metal cools THEN metal contracts
+IF electric current flows through wire THEN magnetic field forms
+IF magnetic field changes THEN electric current is induced
+IF light hits mirror THEN light reflects
+IF light enters denser medium THEN light bends toward normal
+IF sound wave hits wall THEN echo is produced
+IF gas is compressed THEN gas heats up
+IF gas expands THEN gas cools down
+IF two objects rub together THEN heat is generated from friction
+IF capacitor is charged THEN electric field stores energy
+IF battery is connected to circuit THEN current flows
+IF fuse overloads THEN fuse breaks circuit
+IF circuit is broken THEN current stops flowing
+IF magnet moves near coil THEN voltage is induced
+IF voltage is applied across resistance THEN current flows
+IF current flows through filament THEN light is emitted
+IF nuclear fuel undergoes fission THEN enormous energy is released
+IF mass approaches speed of light THEN time dilates
+IF star exhausts hydrogen fuel THEN star expands into red giant
+IF massive star collapses THEN supernova explosion occurs
+IF gravity overwhelms all forces THEN black hole forms
+IF earthquake occurs underwater THEN tsunami may form
+IF plant gets sunlight and water THEN plant grows
+IF plant has no sunlight THEN plant cannot photosynthesize
+IF plant has no water THEN plant wilts and dies
+IF animal eats food THEN animal gains energy
+IF animal has no food THEN animal starves
+IF pathogen enters body THEN immune system responds
+IF antibodies bind pathogen THEN pathogen is neutralized
+IF person is vaccinated THEN immune system learns to fight disease
+IF bacteria multiply unchecked THEN infection worsens
+IF antibiotic kills bacteria THEN infection clears
+IF virus mutates THEN vaccine may lose effectiveness
+IF predator population grows THEN prey population shrinks
+IF prey population shrinks THEN predator population declines
+IF habitat is destroyed THEN species may go extinct
+IF species goes extinct THEN ecosystem balance is disrupted
+IF trees are cut down THEN soil erosion increases
+IF soil erodes THEN land becomes less fertile
+IF fertilizer runs into water THEN algal bloom occurs
+IF algal bloom covers water THEN oxygen depletes
+IF oxygen depletes in water THEN fish die
+IF pollination occurs THEN seeds develop in fruit
+IF seeds germinate THEN new plants grow
+IF forest fire occurs THEN nutrients return to soil
+IF nutrients enrich soil THEN new growth flourishes
+IF climate warms THEN ice caps melt
+IF ice caps melt THEN sea level rises
+IF sea level rises THEN coastal areas flood
+IF coral water temperature rises THEN coral bleaching occurs
+IF coral dies THEN marine biodiversity decreases
+IF deforestation occurs THEN carbon dioxide increases
+IF code has bug THEN program produces wrong output
+IF program crashes THEN user loses unsaved work
+IF server overloads THEN website becomes slow or unavailable
+IF database corrupts THEN data is lost
+IF backup exists THEN data can be restored
+IF password is weak THEN account is vulnerable to hacking
+IF software is updated THEN security vulnerabilities are patched
+IF network cable is disconnected THEN internet access is lost
+IF hard drive fails THEN stored data is inaccessible
+IF RAM is full THEN computer becomes slow
+IF CPU overheats THEN computer throttles or shuts down
+IF virus infects system THEN data and performance are compromised
+IF firewall blocks traffic THEN unauthorized access is prevented
+IF encryption is applied THEN data is unreadable without key
+IF API rate limit is exceeded THEN requests are rejected
+IF cache is cleared THEN data must be fetched again
+IF index is created THEN database queries run faster
+IF code is refactored THEN maintenance becomes easier
+IF tests are written THEN bugs are caught earlier
+IF deployment fails THEN rollback restores previous version
+IF load balancer distributes traffic THEN no single server is overwhelmed
+IF microservice fails THEN circuit breaker prevents cascade
+IF DNS fails THEN websites cannot be reached by name
+IF SSL certificate expires THEN browser shows security warning
+IF container crashes THEN orchestrator restarts it automatically
+IF demand exceeds supply THEN price increases
+IF supply exceeds demand THEN price decreases
+IF interest rates rise THEN borrowing becomes expensive
+IF interest rates fall THEN borrowing becomes cheaper
+IF inflation rises THEN purchasing power decreases
+IF unemployment rises THEN consumer spending decreases
+IF economy grows THEN more jobs are created
+IF recession occurs THEN businesses reduce spending
+IF taxes increase THEN disposable income decreases
+IF education improves THEN workforce productivity increases
+IF crime increases THEN community feels less safe
+IF infrastructure improves THEN economic activity increases
+IF corruption spreads THEN public trust erodes
+IF free trade increases THEN goods become cheaper
+IF tariffs are imposed THEN imported goods cost more
+IF population grows THEN resource demand increases
+IF technology advances THEN some jobs become obsolete
+IF automation increases THEN production efficiency improves
+IF pandemic spreads THEN healthcare systems are strained
+IF quarantine is imposed THEN disease spread slows
+IF war breaks out THEN refugees flee
+IF peace is established THEN rebuilding can begin
+IF investment in research increases THEN innovation accelerates
+IF censorship increases THEN information access decreases
+IF voting rights expand THEN democracy strengthens
+IF warm air meets cold air THEN storm front forms
+IF air pressure drops rapidly THEN storm is approaching
+IF humidity is high and temperature drops THEN fog forms
+IF sun heats ground unevenly THEN wind patterns form
+IF ocean water warms above 26C THEN hurricanes can form
+IF hurricane hits land THEN wind and flood damage occurs
+IF tornado touches ground THEN destruction path forms
+IF heavy rain falls on saturated ground THEN flooding occurs
+IF drought persists THEN wildfire risk increases
+IF wildfire burns forest THEN smoke affects air quality
+IF volcanic eruption occurs THEN ash cloud blocks sunlight
+IF ash blocks sunlight THEN temperature drops temporarily
+IF tectonic plates collide THEN mountains form over time
+IF tectonic plates separate THEN rift valleys form
+IF glacier melts THEN freshwater enters ocean
+IF freshwater enters ocean THEN ocean currents may shift
+IF ocean currents shift THEN weather patterns change
+IF permafrost thaws THEN methane is released
+IF methane increases THEN greenhouse effect strengthens
+IF greenhouse effect strengthens THEN global temperature rises
+IF monsoon arrives THEN heavy seasonal rain falls
+IF El Nino occurs THEN Pacific weather patterns shift
+IF La Nina occurs THEN opposite weather shift happens
+IF solar activity increases THEN aurora displays intensify
+IF comet passes near sun THEN tail becomes visible
+IF person exercises regularly THEN cardiovascular health improves
+IF person eats too much sugar THEN blood glucose spikes
+IF insulin is produced THEN blood glucose drops
+IF person lacks sleep THEN cognitive function decreases
+IF person is dehydrated THEN body functions slow
+IF person is stressed THEN cortisol level rises
+IF cortisol stays high THEN immune system weakens
+IF person takes deep breaths THEN heart rate slows
+IF muscle is exercised THEN muscle fibers grow stronger
+IF bone bears weight THEN bone density increases
+IF person reads in dim light THEN eye strain occurs
+IF loud noise persists THEN hearing damage accumulates
+IF person smokes THEN lung capacity decreases over time
+IF person quits smoking THEN lung function gradually improves
+IF wound is cleaned THEN infection risk decreases
+IF person gets sunburned THEN skin cancer risk increases
+IF person takes antibiotics THEN gut bacteria are affected
+IF person meditates THEN stress levels decrease
+IF caffeine is consumed THEN alertness temporarily increases
+IF alcohol is consumed THEN reaction time slows
+IF person fasts THEN body enters ketosis after 12-36 hours
+IF fever occurs THEN body is fighting infection
+IF allergic reaction occurs THEN histamine is released
+IF antihistamine is taken THEN allergic symptoms reduce
+IF bone is broken THEN body begins healing process
+IF person studies consistently THEN knowledge increases
+IF knowledge increases THEN problem-solving ability improves
+IF person practices skill daily THEN proficiency increases
+IF proficiency increases THEN work quality improves
+IF work quality improves THEN career advancement is likely
+IF person saves money regularly THEN savings grow over time
+IF savings grow THEN financial security increases
+IF person exercises regularly THEN physical fitness improves
+IF physical fitness improves THEN energy levels increase
+IF energy levels increase THEN productivity improves
+IF person reads widely THEN vocabulary expands
+IF vocabulary expands THEN communication skills improve
+IF communication skills improve THEN relationships strengthen
+IF person sleeps well THEN cognitive function is optimal
+IF cognitive function is optimal THEN learning is effective
+IF pollution increases THEN air quality decreases
+IF air quality decreases THEN respiratory problems increase
+IF respiratory problems increase THEN healthcare costs rise
+IF urbanization increases THEN green space decreases
+IF green space decreases THEN mental health may decline
+IF renewable energy adoption increases THEN carbon emissions decrease
+IF carbon emissions decrease THEN climate change slows
+IF climate change slows THEN extreme weather events decrease
+IF electric vehicles adopt widely THEN oil demand decreases
+IF oil demand decreases THEN geopolitical tensions may shift
+IF internet access expands THEN information access improves
+IF information access improves THEN education opportunities grow
+IF education opportunities grow THEN inequality may decrease
+IF AI capabilities improve THEN automation increases
+IF automation increases THEN some jobs disappear but new ones emerge
+IF population ages THEN healthcare demand increases
+IF healthcare demand increases THEN medical costs rise
+IF medical costs rise THEN insurance premiums increase
+IF minimum wage increases THEN low-wage workers earn more
+IF low-wage workers earn more THEN consumer spending may increase
+IF consumer spending increases THEN businesses revenue grows
+IF businesses revenue grows THEN businesses hire more workers
+IF unemployment decreases THEN tax revenue increases
+IF tax revenue increases THEN government can fund more services
+IF government funds education THEN workforce skills improve

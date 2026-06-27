@@ -1,0 +1,511 @@
+united_states|capital|Washington DC|1.0
+united_states|population|331 million|0.9
+united_states|located_in|North America|1.0
+china|capital|Beijing|1.0
+china|population|1.4 billion|0.9
+china|located_in|Asia|1.0
+india|capital|New Delhi|1.0
+india|population|1.4 billion|0.9
+india|located_in|Asia|1.0
+russia|capital|Moscow|1.0
+russia|population|144 million|0.9
+russia|located_in|Europe/Asia|1.0
+brazil|capital|Brasilia|1.0
+brazil|population|214 million|0.9
+brazil|located_in|South America|1.0
+united_kingdom|capital|London|1.0
+united_kingdom|population|67 million|0.9
+united_kingdom|located_in|Europe|1.0
+france|capital|Paris|1.0
+france|population|67 million|0.9
+france|located_in|Europe|1.0
+germany|capital|Berlin|1.0
+germany|population|83 million|0.9
+germany|located_in|Europe|1.0
+japan|capital|Tokyo|1.0
+japan|population|125 million|0.9
+japan|located_in|Asia|1.0
+canada|capital|Ottawa|1.0
+canada|population|38 million|0.9
+canada|located_in|North America|1.0
+australia|capital|Canberra|1.0
+australia|population|26 million|0.9
+australia|located_in|Oceania|1.0
+mexico|capital|Mexico City|1.0
+mexico|population|130 million|0.9
+mexico|located_in|North America|1.0
+south_korea|capital|Seoul|1.0
+south_korea|population|52 million|0.9
+south_korea|located_in|Asia|1.0
+italy|capital|Rome|1.0
+italy|population|60 million|0.9
+italy|located_in|Europe|1.0
+spain|capital|Madrid|1.0
+spain|population|47 million|0.9
+spain|located_in|Europe|1.0
+indonesia|capital|Jakarta|1.0
+indonesia|population|275 million|0.9
+indonesia|located_in|Asia|1.0
+turkey|capital|Ankara|1.0
+turkey|population|85 million|0.9
+turkey|located_in|Europe/Asia|1.0
+saudi_arabia|capital|Riyadh|1.0
+saudi_arabia|population|35 million|0.9
+saudi_arabia|located_in|Asia|1.0
+argentina|capital|Buenos Aires|1.0
+argentina|population|46 million|0.9
+argentina|located_in|South America|1.0
+egypt|capital|Cairo|1.0
+egypt|population|104 million|0.9
+egypt|located_in|Africa|1.0
+south_africa|capital|Pretoria|1.0
+south_africa|population|60 million|0.9
+south_africa|located_in|Africa|1.0
+nigeria|capital|Abuja|1.0
+nigeria|population|218 million|0.9
+nigeria|located_in|Africa|1.0
+pakistan|capital|Islamabad|1.0
+pakistan|population|225 million|0.9
+pakistan|located_in|Asia|1.0
+bangladesh|capital|Dhaka|1.0
+bangladesh|population|170 million|0.9
+bangladesh|located_in|Asia|1.0
+thailand|capital|Bangkok|1.0
+thailand|population|70 million|0.9
+thailand|located_in|Asia|1.0
+vietnam|capital|Hanoi|1.0
+vietnam|population|98 million|0.9
+vietnam|located_in|Asia|1.0
+iran|capital|Tehran|1.0
+iran|population|86 million|0.9
+iran|located_in|Asia|1.0
+poland|capital|Warsaw|1.0
+poland|population|38 million|0.9
+poland|located_in|Europe|1.0
+ukraine|capital|Kyiv|1.0
+ukraine|population|44 million|0.9
+ukraine|located_in|Europe|1.0
+netherlands|capital|Amsterdam|1.0
+netherlands|population|17 million|0.9
+netherlands|located_in|Europe|1.0
+belgium|capital|Brussels|1.0
+belgium|population|11 million|0.9
+belgium|located_in|Europe|1.0
+sweden|capital|Stockholm|1.0
+sweden|population|10 million|0.9
+sweden|located_in|Europe|1.0
+norway|capital|Oslo|1.0
+norway|population|5 million|0.9
+norway|located_in|Europe|1.0
+denmark|capital|Copenhagen|1.0
+denmark|population|6 million|0.9
+denmark|located_in|Europe|1.0
+finland|capital|Helsinki|1.0
+finland|population|5.5 million|0.9
+finland|located_in|Europe|1.0
+switzerland|capital|Bern|1.0
+switzerland|population|8.7 million|0.9
+switzerland|located_in|Europe|1.0
+austria|capital|Vienna|1.0
+austria|population|9 million|0.9
+austria|located_in|Europe|1.0
+portugal|capital|Lisbon|1.0
+portugal|population|10 million|0.9
+portugal|located_in|Europe|1.0
+greece|capital|Athens|1.0
+greece|population|10.7 million|0.9
+greece|located_in|Europe|1.0
+czech_republic|capital|Prague|1.0
+czech_republic|population|10.7 million|0.9
+czech_republic|located_in|Europe|1.0
+romania|capital|Bucharest|1.0
+romania|population|19 million|0.9
+romania|located_in|Europe|1.0
+hungary|capital|Budapest|1.0
+hungary|population|10 million|0.9
+hungary|located_in|Europe|1.0
+ireland|capital|Dublin|1.0
+ireland|population|5 million|0.9
+ireland|located_in|Europe|1.0
+new_zealand|capital|Wellington|1.0
+new_zealand|population|5 million|0.9
+new_zealand|located_in|Oceania|1.0
+singapore|capital|Singapore City|1.0
+singapore|population|5.9 million|0.9
+singapore|located_in|Asia|1.0
+malaysia|capital|Kuala Lumpur|1.0
+malaysia|population|33 million|0.9
+malaysia|located_in|Asia|1.0
+philippines|capital|Manila|1.0
+philippines|population|113 million|0.9
+philippines|located_in|Asia|1.0
+colombia|capital|Bogota|1.0
+colombia|population|51 million|0.9
+colombia|located_in|South America|1.0
+chile|capital|Santiago|1.0
+chile|population|19 million|0.9
+chile|located_in|South America|1.0
+peru|capital|Lima|1.0
+peru|population|33 million|0.9
+peru|located_in|South America|1.0
+venezuela|capital|Caracas|1.0
+venezuela|population|28 million|0.9
+venezuela|located_in|South America|1.0
+kenya|capital|Nairobi|1.0
+kenya|population|54 million|0.9
+kenya|located_in|Africa|1.0
+ethiopia|capital|Addis Ababa|1.0
+ethiopia|population|120 million|0.9
+ethiopia|located_in|Africa|1.0
+tanzania|capital|Dodoma|1.0
+tanzania|population|63 million|0.9
+tanzania|located_in|Africa|1.0
+morocco|capital|Rabat|1.0
+morocco|population|37 million|0.9
+morocco|located_in|Africa|1.0
+ghana|capital|Accra|1.0
+ghana|population|32 million|0.9
+ghana|located_in|Africa|1.0
+algeria|capital|Algiers|1.0
+algeria|population|44 million|0.9
+algeria|located_in|Africa|1.0
+iraq|capital|Baghdad|1.0
+iraq|population|41 million|0.9
+iraq|located_in|Asia|1.0
+israel|capital|Jerusalem|1.0
+israel|population|9.4 million|0.9
+israel|located_in|Asia|1.0
+cuba|capital|Havana|1.0
+cuba|population|11 million|0.9
+cuba|located_in|North America|1.0
+asia|is|largest continent by area and population|1.0
+asia|area|44.58 million square kilometers|0.95
+africa|is|second largest continent|1.0
+africa|area|30.37 million square kilometers|0.95
+north_america|is|third largest continent|1.0
+north_america|area|24.71 million square kilometers|0.95
+south_america|is|fourth largest continent|1.0
+south_america|area|17.84 million square kilometers|0.95
+antarctica|is|fifth largest continent|1.0
+antarctica|is|coldest driest windiest continent|1.0
+europe|is|sixth largest continent|1.0
+europe|area|10.18 million square kilometers|0.95
+australia_oceania|is|smallest continent|1.0
+earth|has|seven continents|1.0
+pacific_ocean|is|largest ocean on Earth|1.0
+pacific_ocean|area|165.25 million square kilometers|0.95
+pacific_ocean|deepest_point|Mariana Trench 10994 meters|1.0
+atlantic_ocean|is|second largest ocean|1.0
+atlantic_ocean|area|106.46 million square kilometers|0.95
+indian_ocean|is|third largest ocean|1.0
+indian_ocean|area|70.56 million square kilometers|0.95
+southern_ocean|surrounds|Antarctica|1.0
+arctic_ocean|is|smallest and shallowest ocean|1.0
+arctic_ocean|largely|covered by sea ice|0.95
+earth|has|five oceans|1.0
+ocean_covers|approximately|71 percent of Earths surface|1.0
+dead_sea|is|lowest point on land at -430 meters|1.0
+mediterranean_sea|connects|to Atlantic through Strait of Gibraltar|0.95
+red_sea|connects|to Indian Ocean|0.9
+black_sea|connects|to Mediterranean through Bosphorus|0.9
+caribbean_sea|is|part of Atlantic Ocean|0.9
+south_china_sea|is|major shipping route in Pacific|0.9
+mount_everest|is|highest mountain at 8849 meters|1.0
+mount_everest|located_in|Nepal and Tibet border|1.0
+k2|is|second highest mountain at 8611 meters|1.0
+kangchenjunga|is|third highest mountain at 8586 meters|0.95
+himalayas|is|highest mountain range on Earth|1.0
+himalayas|located_in|Asia spanning five countries|1.0
+andes|is|longest mountain range at 7000 km|1.0
+andes|located_in|South America|1.0
+alps|is|major European mountain range|1.0
+mont_blanc|is|highest peak in Alps at 4808 meters|0.95
+rocky_mountains|extend|from Canada to New Mexico|1.0
+kilimanjaro|is|highest mountain in Africa at 5895 meters|1.0
+kilimanjaro|located_in|Tanzania|1.0
+denali|is|highest peak in North America at 6190 meters|0.95
+aconcagua|is|highest peak in South America at 6961 meters|0.95
+mount_fuji|is|highest mountain in Japan at 3776 meters|0.95
+matterhorn|is|iconic mountain in Swiss Alps|0.9
+mount_elbrus|is|highest peak in Europe at 5642 meters|0.9
+mount_vinson|is|highest peak in Antarctica at 4892 meters|0.85
+mauna_kea|is|tallest mountain from base to peak at 10203 meters|0.9
+nile|is|longest river at approximately 6650 km|1.0
+nile|flows_through|northeastern Africa to Mediterranean|1.0
+amazon|is|largest river by volume|1.0
+amazon|flows_through|South America to Atlantic|1.0
+amazon|length|approximately 6400 km|0.95
+yangtze|is|longest river in Asia at 6300 km|1.0
+yangtze|flows_through|China|1.0
+mississippi|is|major North American river at 3730 km|1.0
+mississippi|flows|from Minnesota to Gulf of Mexico|0.95
+danube|flows_through|10 European countries|0.95
+danube|is|second longest European river at 2850 km|0.95
+volga|is|longest river in Europe at 3530 km|0.95
+ganges|is|sacred river flowing through India|0.95
+congo|is|deepest river in world|0.95
+thames|flows_through|London England|0.9
+seine|flows_through|Paris France|0.9
+rhine|flows_through|six European countries|0.9
+colorado_river|carved|Grand Canyon|0.95
+tigris|flows_through|Turkey and Iraq|0.9
+euphrates|flows_through|Turkey Syria and Iraq|0.9
+mekong|flows_through|six Southeast Asian countries|0.9
+niger|is|principal river of West Africa|0.9
+zambezi|has|Victoria Falls|0.9
+yellow_river|is|second longest river in China|0.9
+indus|flows_through|Pakistan|0.9
+sahara|is|largest hot desert at 9.2 million sq km|1.0
+sahara|located_in|northern Africa|1.0
+antarctic_desert|is|largest desert overall|0.95
+arabian_desert|is|second largest hot desert|0.9
+gobi_desert|located_in|Mongolia and China|0.95
+kalahari_desert|located_in|southern Africa|0.9
+atacama_desert|is|driest hot desert on Earth|0.95
+mojave_desert|located_in|southwestern United States|0.9
+sonoran_desert|located_in|US and Mexico|0.85
+great_victoria_desert|is|largest desert in Australia|0.85
+caspian_sea|is|largest lake by area|1.0
+lake_superior|is|largest freshwater lake by area|1.0
+lake_baikal|is|deepest lake at 1642 meters|1.0
+lake_baikal|contains|20 percent of worlds fresh surface water|0.95
+lake_victoria|is|largest lake in Africa|0.95
+great_lakes|include|Superior Michigan Huron Erie Ontario|1.0
+lake_titicaca|is|highest navigable lake at 3812 meters|0.9
+dead_sea|is|saltiest major body of water|0.95
+grand_canyon|is|277 miles long up to 18 miles wide|0.95
+grand_canyon|located_in|Arizona United States|1.0
+great_barrier_reef|is|largest coral reef system|1.0
+great_barrier_reef|located_off|coast of Australia|1.0
+amazon_rainforest|is|largest tropical rainforest|1.0
+amazon_rainforest|produces|20 percent of worlds oxygen|0.85
+victoria_falls|is|largest waterfall by combined width and height|0.95
+niagara_falls|located_on|border of US and Canada|0.95
+angel_falls|is|worlds highest uninterrupted waterfall at 979 meters|0.95
+ring_of_fire|is|zone of frequent earthquakes and volcanoes|1.0
+ring_of_fire|encircles|Pacific Ocean|1.0
+san_andreas_fault|is|major fault line in California|0.95
+mid_atlantic_ridge|is|longest mountain range underwater|0.9
+mariana_trench|is|deepest point in ocean at 10994 meters|1.0
+challenger_deep|is|deepest part of Mariana Trench|0.95
+great_rift_valley|extends|from Lebanon to Mozambique|0.9
+pangaea|was|supercontinent 335-175 million years ago|0.95
+tectonic_plates|cause|earthquakes and volcanic activity|1.0
+equator|divides|Earth into Northern and Southern hemispheres|1.0
+prime_meridian|passes_through|Greenwich England|1.0
+international_date_line|runs|roughly along 180 degrees longitude|0.95
+tropic_of_cancer|is|23.5 degrees north latitude|1.0
+tropic_of_capricorn|is|23.5 degrees south latitude|1.0
+arctic_circle|is|66.5 degrees north latitude|1.0
+antarctic_circle|is|66.5 degrees south latitude|1.0
+tropical_climate|found_near|equator with warm temperatures year round|0.95
+temperate_climate|has|four distinct seasons|0.95
+polar_climate|found_near|poles with very cold temperatures|0.95
+monsoon|is|seasonal wind pattern bringing heavy rain|0.95
+hurricane|forms_over|warm ocean waters|1.0
+tornado|is|violently rotating column of air|1.0
+el_nino|is|warming of Pacific Ocean affecting weather globally|0.95
+la_nina|is|cooling of Pacific Ocean|0.9
+jet_stream|is|fast flowing air current in upper atmosphere|0.9
+gulf_stream|carries|warm water from Gulf of Mexico to Europe|0.95
+trade_winds|blow|from east to west near equator|0.9
+coriolis_effect|deflects|moving objects due to Earth rotation|0.95
+greenland|is|largest island in the world|1.0
+new_guinea|is|second largest island|0.95
+borneo|is|third largest island|0.9
+madagascar|is|fourth largest island|0.9
+iceland|located_in|North Atlantic Ocean|0.95
+hawaii|is|volcanic island chain in Pacific|0.95
+galapagos|inspired|Darwin theory of evolution|0.9
+maldives|is|lowest country average 1.5 meters above sea level|0.9
+japan|is|archipelago of 6852 islands|0.95
+philippines|is|archipelago of about 7641 islands|0.9
+indonesia|is|largest archipelago with 17000 islands|0.95
+vatican_city|is|smallest country by area|1.0
+russia|is|largest country by area at 17.1 million sq km|1.0
+china|is|most populous country over 1.4 billion|1.0
+monaco|is|most densely populated country|0.95
+mongolia|is|least densely populated country|0.9
+switzerland|is|known for political neutrality|0.9
+japan|is|island nation with active volcanoes|0.95
+iceland|has|numerous geysers and hot springs|0.9
+norway|has|extensive fjord coastline|0.9
+brazil|has|largest tropical rainforest|0.95
+canada|is|second largest country by area|1.0
+united_states|has|50 states|1.0
+india|has|28 states and 8 union territories|0.9
+australia|is|both a country and a continent|1.0
+north_pole|is|northernmost point on Earth|1.0
+south_pole|is|southernmost point on Earth|1.0
+bermuda_triangle|is|region in Atlantic Ocean|0.8
+amazon_river_mouth|is|widest river mouth at 325 km|0.85
+sahel|is|semiarid region south of Sahara|0.85
+tundra|is|treeless region in high latitudes|0.9
+taiga|is|largest land biome boreal forest|0.9
+savanna|has|grassland with scattered trees|0.9
+steppe|is|vast grassland in Eurasia|0.85
+fjord|is|narrow inlet carved by glacier|0.9
+atoll|is|ring-shaped coral reef enclosing lagoon|0.9
+delta|formed_at|river mouth where sediment deposited|0.95
+strait|is|narrow waterway connecting two bodies of water|0.95
+strait_of_hormuz|is|crucial oil shipping route|0.9
+panama_canal|connects|Atlantic and Pacific oceans|1.0
+suez_canal|connects|Mediterranean and Red seas|1.0
+english_channel|separates|England and France|0.95
+bosphorus|separates|Europe and Asia in Turkey|0.9
+afghanistan|capital|Kabul|1.0
+albania|capital|Tirana|1.0
+angola|capital|Luanda|1.0
+armenia|capital|Yerevan|1.0
+azerbaijan|capital|Baku|1.0
+bahrain|capital|Manama|1.0
+belarus|capital|Minsk|1.0
+bolivia|capital|Sucre|1.0
+bosnia_herzegovina|capital|Sarajevo|1.0
+brunei|capital|Bandar Seri Begawan|1.0
+bulgaria|capital|Sofia|1.0
+cambodia|capital|Phnom Penh|1.0
+cameroon|capital|Yaounde|1.0
+costa_rica|capital|San Jose|1.0
+croatia|capital|Zagreb|1.0
+cyprus|capital|Nicosia|1.0
+dominican_republic|capital|Santo Domingo|1.0
+ecuador|capital|Quito|1.0
+el_salvador|capital|San Salvador|1.0
+estonia|capital|Tallinn|1.0
+fiji|capital|Suva|1.0
+georgia|capital|Tbilisi|1.0
+guatemala|capital|Guatemala City|1.0
+haiti|capital|Port-au-Prince|1.0
+honduras|capital|Tegucigalpa|1.0
+iceland|capital|Reykjavik|1.0
+jamaica|capital|Kingston|1.0
+jordan|capital|Amman|1.0
+kazakhstan|capital|Astana|1.0
+kuwait|capital|Kuwait City|1.0
+laos|capital|Vientiane|1.0
+latvia|capital|Riga|1.0
+lebanon|capital|Beirut|1.0
+libya|capital|Tripoli|1.0
+lithuania|capital|Vilnius|1.0
+luxembourg|capital|Luxembourg City|1.0
+madagascar|capital|Antananarivo|1.0
+mongolia|capital|Ulaanbaatar|1.0
+mozambique|capital|Maputo|1.0
+myanmar|capital|Naypyidaw|1.0
+nepal|capital|Kathmandu|1.0
+nicaragua|capital|Managua|1.0
+north_korea|capital|Pyongyang|1.0
+oman|capital|Muscat|1.0
+panama|capital|Panama City|1.0
+papua_new_guinea|capital|Port Moresby|1.0
+paraguay|capital|Asuncion|1.0
+qatar|capital|Doha|1.0
+senegal|capital|Dakar|1.0
+serbia|capital|Belgrade|1.0
+slovakia|capital|Bratislava|1.0
+slovenia|capital|Ljubljana|1.0
+sri_lanka|capital|Sri Jayawardenepura Kotte|1.0
+sudan|capital|Khartoum|1.0
+syria|capital|Damascus|1.0
+taiwan|capital|Taipei|1.0
+tunisia|capital|Tunis|1.0
+turkmenistan|capital|Ashgabat|1.0
+uae|capital|Abu Dhabi|1.0
+uruguay|capital|Montevideo|1.0
+uzbekistan|capital|Tashkent|1.0
+yemen|capital|Sanaa|1.0
+zambia|capital|Lusaka|1.0
+zimbabwe|capital|Harare|1.0
+tokyo|population|approximately 37 million metro area|0.9
+delhi|population|approximately 32 million metro area|0.9
+shanghai|population|approximately 28 million metro area|0.9
+sao_paulo|population|approximately 22 million metro area|0.9
+mumbai|population|approximately 21 million metro area|0.9
+cairo|population|approximately 21 million metro area|0.9
+beijing|population|approximately 21 million metro area|0.9
+dhaka|population|approximately 22 million metro area|0.85
+osaka|population|approximately 19 million metro area|0.85
+new_york|population|approximately 20 million metro area|0.9
+karachi|population|approximately 16 million metro area|0.85
+istanbul|population|approximately 15 million metro area|0.9
+buenos_aires|population|approximately 15 million metro area|0.85
+kolkata|population|approximately 15 million metro area|0.85
+lagos|population|approximately 15 million metro area|0.85
+manila|population|approximately 14 million metro area|0.85
+rio_de_janeiro|population|approximately 13 million metro area|0.85
+los_angeles|population|approximately 13 million metro area|0.9
+moscow|population|approximately 12 million metro area|0.9
+paris|population|approximately 11 million metro area|0.9
+london|population|approximately 9 million city proper|0.9
+mount_everest|is|highest point on Earth above sea level|1.0
+mariana_trench|is|deepest point in ocean|1.0
+death_valley|is|hottest place recorded on Earth|0.9
+antarctica|recorded|lowest temperature minus 89.2 degrees C|0.9
+atacama_desert|may_have|areas with zero recorded rainfall|0.85
+amazon_basin|is|largest river drainage basin|0.95
+lake_baikal|is|oldest lake at 25 million years|0.9
+angel_falls_height|is|979 meters tallest waterfall|0.95
+sahara_desert|grows|larger each year due to desertification|0.85
+greenland_ice_sheet|is|second largest ice body after Antarctica|0.9
+antarctica_ice|contains|70 percent of Earths fresh water|0.9
+pacific_ocean|is|wider than the moon|0.85
+russia_time_zones|spans|11 time zones|0.9
+china_time_zones|uses|single time zone despite wide span|0.85
+longest_border|is|US-Canada border at 8891 km|0.9
+shortest_border|is|between Botswana and Zambia at 150 meters|0.8
+landlocked_countries|include|Switzerland Austria Mongolia Bolivia|0.9
+island_countries|include|Japan Philippines Indonesia Iceland|0.9
+mauna_loa|is|largest active volcano by volume|0.9
+kilauea|is|one of most active volcanoes|0.9
+mount_vesuvius|destroyed|Pompeii in 79 AD|1.0
+krakatoa|erupted|catastrophically in 1883|0.9
+mount_st_helens|erupted|May 18 1980|0.9
+eyjafjallajokull|erupted|2010 disrupting European air travel|0.85
+yellowstone|is|supervolcano in United States|0.9
+mount_pinatubo|erupted|1991 second largest 20th century eruption|0.85
+ring_of_fire|contains|75 percent of worlds volcanoes|0.95
+pacific_plate|is|largest tectonic plate|0.9
+earth_has|approximately|15 major tectonic plates|0.9
+himalaya_formation|caused_by|Indian plate colliding with Eurasian|0.95
+rift_valley|formed_by|plates pulling apart|0.9
+subduction|occurs_when|one plate slides under another|0.9
+earthquake_richter|measures|earthquake magnitude logarithmically|0.95
+tsunami|caused_by|underwater earthquakes or landslides|0.95
+2004_tsunami|caused_by|magnitude 9.1 earthquake in Indian Ocean|0.9
+san_francisco_1906|was|magnitude 7.9 earthquake|0.85
+japan_2011|was|magnitude 9.1 earthquake and tsunami|0.9
+northern_lights|visible_in|high latitude regions|0.9
+southern_lights|visible_in|near South Pole|0.9
+great_blue_hole|is|giant marine sinkhole off Belize|0.85
+uluru|is|large sandstone monolith in Australia|0.9
+mount_rushmore|carved_with|four US president faces|0.9
+dead_sea|is|10 times saltier than ocean|0.9
+lake_natron|turns|animals to stone through calcification|0.8
+socotra_island|has|unique alien-like vegetation|0.8
+ha_long_bay|has|thousands of limestone karsts in Vietnam|0.85
+cappadocia|has|fairy chimney rock formations in Turkey|0.85
+zhangjiajie|inspired|Avatar movie floating mountains|0.8
+salar_de_uyuni|is|worlds largest salt flat in Bolivia|0.9
+pamukkale|is|white travertine terraces in Turkey|0.85
+giants_causeway|is|basalt column formation in Northern Ireland|0.85
+continent_drift|theory_by|Alfred Wegener 1912|0.9
+earth_circumference|approximately|40075 km at equator|0.95
+earth_diameter|approximately|12742 km|1.0
+earth_surface_area|approximately|510 million sq km|0.9
+ocean_average_depth|approximately|3688 meters|0.9
+highest_waterfall_africa|is|Tugela Falls South Africa 948 meters|0.85
+longest_cave_system|is|Mammoth Cave Kentucky 676 km|0.85
+deepest_cave|is|Veryovkina Cave Georgia 2212 meters|0.8
+largest_delta|is|Ganges-Brahmaputra Delta|0.9
+longest_coastline|belongs_to|Canada at 243042 km|0.85
+smallest_continent|is|Australia-Oceania|0.95
+driest_continent|is|Antarctica|0.9
+most_rivers_country|is|Bangladesh|0.8
+highest_capital|is|La Paz Bolivia at 3640 meters|0.9
+northernmost_capital|is|Reykjavik Iceland|0.9
+earth_age|approximately|4.54 billion years|0.95
+earth_rotation|takes|23 hours 56 minutes 4 seconds|0.95
+earth_orbit|takes|365.25 days|1.0
+earth_tilt|is|23.5 degrees|1.0
+seasons_caused_by|axial_tilt|of Earth|1.0

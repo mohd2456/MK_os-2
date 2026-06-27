@@ -1,0 +1,552 @@
+# Python Code Patterns
+# Format: Pattern name followed by description and code template
+
+PATTERN: Hello World
+print("Hello, World!")
+
+PATTERN: Read file contents
+with open("filename.txt", "r") as f:
+    content = f.read()
+
+PATTERN: Write to file
+with open("output.txt", "w") as f:
+    f.write("content here")
+
+PATTERN: Append to file
+with open("log.txt", "a") as f:
+    f.write("new line\n")
+
+PATTERN: Read file line by line
+with open("data.txt", "r") as f:
+    for line in f:
+        process(line.strip())
+
+PATTERN: Read CSV file
+import csv
+with open("data.csv", "r") as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        print(row)
+
+PATTERN: Write CSV file
+import csv
+with open("output.csv", "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow(["col1", "col2"])
+    writer.writerows(data)
+
+PATTERN: Read JSON file
+import json
+with open("config.json", "r") as f:
+    data = json.load(f)
+
+PATTERN: Write JSON file
+import json
+with open("output.json", "w") as f:
+    json.dump(data, f, indent=2)
+
+PATTERN: HTTP GET request
+import requests
+response = requests.get("https://api.example.com/data")
+data = response.json()
+
+PATTERN: HTTP POST request
+import requests
+response = requests.post("https://api.example.com/create",
+    json={"key": "value"},
+    headers={"Authorization": "Bearer token"})
+
+PATTERN: Flask web app
+from flask import Flask, jsonify, request
+app = Flask(__name__)
+
+@app.route("/api/data", methods=["GET"])
+def get_data():
+    return jsonify({"message": "success"})
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+PATTERN: FastAPI web app
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class Item(BaseModel):
+    name: str
+    price: float
+
+@app.get("/items/{item_id}")
+async def read_item(item_id: int):
+    return {"item_id": item_id}
+
+@app.post("/items/")
+async def create_item(item: Item):
+    return item
+
+PATTERN: Django model
+from django.db import models
+
+class Article(models.Model):
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    published = models.DateTimeField(auto_now_add=True)
+    author = models.ForeignKey("auth.User", on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.title
+
+PATTERN: SQLAlchemy ORM
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.orm import declarative_base, Session
+
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50))
+    email = Column(String(100), unique=True)
+
+engine = create_engine("sqlite:///app.db")
+Base.metadata.create_all(engine)
+
+PATTERN: List comprehension
+squares = [x**2 for x in range(10)]
+evens = [x for x in numbers if x % 2 == 0]
+pairs = [(x, y) for x in range(3) for y in range(3)]
+
+PATTERN: Dictionary comprehension
+word_lengths = {word: len(word) for word in words}
+filtered = {k: v for k, v in data.items() if v > threshold}
+
+PATTERN: Generator function
+def fibonacci():
+    a, b = 0, 1
+    while True:
+        yield a
+        a, b = b, a + b
+
+PATTERN: Decorator
+from functools import wraps
+
+def timer(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        import time
+        start = time.time()
+        result = func(*args, **kwargs)
+        print(f"{func.__name__} took {time.time() - start:.2f}s")
+        return result
+    return wrapper
+
+PATTERN: Context manager
+from contextlib import contextmanager
+
+@contextmanager
+def managed_resource(name):
+    resource = acquire(name)
+    try:
+        yield resource
+    finally:
+        release(resource)
+
+PATTERN: Class with properties
+class Circle:
+    def __init__(self, radius):
+        self._radius = radius
+
+    @property
+    def radius(self):
+        return self._radius
+
+    @radius.setter
+    def radius(self, value):
+        if value < 0:
+            raise ValueError("Radius cannot be negative")
+        self._radius = value
+
+    @property
+    def area(self):
+        import math
+        return math.pi * self._radius ** 2
+
+PATTERN: Dataclass
+from dataclasses import dataclass, field
+from typing import List
+
+@dataclass
+class Student:
+    name: str
+    age: int
+    grades: List[float] = field(default_factory=list)
+
+    @property
+    def average(self):
+        return sum(self.grades) / len(self.grades) if self.grades else 0
+
+PATTERN: Async/await
+import asyncio
+import aiohttp
+
+async def fetch_url(session, url):
+    async with session.get(url) as response:
+        return await response.json()
+
+async def main():
+    async with aiohttp.ClientSession() as session:
+        tasks = [fetch_url(session, url) for url in urls]
+        results = await asyncio.gather(*tasks)
+    return results
+
+asyncio.run(main())
+
+PATTERN: Multiprocessing
+from multiprocessing import Pool
+
+def process_item(item):
+    return heavy_computation(item)
+
+with Pool(processes=4) as pool:
+    results = pool.map(process_item, items)
+
+PATTERN: Threading
+import threading
+
+def worker(name):
+    print(f"Thread {name} running")
+
+threads = []
+for i in range(5):
+    t = threading.Thread(target=worker, args=(i,))
+    threads.append(t)
+    t.start()
+
+for t in threads:
+    t.join()
+
+PATTERN: Argparse CLI
+import argparse
+
+parser = argparse.ArgumentParser(description="My CLI tool")
+parser.add_argument("input", help="Input file path")
+parser.add_argument("-o", "--output", default="out.txt", help="Output file")
+parser.add_argument("-v", "--verbose", action="store_true")
+args = parser.parse_args()
+
+PATTERN: Logging setup
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("app.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+PATTERN: Unit test with pytest
+import pytest
+
+def add(a, b):
+    return a + b
+
+def test_add():
+    assert add(2, 3) == 5
+    assert add(-1, 1) == 0
+    assert add(0, 0) == 0
+
+@pytest.fixture
+def sample_data():
+    return [1, 2, 3, 4, 5]
+
+def test_sum(sample_data):
+    assert sum(sample_data) == 15
+
+PATTERN: Exception handling
+class CustomError(Exception):
+    pass
+
+try:
+    result = risky_operation()
+except ValueError as e:
+    logger.error(f"Value error: {e}")
+    result = default_value
+except (IOError, OSError) as e:
+    logger.error(f"IO error: {e}")
+    raise CustomError("Operation failed") from e
+finally:
+    cleanup()
+
+PATTERN: Regular expressions
+import re
+
+email_pattern = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+emails = re.findall(email_pattern, text)
+
+phone = re.sub(r"[^0-9]", "", phone_string)
+match = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", date_string)
+
+PATTERN: SQLite database
+import sqlite3
+
+conn = sqlite3.connect("database.db")
+cursor = conn.cursor()
+cursor.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)")
+cursor.execute("INSERT INTO users (name, email) VALUES (?, ?)", (name, email))
+conn.commit()
+rows = cursor.execute("SELECT * FROM users").fetchall()
+conn.close()
+
+PATTERN: Web scraping with BeautifulSoup
+from bs4 import BeautifulSoup
+import requests
+
+response = requests.get("https://example.com")
+soup = BeautifulSoup(response.text, "html.parser")
+titles = [h2.text for h2 in soup.find_all("h2")]
+links = [a["href"] for a in soup.find_all("a", href=True)]
+
+PATTERN: Pandas DataFrame operations
+import pandas as pd
+
+df = pd.read_csv("data.csv")
+filtered = df[df["age"] > 25]
+grouped = df.groupby("category")["value"].mean()
+df["new_col"] = df["col1"] + df["col2"]
+df.to_csv("output.csv", index=False)
+
+PATTERN: NumPy array operations
+import numpy as np
+
+arr = np.array([1, 2, 3, 4, 5])
+matrix = np.random.rand(3, 3)
+result = np.dot(matrix, matrix.T)
+normalized = (arr - arr.mean()) / arr.std()
+
+PATTERN: Matplotlib plotting
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(10, 6))
+plt.plot(x_data, y_data, label="Data")
+plt.xlabel("X axis")
+plt.ylabel("Y axis")
+plt.title("My Plot")
+plt.legend()
+plt.savefig("plot.png")
+plt.show()
+
+PATTERN: Type hints
+from typing import List, Dict, Optional, Tuple, Union
+
+def process_data(
+    items: List[str],
+    config: Dict[str, int],
+    threshold: Optional[float] = None
+) -> Tuple[List[str], int]:
+    results: List[str] = []
+    count: int = 0
+    return results, count
+
+PATTERN: Abstract base class
+from abc import ABC, abstractmethod
+
+class Shape(ABC):
+    @abstractmethod
+    def area(self) -> float:
+        pass
+
+    @abstractmethod
+    def perimeter(self) -> float:
+        pass
+
+class Rectangle(Shape):
+    def __init__(self, width: float, height: float):
+        self.width = width
+        self.height = height
+
+    def area(self) -> float:
+        return self.width * self.height
+
+    def perimeter(self) -> float:
+        return 2 * (self.width + self.height)
+
+PATTERN: Singleton pattern
+class Singleton:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+PATTERN: Observer pattern
+class EventEmitter:
+    def __init__(self):
+        self._listeners = {}
+
+    def on(self, event, callback):
+        self._listeners.setdefault(event, []).append(callback)
+
+    def emit(self, event, *args, **kwargs):
+        for callback in self._listeners.get(event, []):
+            callback(*args, **kwargs)
+
+PATTERN: Factory pattern
+class Animal:
+    pass
+
+class Dog(Animal):
+    def speak(self): return "Woof"
+
+class Cat(Animal):
+    def speak(self): return "Meow"
+
+def animal_factory(animal_type: str) -> Animal:
+    animals = {"dog": Dog, "cat": Cat}
+    return animals[animal_type]()
+
+PATTERN: Iterator class
+class Range:
+    def __init__(self, start, end, step=1):
+        self.start = start
+        self.end = end
+        self.step = step
+
+    def __iter__(self):
+        self.current = self.start
+        return self
+
+    def __next__(self):
+        if self.current >= self.end:
+            raise StopIteration
+        value = self.current
+        self.current += self.step
+        return value
+
+PATTERN: Caching with lru_cache
+from functools import lru_cache
+
+@lru_cache(maxsize=128)
+def expensive_computation(n):
+    if n < 2:
+        return n
+    return expensive_computation(n-1) + expensive_computation(n-2)
+
+PATTERN: Environment variables
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///default.db")
+SECRET_KEY = os.environ["SECRET_KEY"]
+DEBUG = os.getenv("DEBUG", "false").lower() == "true" 
+
+PATTERN: Path operations
+from pathlib import Path
+
+project_root = Path(__file__).parent.parent
+data_dir = project_root / "data"
+data_dir.mkdir(parents=True, exist_ok=True)
+files = list(data_dir.glob("*.csv"))
+content = (data_dir / "config.yaml").read_text()
+
+PATTERN: Subprocess execution
+import subprocess
+
+result = subprocess.run(
+    ["ls", "-la"],
+    capture_output=True,
+    text=True,
+    check=True
+)
+print(result.stdout)
+
+PATTERN: Socket server
+import socket
+
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(("0.0.0.0", 8080))
+server.listen(5)
+while True:
+    client, addr = server.accept()
+    data = client.recv(1024)
+    client.send(b"Response")
+    client.close()
+
+PATTERN: Queue processing
+from queue import Queue
+from threading import Thread
+
+def worker(q):
+    while True:
+        item = q.get()
+        if item is None:
+            break
+        process(item)
+        q.task_done()
+
+q = Queue()
+threads = [Thread(target=worker, args=(q,)) for _ in range(4)]
+for t in threads: t.start()
+
+PATTERN: Retry with exponential backoff
+import time
+
+def retry(func, max_retries=3, base_delay=1):
+    for attempt in range(max_retries):
+        try:
+            return func()
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise
+            delay = base_delay * (2 ** attempt)
+            time.sleep(delay)
+
+PATTERN: Configuration class
+from dataclasses import dataclass
+import yaml
+
+@dataclass
+class Config:
+    host: str = "localhost"
+    port: int = 8080
+    debug: bool = False
+
+    @classmethod
+    def from_yaml(cls, path: str):
+        with open(path) as f:
+            data = yaml.safe_load(f)
+        return cls(**data)
+
+PATTERN: Enum usage
+from enum import Enum, auto
+
+class Status(Enum):
+    PENDING = auto()
+    RUNNING = auto()
+    COMPLETED = auto()
+    FAILED = auto()
+
+def handle_status(status: Status):
+    match status:
+        case Status.PENDING: print("Waiting")
+        case Status.COMPLETED: print("Done")
+
+PATTERN: Pydantic model validation
+from pydantic import BaseModel, validator, EmailStr
+
+class UserCreate(BaseModel):
+    name: str
+    email: EmailStr
+    age: int
+
+    @validator("age")
+    def age_must_be_positive(cls, v):
+        if v < 0 or v > 150:
+            raise ValueError("Invalid age")
+        return v
+

@@ -1,0 +1,200 @@
+IF someone is wearing a coat THEN it is probably cold outside
+IF someone is carrying an umbrella THEN rain is expected
+IF lights are off in a house THEN probably no one is home
+IF car is in driveway THEN someone is probably home
+IF smoke comes from chimney THEN someone lit a fire
+IF lawn is wet in morning THEN it rained or sprinklers ran
+IF grocery bags are in car THEN person went shopping
+IF person is yawning THEN person is probably tired
+IF person is smiling THEN person is probably happy
+IF person is crying THEN person is probably sad or in pain
+IF person is running THEN person is in a hurry or exercising
+IF person is whispering THEN they want to be quiet
+IF someone says thank you THEN they received something good
+IF someone apologizes THEN they did something wrong
+IF dog is wagging tail THEN dog is happy
+IF dog is growling THEN dog feels threatened
+IF cat is purring THEN cat is content
+IF birds are singing THEN it is probably morning
+IF sky is getting dark THEN sunset is approaching or storm is coming
+IF leaves are falling THEN it is probably autumn
+IF snow is on ground THEN it is winter or high altitude
+IF flowers are blooming THEN it is probably spring or summer
+IF ice cream truck music plays THEN ice cream truck is nearby
+IF alarm is going off THEN something needs attention
+IF phone is ringing THEN someone is calling
+IF doorbell rings THEN someone is at the door
+IF food smells burnt THEN food is overcooked
+IF milk smells bad THEN milk has spoiled
+IF bread has mold THEN bread should not be eaten
+IF fruit is soft and brown THEN fruit is overripe
+IF all X are Y AND Z is X THEN Z is Y
+IF no X are Y AND Z is X THEN Z is not Y
+IF some X are Y AND Z is X THEN Z might be Y
+IF X always causes Y AND X occurred THEN Y occurred
+IF X is necessary for Y AND X did not occur THEN Y did not occur
+IF X is sufficient for Y AND X occurred THEN Y occurred
+IF X or Y must be true AND X is false THEN Y is true
+IF not both X and Y AND X is true THEN Y is false
+IF X implies Y AND Y is false THEN X is false
+IF X implies Y AND X is true THEN Y is true
+IF A is true whenever B is true AND B is true THEN A is true
+IF only A can cause B AND B happened THEN A happened
+IF A happens before B always AND B happened THEN A happened earlier
+IF X is the only option AND X fails THEN task cannot be completed
+IF two things are identical AND one has property P THEN other has property P
+IF restaurant is crowded THEN food is probably good there
+IF product has many positive reviews THEN product is probably good
+IF price is unusually low THEN quality may be poor or it is a scam
+IF person is dressed formally THEN they probably have important meeting
+IF traffic is heavy THEN it is probably rush hour
+IF many people carry umbrellas THEN rain is expected
+IF store has long queue THEN store is popular or short-staffed
+IF person checks phone frequently THEN they expect a message
+IF person avoids eye contact THEN they may be uncomfortable
+IF someone asks for directions THEN they are not from the area
+IF lights are flickering THEN electrical problem exists
+IF water is brown from tap THEN pipes may be rusty
+IF room is very humid THEN mold may grow
+IF paint is peeling THEN surface was not prepared properly
+IF car makes unusual noise THEN something mechanical is wrong
+IF car pulls to one side THEN alignment or tire issue exists
+IF computer is slow THEN it may need more memory or has malware
+IF internet is slow THEN network congestion or ISP issue
+IF phone battery drains fast THEN app is running in background
+IF email bounces back THEN address is invalid or mailbox is full
+IF object floats in water THEN its density is less than water
+IF object sinks in water THEN its density is greater than water
+IF metal is attracted to magnet THEN it contains iron nickel or cobalt
+IF substance dissolves in water THEN it is water-soluble
+IF substance does not dissolve THEN it is insoluble in that liquid
+IF plant is green THEN it contains chlorophyll
+IF animal has fur THEN it is likely a mammal
+IF animal has feathers THEN it is a bird
+IF something glows in dark THEN it is phosphorescent or bioluminescent
+IF star appears red THEN it is cooler than blue stars
+IF star appears blue THEN it is very hot
+IF galaxy is redshifted THEN it is moving away from us
+IF pendulum swings faster THEN it has shorter length
+IF shadow is long THEN sun is low in sky
+IF shadow is short THEN sun is high in sky
+IF echo takes long to return THEN reflecting surface is far
+IF pitch of sound is high THEN frequency is high
+IF pitch of sound is low THEN frequency is low
+IF compass points north THEN magnetic field is detected
+IF litmus paper turns red THEN substance is acidic
+IF litmus paper turns blue THEN substance is basic
+IF substance conducts electricity THEN it contains free charges
+IF gas is heavier than air THEN it sinks to floor
+IF gas is lighter than air THEN it rises to ceiling
+IF crystal is formed THEN slow cooling occurred
+IF person has diploma on wall THEN they completed education
+IF person wears uniform THEN they work for specific organization
+IF person wears lab coat THEN they work in science or medicine
+IF person wears hard hat THEN they work in construction
+IF person has paint on hands THEN they were painting
+IF person has flour on apron THEN they were baking
+IF person has grease on hands THEN they were working on machinery
+IF children are in playground THEN school is in recess or after hours
+IF flags are at half mast THEN mourning or remembrance is occurring
+IF fireworks are happening THEN celebration or holiday is occurring
+IF person gives thumbs up THEN they approve or agree
+IF person shakes head THEN they disagree or say no
+IF person nods head THEN they agree or say yes
+IF person crosses arms THEN they may be defensive or cold
+IF person leans forward THEN they are interested in conversation
+IF person looks at watch THEN they are checking time or want to leave
+IF person has red eyes THEN they are tired or have been crying
+IF person is pacing THEN they are anxious or thinking
+IF line at cafe is long THEN coffee is good or it is morning rush
+IF music is playing loudly THEN party or event is happening
+IF car wont start AND lights work THEN likely starter or fuel issue
+IF car wont start AND lights dont work THEN likely dead battery
+IF plant leaves are yellow THEN possible overwatering or nutrient deficiency
+IF plant leaves are brown and crispy THEN possible underwatering or sunburn
+IF computer shows blue screen THEN hardware or driver issue
+IF website shows 404 THEN page does not exist or URL is wrong
+IF website shows 500 THEN server has internal error
+IF website shows 403 THEN access is forbidden
+IF email goes to spam THEN it triggered spam filter
+IF phone has no signal THEN area has poor coverage or phone issue
+IF food tastes metallic THEN possible vitamin deficiency or medicine effect
+IF headache occurs after screen use THEN eye strain may be cause
+IF joint pain worsens in cold THEN arthritis may be factor
+IF cough persists for weeks THEN medical attention needed
+IF skin develops rash after contact THEN allergic reaction likely
+IF power goes out in one room THEN fuse or breaker tripped
+IF power goes out in whole house THEN outage or main breaker issue
+IF faucet drips THEN washer needs replacement
+IF toilet runs constantly THEN flapper valve needs replacement
+IF drain is slow THEN clog is forming
+IF smoke detector beeps intermittently THEN battery is low
+IF room smells musty THEN mold or dampness present
+IF paint bubbles on wall THEN moisture is behind wall
+IF floor creaks THEN subfloor may be loose
+IF door sticks THEN humidity caused wood to swell
+IF heart is to body AS engine is to car THEN heart powers body
+IF brain is to human AS CPU is to computer THEN brain processes information
+IF roots are to tree AS foundation is to building THEN roots provide stability
+IF water is to fish AS air is to humans THEN water is essential for fish
+IF key is to lock AS password is to account THEN key grants access
+IF teacher is to student AS mentor is to apprentice THEN teacher guides
+IF map is to traveler AS compass is to navigator THEN map provides direction
+IF fuel is to car AS food is to human THEN fuel provides energy
+IF shield is to warrior AS firewall is to network THEN shield provides protection
+IF library is to books AS database is to records THEN library stores information
+IF person works from home THEN they have flexible schedule or remote job
+IF person has many books THEN they likely enjoy reading
+IF person has gym bag THEN they likely exercise
+IF someone offers help THEN they are being kind
+IF person declines invitation THEN they are busy or uninterested
+IF person asks many questions THEN they are curious or confused
+IF expert recommends something THEN it is probably worthwhile
+IF multiple sources agree THEN information is likely reliable
+IF only one source claims something THEN verification is needed
+IF prediction has been wrong before THEN current prediction may be wrong too
+IF pattern has repeated many times THEN it will likely repeat again
+IF exception exists to rule THEN rule is not absolute
+IF correlation exists THEN causation is not guaranteed
+IF sample size is small THEN conclusions may not generalize
+IF evidence is anecdotal THEN it may not represent the general case
+IF technology is new THEN early adoption carries more risk
+IF product is well-established THEN it is probably reliable
+IF company is growing fast THEN it may be a good investment or overvalued
+IF stock price drops suddenly THEN negative news likely occurred
+IF traffic is unusually light THEN it may be a holiday
+IF many people are sneezing THEN flu season or high pollen count
+IF person shivers THEN they are cold or have fever
+IF person sweats heavily THEN they are hot or anxious
+IF someone speaks quickly THEN they are excited or nervous
+IF someone speaks slowly THEN they are calm or uncertain
+IF door is ajar THEN someone recently entered or exited
+IF fresh tire tracks exist THEN vehicle recently passed
+IF footprints are in snow THEN someone recently walked there
+IF candle is melted halfway THEN it has been burning for some time
+IF glass is half empty THEN someone has been drinking from it
+IF dishes are in sink THEN someone recently ate
+IF TV is warm THEN it was recently on
+IF coffee is still hot THEN it was recently made
+IF newspaper is on doorstep THEN no one has retrieved it yet
+IF mail is piling up THEN resident may be away
+IF garden is well-maintained THEN owner cares about their property
+IF car is dusty THEN it has not been washed recently
+IF shoes are muddy THEN person walked through mud
+IF person has tan lines THEN they spent time in sun
+IF person squints THEN light is too bright or they need glasses
+IF dog brings leash THEN dog wants to go for walk
+IF cat brings gift THEN cat is showing hunting ability
+IF baby cries THEN baby needs food comfort or diaper change
+IF child asks why repeatedly THEN child is curious about world
+IF elderly person repeats story THEN they may have memory issues
+IF coworker avoids topic THEN topic may be sensitive
+IF meeting is scheduled urgently THEN important issue arose
+IF boss closes door THEN private conversation is happening
+IF email is marked urgent THEN sender needs quick response
+IF phone goes to voicemail THEN person is unavailable
+IF someone cancels last minute THEN unexpected issue arose
+IF project deadline is moved up THEN priorities changed
+IF budget is cut THEN some activities must be reduced
+IF new competitor enters market THEN existing companies must adapt
+IF customer complains THEN product or service has issue

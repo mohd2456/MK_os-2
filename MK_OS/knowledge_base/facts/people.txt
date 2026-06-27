@@ -1,0 +1,304 @@
+isaac_newton|discovered|laws of motion and gravity|1.0
+isaac_newton|invented|calculus independently|1.0
+isaac_newton|born|1643 died 1727|1.0
+albert_einstein|developed|theory of relativity|1.0
+albert_einstein|received|Nobel Prize for photoelectric effect 1921|1.0
+albert_einstein|born|1879 died 1955|1.0
+charles_darwin|developed|theory of evolution by natural selection|1.0
+charles_darwin|wrote|On the Origin of Species 1859|1.0
+charles_darwin|born|1809 died 1882|1.0
+marie_curie|discovered|radium and polonium|1.0
+marie_curie|won|two Nobel Prizes in different sciences|1.0
+marie_curie|born|1867 died 1934|1.0
+nikola_tesla|invented|alternating current systems|1.0
+nikola_tesla|born|1856 died 1943|1.0
+galileo_galilei|improved|telescope and observed moons of Jupiter|1.0
+galileo_galilei|born|1564 died 1642|1.0
+michael_faraday|discovered|electromagnetic induction|1.0
+michael_faraday|born|1791 died 1867|0.95
+james_maxwell|unified|electricity magnetism and light|1.0
+max_planck|founded|quantum theory|1.0
+niels_bohr|developed|model of atomic structure|1.0
+werner_heisenberg|formulated|uncertainty principle|1.0
+erwin_schrodinger|developed|wave equation for quantum mechanics|0.95
+richard_feynman|developed|quantum electrodynamics|0.95
+stephen_hawking|studied|black holes and cosmology|1.0
+stephen_hawking|wrote|A Brief History of Time|0.95
+stephen_hawking|born|1942 died 2018|1.0
+louis_pasteur|developed|pasteurization and germ theory|1.0
+alexander_fleming|discovered|penicillin 1928|1.0
+watson_and_crick|discovered|DNA double helix structure 1953|1.0
+gregor_mendel|founded|genetics through pea plant experiments|1.0
+carl_linnaeus|created|modern biological classification|0.95
+antoine_lavoisier|is|father of modern chemistry|0.95
+dmitri_mendeleev|created|periodic table of elements|1.0
+rosalind_franklin|contributed|X-ray crystallography of DNA|0.95
+alan_turing|created|foundations of computer science|1.0
+alan_turing|broke|Enigma code in World War 2|1.0
+john_von_neumann|created|computer architecture and game theory|0.95
+carl_sagan|popularized|astronomy and science|0.95
+jane_goodall|studied|chimpanzees for decades|0.95
+rachel_carson|wrote|Silent Spring about pesticides|0.9
+neil_degrasse_tyson|is|popular science communicator|0.85
+archimedes|discovered|principle of buoyancy and levers|1.0
+pythagoras|proved|theorem about right triangles|1.0
+euclid|wrote|Elements founding geometry|1.0
+hippocrates|is|father of medicine|0.95
+copernicus|proposed|heliocentric model|1.0
+kepler|discovered|laws of planetary motion|1.0
+robert_hooke|discovered|cells and Hookes law|0.95
+leeuwenhoek|first_observed|microorganisms|0.9
+edward_jenner|developed|smallpox vaccine 1796|1.0
+charles_babbage|designed|first mechanical computer|0.95
+ada_lovelace|wrote|first computer algorithm|0.95
+george_washington|was|first US President 1789-1797|1.0
+abraham_lincoln|was|16th US President preserved Union|1.0
+winston_churchill|was|UK Prime Minister during WW2|1.0
+mahatma_gandhi|led|Indian independence through nonviolence|1.0
+nelson_mandela|ended|apartheid in South Africa|1.0
+nelson_mandela|imprisoned|for 27 years|1.0
+martin_luther_king_jr|led|US civil rights movement|1.0
+martin_luther_king_jr|gave|I Have a Dream speech 1963|1.0
+julius_caesar|was|Roman dictator and military leader|1.0
+alexander_the_great|created|one of largest empires in history|1.0
+napoleon_bonaparte|was|French emperor and military genius|1.0
+queen_victoria|ruled|British Empire for 63 years|0.95
+queen_elizabeth_ii|ruled|UK for 70 years longest reign|1.0
+cleopatra|was|last pharaoh of ancient Egypt|1.0
+genghis_khan|created|largest contiguous land empire|1.0
+franklin_roosevelt|led|US through Depression and WW2|1.0
+john_f_kennedy|was|35th US President assassinated 1963|1.0
+theodore_roosevelt|was|26th US President progressive reformer|0.9
+thomas_jefferson|wrote|Declaration of Independence|1.0
+benjamin_franklin|was|founding father inventor diplomat|1.0
+margaret_thatcher|was|first female UK Prime Minister|1.0
+angela_merkel|was|first female German Chancellor|0.95
+otto_von_bismarck|unified|German states into empire|0.95
+mao_zedong|founded|Peoples Republic of China|1.0
+deng_xiaoping|reformed|Chinese economy|0.9
+fidel_castro|led|Cuban Revolution|0.95
+che_guevara|was|Argentine revolutionary figure|0.9
+simon_bolivar|liberated|several South American countries|0.95
+ataturk|founded|modern Republic of Turkey|0.9
+jawaharlal_nehru|was|first Prime Minister of India|0.95
+leonardo_da_vinci|painted|Mona Lisa and Last Supper|1.0
+leonardo_da_vinci|was|Renaissance polymath|1.0
+michelangelo|painted|Sistine Chapel ceiling|1.0
+michelangelo|sculpted|David|1.0
+vincent_van_gogh|painted|Starry Night and Sunflowers|1.0
+pablo_picasso|co-founded|Cubism art movement|1.0
+claude_monet|founded|Impressionism|0.95
+rembrandt|was|Dutch master painter|0.95
+salvador_dali|was|Surrealist painter|0.95
+frida_kahlo|was|Mexican painter known for self-portraits|0.95
+william_shakespeare|wrote|Hamlet Romeo and Juliet Macbeth|1.0
+william_shakespeare|born|1564 died 1616|1.0
+charles_dickens|wrote|Oliver Twist A Tale of Two Cities|0.95
+mark_twain|wrote|Tom Sawyer and Huckleberry Finn|0.95
+jane_austen|wrote|Pride and Prejudice|0.95
+leo_tolstoy|wrote|War and Peace and Anna Karenina|0.95
+fyodor_dostoevsky|wrote|Crime and Punishment Brothers Karamazov|0.9
+homer|wrote|Iliad and Odyssey|0.95
+ernest_hemingway|wrote|The Old Man and the Sea|0.9
+george_orwell|wrote|1984 and Animal Farm|0.95
+jk_rowling|wrote|Harry Potter series|0.95
+agatha_christie|was|best-selling fiction author|0.9
+beethoven|composed|9 symphonies including Ode to Joy|1.0
+beethoven|continued_composing|after becoming deaf|1.0
+mozart|was|child prodigy composer|1.0
+mozart|composed|over 600 works|0.95
+bach|was|master of Baroque music|0.95
+tchaikovsky|composed|Swan Lake and Nutcracker|0.9
+vivaldi|composed|The Four Seasons|0.9
+chopin|was|master of piano composition|0.9
+elvis_presley|was|King of Rock and Roll|0.95
+michael_jackson|was|King of Pop|0.95
+the_beatles|were|most influential rock band|1.0
+bob_marley|popularized|reggae music worldwide|0.9
+freddie_mercury|was|lead singer of Queen|0.9
+jimi_hendrix|was|legendary guitarist|0.9
+bob_dylan|won|Nobel Prize in Literature 2016|0.9
+thomas_edison|invented|practical light bulb and phonograph|1.0
+thomas_edison|held|over 1000 patents|0.95
+alexander_graham_bell|invented|telephone 1876|1.0
+wright_brothers|achieved|first powered flight 1903|1.0
+henry_ford|revolutionized|automobile mass production|1.0
+james_watt|improved|steam engine enabling Industrial Revolution|0.95
+guglielmo_marconi|developed|radio communication|0.95
+samuel_morse|invented|telegraph and Morse code|0.95
+eli_whitney|invented|cotton gin|0.9
+johannes_gutenberg|invented|movable type printing press|1.0
+tim_berners_lee|invented|World Wide Web 1989|1.0
+steve_jobs|co-founded|Apple Computer|1.0
+bill_gates|co-founded|Microsoft|1.0
+jeff_bezos|founded|Amazon|0.95
+elon_musk|founded|SpaceX and co-founded Tesla|0.95
+mark_zuckerberg|founded|Facebook now Meta|0.95
+larry_page|co-founded|Google|0.9
+sergey_brin|co-founded|Google|0.9
+jack_dorsey|co-founded|Twitter|0.85
+linus_torvalds|created|Linux kernel and Git|0.95
+dennis_ritchie|created|C programming language and Unix|0.95
+grace_hopper|pioneered|computer programming and COBOL|0.95
+vint_cerf|is|father of the internet TCP/IP|0.9
+james_gosling|created|Java programming language|0.9
+guido_van_rossum|created|Python programming language|0.95
+bjarne_stroustrup|created|C++ programming language|0.9
+christopher_columbus|reached|Americas 1492|1.0
+neil_armstrong|was|first person on the moon|1.0
+roald_amundsen|first_reached|South Pole 1911|0.95
+edmund_hillary|first_summited|Mount Everest 1953|0.95
+marco_polo|traveled|from Venice to China|0.9
+ferdinand_magellan|organized|first circumnavigation|0.95
+yuri_gagarin|was|first human in space 1961|1.0
+buzz_aldrin|was|second person on moon|0.9
+usain_bolt|is|fastest human recorded 9.58s 100m|0.95
+michael_phelps|won|23 Olympic gold medals swimming|0.95
+muhammad_ali|was|legendary heavyweight boxer|0.95
+pele|is|one of greatest soccer players|0.95
+michael_jordan|is|one of greatest basketball players|0.95
+serena_williams|won|23 Grand Slam tennis titles|0.9
+roger_federer|won|20 Grand Slam tennis titles|0.9
+lionel_messi|won|multiple Ballon dOr awards|0.9
+cristiano_ronaldo|is|one of greatest soccer players|0.9
+jesse_owens|won|4 gold medals 1936 Berlin Olympics|0.9
+babe_ruth|was|legendary baseball player|0.9
+wayne_gretzky|is|greatest hockey player|0.85
+enrico_fermi|built|first nuclear reactor 1942|0.95
+robert_oppenheimer|directed|Manhattan Project|0.95
+lise_meitner|explained|nuclear fission|0.9
+emmy_noether|proved|fundamental theorem connecting symmetry and conservation|0.9
+paul_dirac|predicted|existence of antimatter|0.9
+murray_gell_mann|proposed|quark model of hadrons|0.85
+peter_higgs|predicted|Higgs boson|0.9
+edwin_hubble|discovered|universe is expanding|0.95
+vera_rubin|provided|evidence for dark matter|0.9
+carl_friedrich_gauss|was|prince of mathematics|0.95
+leonhard_euler|was|most prolific mathematician|0.95
+bernhard_riemann|created|Riemannian geometry|0.9
+georg_cantor|created|set theory and transfinite numbers|0.9
+kurt_godel|proved|incompleteness theorems|0.9
+david_hilbert|formulated|23 famous math problems|0.9
+henri_poincare|founded|topology and chaos theory|0.85
+srinivasa_ramanujan|was|self-taught mathematical genius|0.9
+andrew_wiles|proved|Fermats Last Theorem 1995|0.9
+john_nash|developed|Nash equilibrium game theory|0.9
+claude_shannon|founded|information theory|0.95
+norbert_wiener|founded|cybernetics|0.85
+marvin_minsky|was|AI pioneer|0.85
+geoffrey_hinton|is|godfather of deep learning|0.9
+yann_lecun|developed|convolutional neural networks|0.85
+yoshua_bengio|contributed|to deep learning research|0.85
+andrei_kolmogorov|axiomatized|probability theory|0.85
+john_bardeen|co-invented|transistor and BCS theory|0.9
+dorothy_hodgkin|determined|structures using X-ray crystallography|0.85
+barbara_mcclintock|discovered|genetic transposition|0.85
+tu_youyou|discovered|artemisinin for malaria|0.85
+jonas_salk|developed|polio vaccine|0.95
+alexander_von_humboldt|was|pioneering naturalist and explorer|0.85
+carl_sagan|hosted|Cosmos TV series|0.9
+richard_dawkins|wrote|The Selfish Gene|0.85
+oliver_sacks|was|neurologist and author|0.8
+michio_kaku|is|theoretical physicist and popularizer|0.8
+augusto_pinochet|was|Chilean dictator 1973-1990|0.85
+pol_pot|led|Khmer Rouge in Cambodia|0.9
+idi_amin|was|Ugandan dictator 1971-1979|0.85
+saddam_hussein|was|Iraqi dictator 1979-2003|0.9
+joseph_stalin|ruled|Soviet Union 1924-1953|1.0
+lenin|led|Russian Revolution 1917|1.0
+trotsky|was|key Russian revolutionary exiled by Stalin|0.85
+charles_de_gaulle|was|French president and WW2 leader|0.9
+willy_brandt|was|German chancellor who normalized East relations|0.8
+indira_gandhi|was|Indian Prime Minister assassinated 1984|0.9
+benazir_bhutto|was|first female PM of Muslim country Pakistan|0.85
+golda_meir|was|Israeli Prime Minister|0.85
+aung_san_suu_kyi|won|Nobel Peace Prize for Myanmar democracy|0.85
+vaclav_havel|led|Czech Velvet Revolution|0.85
+mikhail_gorbachev|ended|Cold War through reforms|0.9
+kofi_annan|was|first black African UN Secretary-General|0.85
+desmond_tutu|won|Nobel Peace Prize for anti-apartheid work|0.85
+mother_teresa|devoted|life to serving poor in Calcutta|0.9
+dalai_lama_14th|advocates|for Tibetan freedom nonviolently|0.85
+malala_yousafzai|youngest|Nobel Peace Prize laureate|0.9
+greta_thunberg|is|climate change activist|0.85
+franz_kafka|wrote|The Metamorphosis and The Trial|0.9
+virginia_woolf|wrote|Mrs Dalloway and To the Lighthouse|0.85
+gabriel_garcia_marquez|wrote|One Hundred Years of Solitude|0.9
+haruki_murakami|is|Japanese novelist|0.8
+toni_morrison|won|Nobel Prize in Literature 1993|0.85
+maya_angelou|wrote|I Know Why the Caged Bird Sings|0.85
+edgar_allan_poe|wrote|The Raven and horror stories|0.9
+oscar_wilde|wrote|The Picture of Dorian Gray|0.85
+arthur_conan_doyle|created|Sherlock Holmes character|0.95
+jrr_tolkien|wrote|Lord of the Rings and The Hobbit|0.95
+cs_lewis|wrote|Chronicles of Narnia|0.9
+isaac_asimov|wrote|Foundation series and Robot stories|0.9
+philip_k_dick|wrote|Do Androids Dream of Electric Sheep|0.85
+stephen_king|is|master of horror fiction|0.9
+roald_dahl|wrote|Charlie and the Chocolate Factory|0.9
+hans_christian_andersen|wrote|The Little Mermaid fairy tales|0.9
+brothers_grimm|collected|fairy tales like Cinderella|0.9
+emily_dickinson|was|reclusive American poet|0.85
+walt_whitman|wrote|Leaves of Grass|0.85
+pablo_neruda|was|Chilean Nobel Prize poet|0.85
+andy_warhol|was|Pop Art movement leader|0.9
+banksy|is|anonymous street artist|0.85
+frank_lloyd_wright|designed|Fallingwater and Guggenheim|0.9
+zaha_hadid|was|pioneering female architect|0.85
+john_lennon|was|lead singer of The Beatles|0.95
+paul_mccartney|was|bassist of The Beatles|0.9
+david_bowie|was|innovative rock musician|0.9
+prince|was|multi-instrumentalist musician|0.85
+whitney_houston|was|legendary vocalist|0.85
+aretha_franklin|was|Queen of Soul|0.9
+frank_sinatra|was|iconic crooner|0.85
+louis_armstrong|was|jazz trumpet legend|0.9
+miles_davis|was|jazz trumpet innovator|0.85
+duke_ellington|was|jazz composer and bandleader|0.85
+johnny_cash|was|Man in Black country legend|0.85
+bob_marley|born|1945 died 1981|0.85
+kurt_cobain|led|Nirvana and grunge movement|0.85
+taylor_swift|is|best-selling music artist|0.85
+beyonce|is|influential pop and R&B artist|0.85
+adele|is|Grammy-winning British singer|0.8
+socrates|is|founder of Western philosophy|1.0
+plato|wrote|The Republic|0.95
+aristotle|wrote|on logic ethics politics and science|0.95
+confucius|founded|Confucianism in China|1.0
+buddha|founded|Buddhism through enlightenment|1.0
+rene_descartes|said|I think therefore I am|1.0
+immanuel_kant|wrote|Critique of Pure Reason|0.9
+friedrich_nietzsche|wrote|Thus Spoke Zarathustra|0.9
+karl_marx|wrote|Das Kapital and Communist Manifesto|1.0
+jean_paul_sartre|was|existentialist philosopher|0.85
+simone_de_beauvoir|wrote|The Second Sex|0.85
+john_locke|influenced|liberal democratic thought|0.9
+thomas_hobbes|wrote|Leviathan about social contract|0.85
+voltaire|advocated|freedom of speech and religion|0.9
+adam_smith|wrote|Wealth of Nations founding economics|0.95
+alfred_hitchcock|was|master of suspense films|0.9
+steven_spielberg|directed|Schindlers List Jurassic Park Jaws|0.95
+stanley_kubrick|directed|2001 A Space Odyssey|0.9
+martin_scorsese|directed|Goodfellas Taxi Driver|0.9
+quentin_tarantino|directed|Pulp Fiction|0.85
+charlie_chaplin|was|pioneer of silent film comedy|0.95
+walt_disney|founded|Disney entertainment empire|1.0
+oprah_winfrey|is|influential media personality|0.9
+marilyn_monroe|was|iconic Hollywood actress|0.9
+audrey_hepburn|starred_in|Breakfast at Tiffanys|0.85
+meryl_streep|won|three Academy Awards for acting|0.85
+tom_hanks|starred_in|Forrest Gump and Cast Away|0.85
+nikola_tesla|held|over 300 patents worldwide|0.95
+alexander_hamilton|was|first US Secretary of Treasury|0.9
+rosa_parks|refused|to give up bus seat sparking civil rights|0.95
+harriet_tubman|freed|hundreds through Underground Railroad|0.95
+florence_nightingale|founded|modern nursing|0.95
+amelia_earhart|was|first woman to fly solo across Atlantic|0.95
+frida_kahlo|born|1907 died 1954|0.85
+marie_antoinette|was|Queen of France executed 1793|0.9
+joan_of_arc|led|French army at age 17|0.9
+alexander_pushkin|was|father of Russian literature|0.85
+rabindranath_tagore|won|Nobel Prize Literature 1913 first Asian|0.85
+confucius|born|551 BCE died 479 BCE|0.95
+sun_tzu|wrote|The Art of War|0.9
+laozi|founded|Taoism philosophy|0.85

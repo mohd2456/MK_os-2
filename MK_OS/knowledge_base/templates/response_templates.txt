@@ -1,0 +1,504 @@
+Hello! How can I help you today?
+Hi there! What can I do for you?
+Hey! What's on your mind?
+Good to see you! What would you like to know?
+Welcome back! How can I assist you?
+Hello! I'm ready to help with whatever you need.
+Hi! Feel free to ask me anything.
+Hey there! What can I help you with today?
+Yes, that's correct.
+Absolutely, you're right about that.
+That's exactly right.
+Correct! {subject} is indeed {property}.
+Yes, {subject} {verb} {object}.
+That's accurate. {explanation}
+You've got it! {confirmation}
+Precisely. {detail}
+Indeed, {subject} {fact}.
+Right you are. {elaboration}
+Actually, that's not quite right. {correction}
+Not exactly. {subject} is actually {correct_info}.
+I'm afraid that's incorrect. {correct_answer}
+Close, but not quite. {clarification}
+That's a common misconception. In reality, {truth}.
+I need to correct that. {subject} is {correct_fact}, not {wrong_fact}.
+Almost! But the correct answer is {answer}.
+Not quite. Let me clarify: {explanation}.
+{subject} is {definition}.
+{subject} refers to {explanation}.
+{subject} was {action} by {person} in {year}.
+{subject} is known for {feature}.
+{subject} is a type of {category} that {description}.
+The {subject} is located in {location}.
+{subject} was discovered in {year} by {person}.
+{subject} works by {mechanism}.
+{subject} is made up of {components}.
+The main purpose of {subject} is to {purpose}.
+{subject} is different from {other} because {difference}.
+{subject} and {other} are similar in that they both {similarity}.
+There are {number} main types of {subject}: {list}.
+{subject} can be found in {location} and is known for {characteristic}.
+{subject} has been used since {time_period} for {purpose}.
+The term {subject} comes from {origin} and means {meaning}.
+In {field}, {subject} refers to {definition}.
+{subject} was first {action} in {year}, and has since {development}.
+One interesting fact about {subject} is that {fact}.
+{subject} plays an important role in {context} by {function}.
+{subject_a} is {comparison} than {subject_b} in terms of {metric}.
+While {subject_a} is known for {trait_a}, {subject_b} excels at {trait_b}.
+The main difference between {subject_a} and {subject_b} is {difference}.
+Both {subject_a} and {subject_b} share {similarity}, but differ in {difference}.
+Compared to {subject_a}, {subject_b} is {comparison}.
+{subject_a} tends to be better for {use_case_a}, while {subject_b} is better for {use_case_b}.
+In terms of {metric}, {subject_a} scores {value_a} while {subject_b} scores {value_b}.
+If you need {requirement}, {subject_a} is the better choice. For {other_need}, go with {subject_b}.
+Let me explain how {subject} works: {explanation}.
+Here's how {process} works: {steps}.
+The reason {subject} {behavior} is because {reason}.
+This happens because {cause}, which leads to {effect}.
+To understand {subject}, think of it like {analogy}.
+In simple terms, {subject} means {simple_explanation}.
+The key concept here is that {principle}.
+Think of it this way: {simplified_explanation}.
+The basic idea behind {subject} is {core_concept}.
+What makes {subject} special is {unique_feature}.
+I'm not entirely sure about that, but I believe {tentative_answer}.
+Based on what I know, {answer}, though I could be wrong about {uncertain_part}.
+That's a great question. I think {answer}, but you may want to verify that.
+I don't have enough information to answer that definitively.
+I'm not confident about that specific detail. What I do know is {partial_answer}.
+That's outside my current knowledge. I'd suggest looking into {resource}.
+I can't say for certain, but my understanding is that {best_guess}.
+Hmm, I'm not sure about {specific}. Can you give me more context?
+To {goal}, follow these steps: {steps}.
+Here's how to {task}: First, {step1}. Then, {step2}. Finally, {step3}.
+The easiest way to {goal} is to {method}.
+You can {goal} by {approach}.
+Start by {first_step}, then {next_step}.
+The recommended approach is to {method} because {reason}.
+There are several ways to {goal}. The most common is {method}.
+For {task}, I'd suggest {recommendation}.
+If you want to {goal}, you'll need to {requirements} first.
+The trick to {task} is {key_insight}.
+That's a great question! {answer}
+Interesting you ask about that. {response}
+Good point. {elaboration}
+That reminds me of {related_topic}.
+Speaking of which, {related_info}.
+On a related note, {connection}.
+To add to that, {additional_info}.
+That's worth exploring further. {deeper_insight}.
+You raise a good point about {topic}. {response}
+Let me think about that. {considered_response}
+I'm sorry, I didn't understand that. Could you rephrase?
+Could you be more specific about what you mean by {ambiguous_term}?
+I'm not sure what you're asking. Do you mean {interpretation_a} or {interpretation_b}?
+Let me make sure I understand: you want to know about {clarification}?
+I'd be happy to help with that. What specifically would you like to know?
+That's a broad topic. Would you like me to focus on {aspect_a} or {aspect_b}?
+I can help with that! To give you the best answer, could you tell me {needed_info}?
+Sure, I can explain {topic}. Would you like a brief overview or detailed explanation?
+Based on {criteria}, I would recommend {recommendation}.
+In my assessment, {subject} is {evaluation} because {reason}.
+The best option for {use_case} would be {recommendation} because {reason}.
+If I had to choose, I'd go with {choice} for {reason}.
+For your situation, {recommendation} makes the most sense because {reason}.
+I'd suggest {option} over {alternative} because {advantage}.
+The most popular choice for {context} is {recommendation}.
+Experts generally recommend {advice} for {situation}.
+Here are the main {things}: {list}.
+The key {items} include: {list}.
+There are {number} important {things} to know: {list}.
+{subject} has several {aspects}: {list}.
+The most notable {things} are: {list}.
+Some examples of {subject} include: {list}.
+The {category} consists of: {list}.
+Common types of {subject} include: {list}.
+{subject} was {action} in {year}.
+{subject} has been {state} since {year}.
+{subject} lasted from {start} to {end}.
+Before {event}, {prior_state}. After it, {post_state}.
+Currently, {subject} is {current_state}.
+In the future, {subject} is expected to {prediction}.
+Historically, {subject} was used for {old_purpose}. Today it's used for {new_purpose}.
+The {event} took place on {date} in {location}.
+{subject} measures approximately {value} {unit}.
+The {metric} of {subject} is {value}.
+There are approximately {number} {things} in {context}.
+{subject} can reach speeds of up to {speed}.
+{subject} weighs about {weight}.
+{subject} is {distance} away from {reference}.
+The population of {place} is approximately {number}.
+{subject} produces about {amount} of {output} per {time_unit}.
+{subject} causes {effect} because {mechanism}.
+The reason for {phenomenon} is {explanation}.
+This leads to {consequence} because {logic}.
+If {condition}, then {result}.
+Without {requirement}, {subject} cannot {action}.
+{factor_a} and {factor_b} combine to produce {outcome}.
+The relationship between {a} and {b} is that {relationship}.
+{effect} occurs as a result of {cause}.
+To implement {feature}, you would use {approach}.
+The function {name} takes {parameters} and returns {return_type}.
+This error occurs because {cause}. To fix it, {solution}.
+The time complexity of this approach is {big_o} because {reason}.
+A better approach would be to use {alternative} because {advantage}.
+This design pattern is called {pattern_name} and it solves {problem}.
+The bug is on line {line}: {issue}. Change it to {fix}.
+To optimize this, you could {optimization} which would improve {metric} by {amount}.
+In {language}, you would write this as: {code}.
+The standard way to handle {situation} in {language} is {approach}.
+I understand that can be frustrating. Let me help you with {topic}.
+That's completely understandable. Here's what you can do: {suggestion}.
+I can see why that would be confusing. Let me clarify: {clarification}.
+Don't worry, that's a common question. {answer}.
+I appreciate your patience. {response}.
+That's a really thoughtful question. {answer}.
+I can tell this is important to you. {helpful_response}.
+No problem at all! {answer}.
+I'm an AI assistant, so {limitation_note}.
+While I can help with {capability}, I should mention that {caveat}.
+I want to be transparent: {honesty_note}.
+I should note that my knowledge has limitations regarding {area}.
+That's a question where {context_note}.
+I can provide information about {topic}, but for {sensitive_area} please consult a professional.
+My understanding of {topic} is based on {source_note}.
+I can definitely help with that! {enthusiastic_response}.
+In summary, {main_points}.
+To recap: {brief_summary}.
+The key takeaways are: {points}.
+So to sum up, {conclusion}.
+The bottom line is: {core_message}.
+Here's the short version: {brief_answer}.
+Long story short: {concise_answer}.
+The essential point is {key_point}.
+Would you like me to elaborate on any of those points?
+Is there anything else you'd like to know about {topic}?
+Do you have any other questions?
+Would you like more details about {specific_aspect}?
+Shall I go deeper into {subtopic}?
+Let me know if you need clarification on anything.
+Does that answer your question, or would you like more information?
+Feel free to ask follow-up questions!
+I can provide more examples if that would help.
+Would a different explanation be more helpful?
+Here's what I found about {subject}: {information}.
+{subject} is particularly important because {significance}.
+The concept of {subject} was first introduced by {person} in {year}.
+When it comes to {topic}, the most important thing to remember is {key_point}.
+Many people confuse {subject_a} with {subject_b}, but they're actually quite different.
+The advantage of {approach} is {benefit}. The downside is {limitation}.
+In practice, {subject} is used for {applications}.
+The latest research shows that {finding}.
+According to {source}, {fact}.
+While there's debate about {topic}, most experts agree that {consensus}.
+That's a fascinating topic! {subject} has been studied extensively and {finding}.
+Great question. The short answer is {brief}. The longer explanation is {detailed}.
+This depends on {factor}. If {condition_a}, then {outcome_a}. Otherwise, {outcome_b}.
+There are pros and cons to consider. Pros: {advantages}. Cons: {disadvantages}.
+The most common approach is {method}, but alternatives include {alternatives}.
+For beginners, I'd recommend starting with {basic_approach}.
+For advanced users, you might want to try {advanced_approach}.
+The answer varies depending on {context}. In general, {general_answer}.
+That's changed over time. Originally {old_info}, but now {current_info}.
+Scientists/researchers have found that {discovery}.
+Here are some common misconceptions about {topic}: {misconceptions}.
+The real-world applications of {subject} include {applications}.
+Fun fact: {interesting_fact_about_topic}!
+You might be surprised to learn that {surprising_fact}.
+The history of {subject} is quite interesting: {brief_history}.
+Here's a helpful analogy: {subject} is like {analogy}.
+To put it simply: {simple_explanation}.
+The technical term for that is {term}, which means {definition}.
+In {field}, this is known as {technical_name}.
+This is one of those cases where {nuance}.
+I'd rate that as {rating} because {reasoning}.
+The consensus among experts is {consensus}.
+Statistically speaking, {statistical_fact}.
+From a practical standpoint, {practical_advice}.
+Theoretically, {theory}. In practice, {reality}.
+The short answer is {brief}. Want me to explain why?
+That's actually more complex than it seems. {complexity_explanation}.
+The simple version: {simple}. The detailed version: {detailed}.
+Most people would say {common_answer}, but actually {nuanced_answer}.
+It depends on what you mean by {ambiguous_term}. If you mean {def_a}, then {answer_a}.
+There's no single right answer to that. {explanation_of_why}.
+The evidence suggests {finding}, though more research is needed.
+Based on current understanding, {answer}.
+That's still an open question in {field}. Current thinking is {current_view}.
+I can give you {number} reasons why {claim}: {reasons}.
+The top {number} factors that influence {subject} are: {factors}.
+Here's a step-by-step breakdown of {process}: {steps}.
+The relationship between {a} and {b} is {type}: as {a} increases, {b} {effect}.
+This falls into the category of {category}, which also includes {examples}.
+You're thinking of {correct_term}. That's when {definition}.
+Here's what you need to know about {subject}: {key_points}.
+The short answer: {brief}. The nuanced answer: {detailed}.
+I'd approach {problem} by first {step_1}, then {step_2}.
+From what I understand, {subject} involves {explanation}.
+The consensus view is {view}, though some argue {alternative}.
+Let me break that down: {breakdown}.
+In essence, {subject} is {core_description}.
+To put {subject} in perspective: {context}.
+The practical implications are: {implications}.
+Looking at the bigger picture, {subject} matters because {importance}.
+There are {number} schools of thought on {topic}: {schools}.
+The evidence points to {conclusion}.
+Based on {criteria}, the answer is {answer}.
+Here's a framework for thinking about {topic}: {framework}.
+The most important takeaway is: {takeaway}.
+I'd summarize {topic} as: {summary}.
+The underlying mechanism is: {mechanism}.
+What sets {subject} apart is {distinguishing_factor}.
+The historical precedent suggests {pattern}.
+Current trends indicate {trend}.
+The data shows that {finding}.
+Experts in {field} generally agree that {consensus}.
+The primary benefit of {subject} is {benefit}.
+The main risk of {subject} is {risk}.
+A common approach to {problem} is {solution}.
+The standard recommendation is {recommendation}.
+For your specific case, I'd suggest {tailored_advice}.
+The trade-off here is between {factor_a} and {factor_b}.
+You'll want to consider {consideration} before deciding.
+The first thing to understand is {foundational_concept}.
+Here's the context you need: {context}.
+The technical explanation is {technical}. Simply put: {simple}.
+What's happening under the hood is {internal_process}.
+The key variables are: {variables}.
+Success depends on {success_factors}.
+The common pitfall is {pitfall}. Avoid it by {prevention}.
+A useful rule of thumb is: {heuristic}.
+The exception to this is when {exception_condition}.
+In most cases, {general_rule}. However, {exception}.
+The optimal strategy depends on {factors}.
+Here's my recommendation based on {reasoning}: {recommendation}.
+The safest approach would be to {safe_approach}.
+For maximum efficiency, try {efficient_approach}.
+The industry standard is {standard}.
+Best practices include: {best_practices}.
+Common mistakes to avoid: {mistakes}.
+The most effective method is {method} because {reason}.
+Priority-wise, I'd rank them as: {ranked_list}.
+The bottom line: {conclusion}.
+Let me give you a concrete example: {example}.
+Here's how this applies in practice: {application}.
+The real-world impact of {subject} is {impact}.
+From a cost-benefit perspective: {analysis}.
+The quickest solution is {quick_fix}. For long-term: {proper_fix}.
+I've seen this pattern before: {pattern_description}.
+The root cause is typically {root_cause}.
+The symptom you're describing suggests {diagnosis}.
+To troubleshoot {issue}, try: {steps}.
+The fix for {problem} is {solution}.
+Here are your options: {option_list}. I'd go with {preferred}.
+The prerequisite for {goal} is {prerequisite}.
+You're missing {missing_piece}. Once you have that, {next_step}.
+The next step would be to {next_action}.
+Before doing that, make sure {precondition}.
+After {action}, you should see {expected_result}.
+If {condition}, try {alternative_approach}.
+That should work because {reasoning}.
+The reason it's not working is likely {cause}.
+Double-check that {verification_step}.
+One thing to keep in mind: {caveat}.
+An important nuance here is {nuance}.
+Don't overlook {often_missed_detail}.
+The subtle difference is {subtlety}.
+This is closely related to {related_concept}.
+This builds on the concept of {foundation}.
+Combining {a} with {b} gives you {result}.
+The synergy between {a} and {b} creates {emergent_property}.
+In isolation, {subject} does {solo_effect}. Combined with {other}, it {combined_effect}.
+The limiting factor is {bottleneck}.
+The catalyst for {change} was {trigger}.
+What made {subject} successful was {success_factor}.
+The turning point came when {pivotal_event}.
+The trajectory suggests {projection}.
+Based on current trends, expect {prediction}.
+The long-term outlook for {subject} is {outlook}.
+In {timeframe}, we'll likely see {future_state}.
+The wildcard factor is {uncertainty}.
+Nobody predicted {surprise}. It changed {domain} by {impact}.
+The lesson from {event} is {lesson}.
+History teaches us that {pattern}.
+The analogy breaks down when {limitation}.
+A more accurate comparison would be {better_analogy}.
+The metaphor I like to use is {metaphor}.
+Imagine {scenario}. That's basically what {concept} is.
+You can think of it as {conceptual_model}.
+A useful mental shortcut is {heuristic}.
+The 80/20 rule applies here: {pareto_application}.
+Focus on {high_impact} first, then worry about {low_impact}.
+The quickest win is {quick_win}.
+For diminishing returns after {threshold}, consider {pivot}.
+I'm {confidence_level} confident about {claim}.
+Take this with a grain of salt, but {tentative_claim}.
+I should mention that {disclaimer}.
+Full disclosure: {transparency_note}.
+That said, {qualification}.
+To be fair, {balanced_view}.
+On the other hand, {counterargument}.
+Devil's advocate: {contrary_position}.
+While that's true, it's also true that {additional_truth}.
+Both sides have valid points: {balanced_summary}.
+The truth is probably somewhere in between: {middle_ground}.
+It's more nuanced than that: {nuance}.
+Context matters here: in {context_a}, {answer_a}. In {context_b}, {answer_b}.
+It depends on your definition of {term}.
+If we define {term} broadly, then {broad_answer}. Narrowly, {narrow_answer}.
+Strictly speaking, {strict}. Colloquially, {colloquial}.
+Technically, {technical}. Practically, {practical}.
+In theory, {theory}. In practice, {practice}.
+On paper, {ideal}. In reality, {reality}.
+The ideal is {ideal}. The realistic goal is {realistic}.
+Your mileage may vary depending on {variables}.
+Results will depend on {dependencies}.
+Assuming {assumption}, then {conclusion}.
+Given {constraints}, the best option is {constrained_optimal}.
+With unlimited {resource}, I'd suggest {unlimited_approach}.
+On a budget, try {budget_approach}.
+For a quick solution, {quick}. For thoroughness, {thorough}.
+If time is limited, focus on {priority}.
+The minimum viable approach is {mvp}.
+Going above and beyond would mean {stretch_goal}.
+The gold standard is {best_practice}.
+The bare minimum is {minimum_requirement}.
+Anything beyond {threshold} is diminishing returns.
+The sweet spot is around {optimal_range}.
+I'd aim for {target} as a good balance.
+That's well within {acceptable_range}.
+That's pushing the boundaries of {limits}.
+We're in uncharted territory with {novel_situation}.
+This is a known challenge in {field}: {known_issue}.
+This is an active area of research in {field}.
+The jury is still out on {unresolved_question}.
+We don't have a definitive answer yet for {open_question}.
+The best current theory is {theory}.
+Multiple competing explanations exist: {theories}.
+The debate centers on {central_disagreement}.
+Proponents argue {pro}. Critics counter {con}.
+The strongest argument for {position} is {argument}.
+The weakest point of {theory} is {weakness}.
+Despite {limitation}, {approach} remains useful because {reason}.
+While imperfect, {method} is the best we have for {purpose}.
+Newer approaches like {new_approach} show promise for {improvement}.
+The field is moving toward {direction}.
+Expect {change} to become standard within {timeframe}.
+Early adopters of {innovation} report {results}.
+The mainstream hasn't caught on to {emerging_trend} yet.
+This is going to become increasingly important as {trend}.
+Keep an eye on {development}; it could change {domain}.
+The implications of {discovery} are still being understood.
+We're just scratching the surface of {field}.
+There's much more to explore about {topic}.
+I could talk about {topic} all day! The key point though is {key}.
+To bring it back to your question: {direct_answer}.
+So, to directly answer your question: {answer}.
+Here is the specific answer you are looking for: {specific_answer}.
+I know that is a lot of information. The core answer is: {core}.
+You've hit on something important: {insight}.
+That's the crux of the matter: {core_issue}.
+Let me reframe that: {reframing}.
+Another way to think about it: {alternative_framing}.
+The counterargument would be: {counter}.
+To steelman the other side: {strongest_opposing_view}.
+The pragmatic answer is: {practical_answer}.
+The idealistic answer is: {ideal_answer}.
+Most people would benefit from: {general_advice}.
+For someone at your level, I'd recommend: {level_appropriate_advice}.
+The ROI on {investment} is typically {return}.
+The payoff for {effort} is {reward}.
+The cost of not doing {action} is {opportunity_cost}.
+Time invested in {activity} pays off through {benefit}.
+The breakeven point is around {threshold}.
+Past {point}, you start seeing {results}.
+The inflection point occurs at {moment}.
+The tipping point for {change} was {catalyst}.
+The domino effect starts with {first_event}.
+One thing leads to another: {chain}.
+It's a virtuous cycle: {positive_feedback_loop}.
+It's a vicious cycle: {negative_feedback_loop}.
+To break the cycle, {intervention}.
+The key leverage point is {leverage}.
+Small changes in {input} lead to big changes in {output}.
+The compounding effect of {habit} over time is {outcome}.
+Consistency with {practice} matters more than intensity.
+It's a marathon, not a sprint: {patience_advice}.
+Progress isn't always linear: {encouragement}.
+Plateaus are normal. Push through by {strategy}.
+The breakthrough often comes just after {difficult_period}.
+What feels like failure now is actually {reframe_as_progress}.
+Every expert was once a beginner at {skill}.
+The learning curve for {topic} is {shape}: {description}.
+You'll hit diminishing returns after {point}.
+The 20% of {skill} that gives 80% of results is {core_subset}.
+Focus your energy on {highest_leverage_activity}.
+Eliminate {waste} to make room for {value}.
+Prioritize {important} over {urgent_but_less_important}.
+The most impactful single change would be {change}.
+If I could only give one piece of advice: {single_advice}.
+The number one mistake is {top_mistake}.
+The most overlooked factor is {overlooked}.
+What separates beginners from experts is {differentiator}.
+The expert mindset is: {expert_thinking}.
+Beginners often assume {wrong_assumption}. Experts know {correct_understanding}.
+The counterintuitive truth about {topic} is {truth}.
+Common wisdom says {conventional}. The data shows {actual}.
+It's more complex than {oversimplification}.
+There's a spectrum from {extreme_a} to {extreme_b}. Most cases fall {where}.
+The answer is context-dependent: in {context_a}, {answer_a}; in {context_b}, {answer_b}.
+This is one of those 'it depends' situations. Key factors: {factors}.
+The framework I use for {type_of_decision} is: {framework}.
+A useful decision criteria is: {criteria}.
+When in doubt, {default_action}.
+The safe default is {safe_choice}. The ambitious choice is {bold_choice}.
+Risk assessment: {risk_level} because {risk_factors}.
+The worst case scenario is {worst_case}. Most likely outcome is {likely}.
+Even in the worst case, {silver_lining}.
+The upside potential is {upside}. The downside risk is {downside}.
+If it works, {success_outcome}. If not, {failure_outcome}.
+Either way, you'll learn {lesson}.
+There's no wrong answer here: both {option_a} and {option_b} are valid.
+The decision ultimately comes down to {key_tradeoff}.
+Trust your {intuition/data} on this one.
+Go with what aligns with your {values/goals/constraints}.
+The reversibility factor: {reversible_or_not}.
+If this decision is reversible, bias toward {action}.
+If irreversible, take more time to {careful_consideration}.
+You don't need to decide right now. {timeline_advice}.
+Gather more data on {information_needed} before committing.
+A pilot test of {experiment} would help clarify {uncertainty}.
+Try {low_cost_experiment} to validate your assumption about {hypothesis}.
+Start small with {small_step}, then scale if it works.
+The MVP approach here would be {minimum_viable_approach}.
+Iterate from {starting_point}: {improvement_path}.
+Version 1 just needs to {minimum_requirement}. You can improve later.
+Perfect is the enemy of good. Ship {imperfect_but_functional}.
+Done is better than perfect for {situation}.
+However, for {critical_area}, quality cannot be compromised.
+The non-negotiables are: {must_haves}. Everything else is nice-to-have.
+Draw the line at {boundary}. Beyond that is scope creep.
+Stay focused on {core_objective}. Resist the temptation to {distraction}.
+The constraint here is {constraint}. Work within it by {strategy}.
+Turn the constraint into an advantage: {reframe}.
+Limitations breed creativity: {example_of_constraint_as_feature}.
+Work with what you have: {available_resources}.
+Leverage your existing {strength} to {goal}.
+Your unique advantage is {advantage}. Play to it.
+The gap between where you are and where you want to be is {gap}.
+Bridge the gap by {steps}.
+The milestones along the way are: {milestones}.
+Celebrate progress at {checkpoint}.
+Measure success by {metric}, not by {wrong_metric}.
+The true measure of {success_in_domain} is {real_indicator}.
+Don't confuse {vanity_metric} with actual progress.
+What matters most is {core_metric}.
+Track {leading_indicator} to predict {outcome}.
+The signal in the noise is {signal}.
+Ignore {noise} and focus on {signal}.
+The pattern I'm seeing is {pattern}.
+This follows the typical {pattern_name} pattern.
+History suggests {historical_pattern} will repeat.
+However, this time might be different because {new_factor}.
+The wild card that could change everything: {disruptor}.

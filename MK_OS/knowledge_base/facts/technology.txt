@@ -1,0 +1,506 @@
+python|is|high-level interpreted programming language|1.0
+python|created_by|Guido van Rossum in 1991|1.0
+python|uses|indentation for code blocks|1.0
+python|has_feature|dynamic typing|1.0
+python|has_feature|garbage collection|1.0
+python|has_feature|list comprehensions|0.95
+python|has_feature|generators and iterators|0.95
+python|has_feature|decorators|0.95
+python|has_feature|multiple inheritance|0.95
+python|standard_library|includes os sys json re math|1.0
+javascript|is|dynamic interpreted scripting language|1.0
+javascript|created_by|Brendan Eich in 1995|1.0
+javascript|runs_in|web browsers and Node.js|1.0
+javascript|has_feature|first-class functions|1.0
+javascript|has_feature|prototypal inheritance|0.95
+javascript|has_feature|event-driven programming|1.0
+javascript|has_feature|async await syntax|0.95
+javascript|has_feature|closures|1.0
+javascript|has_feature|promises for async operations|0.95
+javascript|engine|V8 in Chrome and Node.js|0.95
+typescript|is|typed superset of JavaScript|1.0
+typescript|created_by|Microsoft in 2012|1.0
+typescript|compiles_to|JavaScript|1.0
+typescript|has_feature|static type checking|1.0
+typescript|has_feature|interfaces and generics|0.95
+java|is|object-oriented compiled language|1.0
+java|created_by|James Gosling at Sun Microsystems 1995|1.0
+java|runs_on|Java Virtual Machine JVM|1.0
+java|has_feature|write once run anywhere|0.95
+java|has_feature|automatic garbage collection|1.0
+java|has_feature|strong static typing|1.0
+cpp|is|systems programming language|1.0
+cpp|created_by|Bjarne Stroustrup in 1979|1.0
+cpp|has_feature|manual memory management|1.0
+cpp|has_feature|templates and generics|0.95
+cpp|has_feature|multiple inheritance|0.95
+cpp|has_feature|operator overloading|0.95
+cpp|has_feature|RAII resource management|0.95
+cpp|standard|C++17 C++20 C++23|0.95
+rust|is|systems programming language focused on safety|1.0
+rust|created_by|Mozilla Research starting 2010|0.95
+rust|has_feature|ownership and borrowing system|1.0
+rust|has_feature|zero-cost abstractions|0.95
+rust|has_feature|no garbage collector|1.0
+rust|has_feature|pattern matching|0.95
+rust|prevents|data races at compile time|0.95
+go|is|compiled language by Google|1.0
+go|created_by|Rob Pike Ken Thompson Robert Griesemer|0.95
+go|has_feature|goroutines for concurrency|1.0
+go|has_feature|channels for communication|0.95
+go|has_feature|garbage collection|1.0
+go|has_feature|fast compilation|0.95
+c_language|is|low-level systems programming language|1.0
+c_language|created_by|Dennis Ritchie in 1972|1.0
+c_language|used_for|operating systems and embedded systems|1.0
+swift|is|programming language by Apple|1.0
+kotlin|is|modern JVM language by JetBrains|1.0
+ruby|is|dynamic object-oriented language|1.0
+ruby|created_by|Yukihiro Matsumoto in 1995|0.95
+php|is|server-side scripting language|1.0
+haskell|is|purely functional programming language|1.0
+scala|combines|object-oriented and functional programming|0.95
+elixir|runs_on|Erlang BEAM virtual machine|0.9
+clojure|is|functional Lisp dialect on JVM|0.9
+cpu|is|central processing unit of computer|1.0
+cpu|executes|machine instructions|1.0
+cpu|contains|ALU control unit and registers|1.0
+gpu|is|graphics processing unit|1.0
+gpu|optimized_for|parallel processing|1.0
+ram|is|random access memory volatile storage|1.0
+ram|provides|fast temporary data storage|1.0
+rom|is|read only memory non-volatile|1.0
+cache_memory|is|fast small memory near CPU|1.0
+L1_cache|is|fastest smallest cache level|0.95
+L2_cache|is|larger slower than L1 cache|0.95
+L3_cache|is|largest slowest CPU cache shared between cores|0.95
+hard_drive|is|non-volatile magnetic storage|1.0
+ssd|is|solid state drive using flash memory|1.0
+ssd|faster_than|traditional hard drive|1.0
+nvme|is|fast storage interface for SSDs|0.95
+motherboard|connects|all computer components|1.0
+bus|is|communication system between components|0.95
+pcie|is|high speed serial expansion bus|0.95
+usb|is|universal serial bus interface|1.0
+bios|is|basic input output system firmware|0.95
+uefi|is|modern replacement for BIOS|0.95
+transistor|is|basic building block of processors|1.0
+moores_law|states|transistor count doubles every two years|0.95
+von_neumann_architecture|stores|program and data in same memory|1.0
+harvard_architecture|separates|instruction and data memory|0.95
+risc|is|reduced instruction set computing|0.95
+cisc|is|complex instruction set computing|0.95
+arm_architecture|dominates|mobile and embedded processors|0.95
+x86_architecture|dominates|desktop and server processors|0.95
+clock_speed|measured_in|gigahertz GHz|1.0
+multicore_processor|has|multiple processing cores|1.0
+hyperthreading|allows|single core to run two threads|0.9
+pipeline|executes|multiple instruction stages simultaneously|0.9
+branch_prediction|guesses|which code path CPU will take|0.9
+register|is|fastest storage inside CPU|1.0
+instruction_set|is|set of commands CPU can execute|0.95
+floating_point_unit|handles|decimal number calculations|0.9
+dma|allows|hardware to access memory without CPU|0.9
+interrupt|signals|CPU to handle urgent event|0.95
+operating_system|manages|hardware and software resources|1.0
+linux|is|open source Unix-like operating system|1.0
+linux|created_by|Linus Torvalds in 1991|1.0
+linux_kernel|is|core of Linux operating system|1.0
+windows|is|operating system by Microsoft|1.0
+macos|is|operating system by Apple|1.0
+unix|is|multiuser multitasking operating system from 1969|1.0
+process|is|running instance of program|1.0
+thread|is|lightweight unit of execution within process|1.0
+scheduler|determines|which process runs next|0.95
+virtual_memory|allows|programs to use more memory than physical RAM|1.0
+page_table|maps|virtual addresses to physical addresses|0.95
+context_switch|saves|state of one process loads another|0.95
+deadlock|occurs_when|processes wait for each other indefinitely|0.95
+mutex|provides|mutual exclusion for shared resources|0.95
+semaphore|controls|access to shared resource|0.95
+file_system|organizes|data on storage devices|1.0
+ext4|is|default Linux file system|0.95
+ntfs|is|default Windows file system|0.95
+apfs|is|Apple file system|0.9
+inode|stores|metadata about file in Unix|0.9
+system_call|is|interface between user program and kernel|0.95
+device_driver|translates|OS commands to hardware instructions|0.95
+bootloader|loads|operating system into memory|0.95
+shell|is|command line interface to operating system|1.0
+bash|is|Bourne Again Shell default on Linux|0.95
+docker|is|container platform for application isolation|1.0
+virtual_machine|emulates|complete computer system|1.0
+hypervisor|manages|virtual machines|0.95
+kubernetes|orchestrates|container deployments|1.0
+internet|is|global network of interconnected computers|1.0
+tcp|is|reliable connection-oriented transport protocol|1.0
+udp|is|fast connectionless transport protocol|1.0
+ip_address|identifies|device on network|1.0
+ipv4|uses|32 bit addresses|1.0
+ipv6|uses|128 bit addresses|1.0
+dns|translates|domain names to IP addresses|1.0
+http|is|protocol for web communication|1.0
+https|is|encrypted HTTP using TLS|1.0
+tcp_ip_model|has|four layers application transport internet link|1.0
+osi_model|has|seven layers|1.0
+router|forwards|packets between networks|1.0
+switch|forwards|frames within local network|0.95
+firewall|filters|network traffic based on rules|1.0
+nat|translates|private IP to public IP addresses|0.95
+dhcp|assigns|IP addresses automatically|0.95
+subnet_mask|divides|network into subnets|0.95
+mac_address|is|unique hardware identifier for network interface|1.0
+ethernet|is|wired local area network technology|1.0
+wifi|is|wireless local area network technology|1.0
+bandwidth|is|maximum data transfer rate|1.0
+latency|is|delay in network communication|1.0
+packet|is|unit of data transmitted over network|1.0
+port_number|identifies|specific service on host|1.0
+ssl_tls|provides|encrypted communication over network|1.0
+vpn|creates|encrypted tunnel over public network|1.0
+load_balancer|distributes|traffic across multiple servers|0.95
+cdn|caches|content at edge locations worldwide|0.95
+websocket|provides|full-duplex communication over TCP|0.95
+rest_api|uses|HTTP methods for CRUD operations|1.0
+graphql|is|query language for APIs|0.95
+grpc|uses|protocol buffers for fast RPC|0.9
+mqtt|is|lightweight messaging protocol for IoT|0.9
+ftp|is|file transfer protocol|0.95
+ssh|is|secure shell for remote access|1.0
+smtp|is|protocol for sending email|0.95
+imap|is|protocol for receiving email|0.95
+tcp_handshake|uses|three-way SYN SYN-ACK ACK|1.0
+arp|resolves|IP address to MAC address|0.9
+icmp|used_for|ping and network diagnostics|0.9
+bgp|is|border gateway protocol for internet routing|0.9
+algorithm|is|step by step procedure to solve problem|1.0
+data_structure|organizes|data for efficient access|1.0
+array|is|contiguous memory storing elements of same type|1.0
+linked_list|is|elements connected by pointers|1.0
+stack|is|LIFO last in first out data structure|1.0
+queue|is|FIFO first in first out data structure|1.0
+hash_table|provides|O(1) average lookup time|1.0
+binary_tree|has|at most two children per node|1.0
+binary_search_tree|maintains|sorted order for fast search|1.0
+balanced_tree|ensures|O(log n) operations|0.95
+heap|is|tree-based priority queue|0.95
+graph|is|vertices connected by edges|1.0
+sorting_algorithm|arranges|elements in specific order|1.0
+quicksort|has|average O(n log n) time complexity|1.0
+mergesort|has|guaranteed O(n log n) time complexity|1.0
+bubble_sort|has|O(n squared) time complexity|1.0
+binary_search|has|O(log n) time complexity|1.0
+big_o_notation|describes|upper bound of algorithm complexity|1.0
+recursion|is|function calling itself|1.0
+dynamic_programming|solves|problems by breaking into subproblems|1.0
+greedy_algorithm|makes|locally optimal choices|0.95
+divide_and_conquer|splits|problem into smaller subproblems|0.95
+bfs|is|breadth first search explores level by level|1.0
+dfs|is|depth first search explores branch fully|1.0
+dijkstra|finds|shortest path in weighted graph|1.0
+version_control|tracks|changes to source code|1.0
+git|is|distributed version control system|1.0
+git|created_by|Linus Torvalds in 2005|1.0
+agile|is|iterative software development methodology|0.95
+scrum|is|agile framework with sprints|0.95
+ci_cd|is|continuous integration and deployment|1.0
+unit_test|tests|individual functions or methods|1.0
+integration_test|tests|interaction between components|0.95
+tdd|is|test driven development write tests first|0.95
+design_pattern|is|reusable solution to common problem|1.0
+singleton|ensures|only one instance of class|0.95
+factory_pattern|creates|objects without specifying class|0.95
+observer_pattern|notifies|dependents of state changes|0.95
+mvc|separates|model view and controller|1.0
+solid_principles|guide|object-oriented design|0.95
+dry_principle|states|dont repeat yourself|0.95
+kiss_principle|states|keep it simple stupid|0.9
+refactoring|improves|code structure without changing behavior|0.95
+code_review|is|peer examination of source code|0.95
+technical_debt|is|cost of shortcuts in code|0.9
+microservices|is|architecture of small independent services|0.95
+monolith|is|single unified application architecture|0.9
+api|is|application programming interface|1.0
+sdk|is|software development kit|0.95
+ide|is|integrated development environment|1.0
+compiler|translates|source code to machine code|1.0
+interpreter|executes|source code line by line|1.0
+jit_compiler|compiles|code at runtime for speed|0.95
+garbage_collector|automatically|frees unused memory|1.0
+memory_leak|occurs_when|program fails to free memory|0.95
+buffer_overflow|occurs_when|data exceeds allocated buffer|0.95
+sql_injection|exploits|unsanitized database queries|0.95
+xss|injects|malicious scripts into web pages|0.9
+database|stores|organized collection of data|1.0
+relational_database|organizes|data in tables with rows and columns|1.0
+sql|is|structured query language for databases|1.0
+primary_key|uniquely|identifies each row in table|1.0
+foreign_key|references|primary key in another table|1.0
+index|speeds_up|database query performance|1.0
+normalization|reduces|data redundancy in databases|0.95
+acid_properties|ensure|reliable database transactions|1.0
+transaction|is|atomic unit of database operations|1.0
+join|combines|rows from two or more tables|1.0
+nosql|is|non-relational database|1.0
+mongodb|is|document-oriented NoSQL database|1.0
+redis|is|in-memory key-value data store|1.0
+postgresql|is|advanced open source relational database|1.0
+mysql|is|popular open source relational database|1.0
+sqlite|is|lightweight embedded relational database|1.0
+elasticsearch|is|distributed search and analytics engine|0.95
+cassandra|is|distributed wide-column NoSQL database|0.9
+neo4j|is|graph database|0.9
+orm|maps|objects to database tables|0.95
+sharding|distributes|data across multiple databases|0.9
+replication|copies|data to multiple database servers|0.9
+cap_theorem|states|distributed system can have at most two of CAP|0.95
+eventual_consistency|means|system will become consistent over time|0.9
+html|is|hypertext markup language for web pages|1.0
+css|styles|visual presentation of web pages|1.0
+dom|is|document object model tree of web page|1.0
+react|is|JavaScript UI library by Meta|1.0
+angular|is|TypeScript web framework by Google|1.0
+vue|is|progressive JavaScript framework|1.0
+node_js|is|JavaScript runtime built on V8 engine|1.0
+express|is|minimal Node.js web framework|0.95
+django|is|Python web framework|1.0
+flask|is|lightweight Python web framework|0.95
+spring|is|Java enterprise application framework|0.95
+rails|is|Ruby web application framework|0.95
+nextjs|is|React framework with server rendering|0.95
+webpack|is|JavaScript module bundler|0.9
+npm|is|Node.js package manager|1.0
+pip|is|Python package installer|1.0
+json|is|JavaScript Object Notation data format|1.0
+xml|is|extensible markup language|0.95
+yaml|is|human-readable data serialization format|0.95
+responsive_design|adapts|layout to different screen sizes|0.95
+spa|is|single page application|0.9
+ssr|is|server side rendering|0.9
+pwa|is|progressive web application|0.9
+cookie|stores|small data in user browser|0.95
+session|maintains|state between HTTP requests|0.95
+jwt|is|JSON web token for authentication|0.95
+oauth|is|authorization framework|0.95
+cors|is|cross-origin resource sharing policy|0.9
+artificial_intelligence|is|machines performing tasks requiring human intelligence|1.0
+machine_learning|is|systems learning from data without explicit programming|1.0
+deep_learning|uses|neural networks with many layers|1.0
+neural_network|is|computing system inspired by biological brain|1.0
+supervised_learning|learns_from|labeled training data|1.0
+unsupervised_learning|finds|patterns in unlabeled data|1.0
+reinforcement_learning|learns_from|rewards and penalties|1.0
+training_data|is|data used to train ML model|1.0
+overfitting|occurs_when|model memorizes training data|0.95
+underfitting|occurs_when|model is too simple for data|0.95
+gradient_descent|optimizes|model parameters to minimize loss|1.0
+backpropagation|computes|gradients in neural network|1.0
+convolutional_neural_network|excels_at|image recognition|1.0
+recurrent_neural_network|processes|sequential data|0.95
+transformer|uses|self-attention mechanism|1.0
+gpt|is|generative pre-trained transformer|1.0
+bert|is|bidirectional encoder representations from transformers|0.95
+large_language_model|trained_on|massive text corpora|1.0
+natural_language_processing|enables|computers to understand human language|1.0
+computer_vision|enables|computers to interpret images|1.0
+generative_ai|creates|new content from learned patterns|0.95
+diffusion_model|generates|images by denoising|0.9
+gan|generates|data using generator and discriminator|0.95
+attention_mechanism|weighs|importance of input elements|0.95
+tokenization|breaks|text into tokens for processing|0.95
+embedding|represents|words as dense vectors|0.95
+fine_tuning|adapts|pre-trained model to specific task|0.95
+transfer_learning|applies|knowledge from one task to another|0.95
+prompt_engineering|designs|effective inputs for LLMs|0.9
+rag|retrieves|relevant documents to augment generation|0.9
+hallucination|is|AI generating false information confidently|0.9
+rlhf|aligns|models with human preferences|0.9
+inference|is|using trained model to make predictions|0.95
+epoch|is|one complete pass through training data|0.95
+batch_size|is|number of samples processed before update|0.9
+learning_rate|controls|step size of gradient descent|0.95
+loss_function|measures|model prediction error|0.95
+activation_function|introduces|nonlinearity in neural network|0.95
+relu|is|rectified linear unit activation|0.95
+softmax|converts|logits to probabilities|0.9
+dropout|prevents|overfitting by randomly disabling neurons|0.9
+batch_normalization|stabilizes|training by normalizing layer inputs|0.9
+gpu_computing|accelerates|neural network training|0.95
+tensor|is|multi-dimensional array for computation|0.95
+pytorch|is|deep learning framework by Meta|0.95
+tensorflow|is|deep learning framework by Google|0.95
+cloud_computing|provides|on-demand computing resources|1.0
+aws|is|Amazon Web Services cloud platform|1.0
+azure|is|Microsoft cloud platform|1.0
+gcp|is|Google Cloud Platform|1.0
+iaas|provides|infrastructure as a service|0.95
+paas|provides|platform as a service|0.95
+saas|provides|software as a service|0.95
+serverless|runs|code without managing servers|0.95
+lambda|is|AWS serverless compute service|0.9
+s3|is|AWS object storage service|0.95
+ec2|is|AWS virtual server service|0.95
+docker_container|is|lightweight isolated runtime environment|1.0
+docker_image|is|template for creating containers|0.95
+dockerfile|defines|how to build docker image|0.95
+devops|combines|development and operations practices|1.0
+continuous_integration|automatically|builds and tests code changes|1.0
+continuous_deployment|automatically|deploys tested code to production|0.95
+infrastructure_as_code|manages|infrastructure through code|0.95
+terraform|is|infrastructure as code tool|0.95
+ansible|is|configuration management and automation tool|0.9
+prometheus|is|monitoring and alerting system|0.9
+grafana|is|data visualization and monitoring dashboard|0.9
+helm|is|package manager for Kubernetes|0.9
+microservice|is|small independently deployable service|0.95
+service_mesh|manages|service-to-service communication|0.85
+gitops|uses|git as source of truth for deployment|0.9
+encryption|converts|plaintext to ciphertext|1.0
+symmetric_encryption|uses|same key for encrypt and decrypt|1.0
+asymmetric_encryption|uses|public and private key pair|1.0
+aes|is|advanced encryption standard symmetric cipher|1.0
+rsa|is|asymmetric encryption algorithm|1.0
+hash_function|produces|fixed-size output from any input|1.0
+sha256|is|secure hash algorithm producing 256-bit hash|0.95
+md5|is|128-bit hash function now considered insecure|0.9
+digital_signature|verifies|authenticity and integrity|0.95
+certificate|binds|public key to identity|0.95
+tls|secures|communication between client and server|1.0
+firewall|monitors|and controls network traffic|1.0
+malware|is|malicious software|1.0
+virus|is|self-replicating malicious program|0.95
+ransomware|encrypts|victim files for ransom|0.95
+phishing|tricks|users into revealing credentials|0.95
+two_factor_auth|requires|two forms of identification|1.0
+zero_trust|assumes|no implicit trust in network|0.9
+penetration_testing|simulates|attacks to find vulnerabilities|0.9
+vulnerability|is|weakness that can be exploited|1.0
+patch|fixes|software vulnerability|0.95
+authentication|verifies|user identity|1.0
+authorization|determines|what user can access|1.0
+rbac|is|role-based access control|0.9
+fpga|is|field programmable gate array|0.9
+asic|is|application specific integrated circuit|0.9
+dram|is|dynamic random access memory needs refresh|0.9
+sram|is|static random access memory faster than DRAM|0.9
+eeprom|is|electrically erasable programmable read only memory|0.85
+flash_memory|is|non-volatile storage using floating gate transistors|0.95
+quantum_computer|uses|qubits for computation|0.95
+qubit|can_be|in superposition of 0 and 1|0.9
+quantum_entanglement|enables|quantum computing speedup|0.85
+quantum_supremacy|means|quantum computer outperforms classical|0.85
+moore_law_end|predicted|around 2025 physical limits|0.8
+chiplet|is|modular chip design approach|0.85
+3d_stacking|increases|chip density vertically|0.85
+euv_lithography|enables|sub-7nm chip manufacturing|0.85
+risc_v|is|open source instruction set architecture|0.9
+apple_silicon|is|ARM-based Apple processor family|0.9
+tensor_core|accelerates|matrix multiply for AI|0.85
+neural_processing_unit|is|dedicated AI acceleration hardware|0.85
+api_gateway|is|single entry point for microservices|0.9
+message_queue|decouples|producers and consumers|0.9
+kafka|is|distributed event streaming platform|0.95
+rabbitmq|is|message broker implementing AMQP|0.9
+redis_pubsub|provides|publish subscribe messaging|0.85
+event_driven|architecture_reacts|to events asynchronously|0.9
+cqrs|separates|read and write models|0.85
+event_sourcing|stores|state as sequence of events|0.85
+saga_pattern|manages|distributed transactions|0.85
+circuit_breaker|prevents|cascading failures|0.9
+rate_limiting|controls|request frequency|0.9
+idempotency|means|repeated operations produce same result|0.9
+eventual_consistency|guarantees|convergence over time|0.9
+caching|stores|frequently accessed data for speed|1.0
+memcached|is|distributed memory caching system|0.9
+cdn_edge|serves|content from nearest location|0.9
+horizontal_scaling|adds|more machines to system|0.95
+vertical_scaling|adds|more resources to single machine|0.95
+auto_scaling|adjusts|resources based on demand|0.9
+blue_green_deployment|runs|two identical production environments|0.85
+canary_deployment|releases|to small subset first|0.85
+feature_flag|enables|toggling features without deploy|0.9
+a_b_testing|compares|two versions for users|0.9
+observability|includes|logs metrics and traces|0.9
+distributed_tracing|tracks|requests across services|0.85
+log_aggregation|centralizes|logs from multiple services|0.85
+slo|is|service level objective|0.85
+sla|is|service level agreement|0.9
+mttr|is|mean time to recovery|0.85
+mttf|is|mean time to failure|0.85
+react_native|builds|mobile apps using React|0.95
+flutter|builds|cross-platform apps using Dart|0.9
+swift_ui|is|declarative UI framework for Apple|0.9
+jetpack_compose|is|declarative UI for Android|0.85
+graphql_subscription|enables|real-time data with GraphQL|0.85
+server_sent_events|enables|server push to client|0.85
+web_assembly|enables|near-native code in browser|0.95
+service_worker|enables|offline web functionality|0.9
+web_component|is|reusable custom HTML element|0.85
+shadow_dom|encapsulates|component styles and markup|0.85
+virtual_dom|optimizes|UI rendering in React|0.9
+state_management|handles|application data flow|0.9
+redux|is|predictable state container for JS|0.9
+context_api|provides|state without prop drilling|0.85
+hydration|attaches|event handlers to server-rendered HTML|0.85
+lazy_loading|defers|loading non-critical resources|0.9
+code_splitting|divides|bundle into smaller chunks|0.9
+tree_shaking|removes|unused code from bundle|0.9
+minification|reduces|code size by removing whitespace|0.9
+source_map|maps|minified code to original source|0.85
+protobuf|is|binary serialization format by Google|0.9
+avro|is|row-based serialization format|0.85
+parquet|is|columnar storage format|0.85
+arrow|is|in-memory columnar data format|0.85
+msgpack|is|binary JSON-like serialization|0.85
+http2|supports|multiplexing and server push|0.9
+http3|uses|QUIC protocol over UDP|0.85
+quic|is|multiplexed transport protocol|0.85
+webrtc|enables|peer-to-peer real-time communication|0.9
+graphql_federation|composes|multiple GraphQL services|0.8
+vscode|is|popular code editor by Microsoft|0.95
+vim|is|modal text editor|0.9
+emacs|is|extensible text editor|0.85
+intellij|is|IDE by JetBrains for Java|0.9
+git_branch|is|independent line of development|1.0
+git_merge|combines|changes from different branches|1.0
+git_rebase|replays|commits on top of another branch|0.9
+pull_request|requests|code review before merge|0.95
+github|is|code hosting platform using git|1.0
+gitlab|is|DevOps platform with git hosting|0.95
+linter|checks|code for style and errors|0.95
+formatter|automatically|formats code consistently|0.9
+debugger|allows|stepping through code execution|0.95
+profiler|measures|code performance and bottlenecks|0.9
+package_manager|installs|and manages dependencies|1.0
+semantic_versioning|uses|major minor patch numbering|0.95
+monorepo|stores|multiple projects in one repository|0.85
+ci_pipeline|automates|build test deploy steps|0.95
+artifact|is|build output like binary or package|0.9
+container_registry|stores|docker images|0.9
+blockchain|is|distributed immutable ledger|0.95
+bitcoin|is|first decentralized cryptocurrency|0.95
+ethereum|is|blockchain platform with smart contracts|0.9
+smart_contract|is|self-executing code on blockchain|0.9
+nft|is|non-fungible token on blockchain|0.85
+defi|is|decentralized finance on blockchain|0.85
+consensus_mechanism|validates|blockchain transactions|0.85
+proof_of_work|requires|computational effort for consensus|0.9
+proof_of_stake|requires|token stake for consensus|0.85
+iot|connects|physical devices to internet|0.95
+edge_computing|processes|data near source|0.9
+5g|provides|high speed low latency wireless|0.9
+ar_augmented_reality|overlays|digital content on real world|0.9
+vr_virtual_reality|creates|immersive digital environment|0.9
+metaverse|is|persistent virtual shared space|0.8
+digital_twin|is|virtual replica of physical system|0.85
+autonomous_vehicle|uses|AI to drive without human|0.9
+lidar|measures|distance using laser light|0.9
+robotics|combines|AI with mechanical systems|0.95
+drone|is|unmanned aerial vehicle|0.9
+3d_printing|creates|objects layer by layer|0.95
+crispr_tech|edits|genes precisely|0.9
+mrna_technology|instructs|cells to produce proteins|0.85
+synthetic_biology|designs|new biological systems|0.8
+nanotechnology|manipulates|matter at nanometer scale|0.9
+brain_computer_interface|connects|brain to computer|0.85
+neuromorphic_computing|mimics|brain neural architecture|0.8

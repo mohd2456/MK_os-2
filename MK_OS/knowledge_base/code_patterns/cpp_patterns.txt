@@ -1,0 +1,793 @@
+# C++ Code Patterns
+# Format: Pattern name followed by code template
+
+PATTERN: Hello World
+#include <iostream>
+int main() {
+    std::cout << "Hello, World!" << std::endl;
+    return 0;
+}
+
+PATTERN: Read file
+#include <fstream>
+#include <string>
+std::ifstream file("input.txt");
+std::string content((std::istreambuf_iterator<char>(file)),
+                     std::istreambuf_iterator<char>());
+
+PATTERN: Write file
+#include <fstream>
+std::ofstream file("output.txt");
+file << "content here" << std::endl;
+file.close();
+
+PATTERN: Vector usage
+#include <vector>
+#include <algorithm>
+std::vector<int> v = {3, 1, 4, 1, 5};
+std::sort(v.begin(), v.end());
+v.push_back(9);
+auto it = std::find(v.begin(), v.end(), 4);
+
+PATTERN: Map usage
+#include <map>
+#include <string>
+std::map<std::string, int> ages;
+ages["Alice"] = 30;
+ages.insert({"Bob", 25});
+if (ages.count("Alice")) { /* exists */ }
+for (const auto& [name, age] : ages) { }
+
+PATTERN: Smart pointers
+#include <memory>
+auto ptr = std::make_unique<MyClass>(args);
+auto shared = std::make_shared<MyClass>(args);
+std::weak_ptr<MyClass> weak = shared;
+// unique_ptr: sole ownership, auto-deletes
+// shared_ptr: reference counted
+// weak_ptr: non-owning observer
+
+PATTERN: Class definition
+class Animal {
+private:
+    std::string name_;
+    int age_;
+public:
+    Animal(std::string name, int age) : name_(std::move(name)), age_(age) {}
+    virtual ~Animal() = default;
+    virtual std::string speak() const = 0;
+    const std::string& name() const { return name_; }
+};
+
+class Dog : public Animal {
+public:
+    using Animal::Animal;
+    std::string speak() const override { return "Woof"; }
+};
+
+PATTERN: Template function
+template<typename T>
+T max_of(T a, T b) {
+    return (a > b) ? a : b;
+}
+
+template<typename Container>
+void print_all(const Container& c) {
+    for (const auto& item : c) {
+        std::cout << item << " ";
+    }
+}
+
+PATTERN: Lambda expressions
+auto add = [](int a, int b) { return a + b; };
+auto greater_than = [threshold](int x) { return x > threshold; };
+std::sort(v.begin(), v.end(), [](const auto& a, const auto& b) {
+    return a.name < b.name;
+});
+
+PATTERN: RAII pattern
+class FileHandle {
+    FILE* file_;
+public:
+    FileHandle(const char* path, const char* mode) : file_(fopen(path, mode)) {
+        if (!file_) throw std::runtime_error("Cannot open file");
+    }
+    ~FileHandle() { if (file_) fclose(file_); }
+    FileHandle(const FileHandle&) = delete;
+    FileHandle& operator=(const FileHandle&) = delete;
+    FILE* get() { return file_; }
+};
+
+PATTERN: Move semantics
+class Buffer {
+    std::unique_ptr<char[]> data_;
+    size_t size_;
+public:
+    Buffer(size_t size) : data_(new char[size]), size_(size) {}
+    Buffer(Buffer&& other) noexcept : data_(std::move(other.data_)), size_(other.size_) {
+        other.size_ = 0;
+    }
+    Buffer& operator=(Buffer&& other) noexcept {
+        data_ = std::move(other.data_);
+        size_ = other.size_;
+        other.size_ = 0;
+        return *this;
+    }
+};
+
+PATTERN: Mutex and threading
+#include <mutex>
+#include <thread>
+std::mutex mtx;
+int shared_counter = 0;
+
+void increment() {
+    std::lock_guard<std::mutex> lock(mtx);
+    ++shared_counter;
+}
+
+std::vector<std::thread> threads;
+for (int i = 0; i < 10; ++i)
+    threads.emplace_back(increment);
+for (auto& t : threads) t.join();
+
+PATTERN: Condition variable
+#include <condition_variable>
+std::queue<int> queue;
+std::mutex mtx;
+std::condition_variable cv;
+
+void producer() {
+    std::lock_guard<std::mutex> lock(mtx);
+    queue.push(42);
+    cv.notify_one();
+}
+
+void consumer() {
+    std::unique_lock<std::mutex> lock(mtx);
+    cv.wait(lock, []{ return !queue.empty(); });
+    int val = queue.front();
+    queue.pop();
+}
+
+PATTERN: Observer pattern
+class Observer {
+public:
+    virtual ~Observer() = default;
+    virtual void update(int value) = 0;
+};
+
+class Subject {
+    std::vector<Observer*> observers_;
+public:
+    void attach(Observer* o) { observers_.push_back(o); }
+    void notify(int value) {
+        for (auto* o : observers_) o->update(value);
+    }
+};
+
+PATTERN: Singleton
+class Singleton {
+    Singleton() = default;
+public:
+    static Singleton& instance() {
+        static Singleton inst;
+        return inst;
+    }
+    Singleton(const Singleton&) = delete;
+    Singleton& operator=(const Singleton&) = delete;
+};
+
+PATTERN: Factory pattern
+class Shape {
+public:
+    virtual ~Shape() = default;
+    virtual double area() const = 0;
+};
+
+std::unique_ptr<Shape> create_shape(const std::string& type) {
+    if (type == "circle") return std::make_unique<Circle>(1.0);
+    if (type == "rect") return std::make_unique<Rectangle>(2.0, 3.0);
+    return nullptr;
+}
+
+PATTERN: Iterator for custom container
+class IntRange {
+    int start_, end_;
+public:
+    IntRange(int s, int e) : start_(s), end_(e) {}
+    struct Iterator {
+        int current;
+        int operator*() const { return current; }
+        Iterator& operator++() { ++current; return *this; }
+        bool operator!=(const Iterator& o) const { return current != o.current; }
+    };
+    Iterator begin() { return {start_}; }
+    Iterator end() { return {end_}; }
+};
+
+PATTERN: String operations
+#include <string>
+#include <sstream>
+std::string s = "Hello, World";
+auto pos = s.find("World");
+auto sub = s.substr(0, 5);
+std::stringstream ss;
+ss << "Value: " << 42;
+std::string result = ss.str();
+
+PATTERN: Error handling with exceptions
+#include <stdexcept>
+class AppError : public std::runtime_error {
+public:
+    AppError(const std::string& msg) : std::runtime_error(msg) {}
+};
+
+try {
+    if (value < 0) throw AppError("Negative value");
+} catch (const AppError& e) {
+    std::cerr << e.what() << std::endl;
+} catch (const std::exception& e) {
+    std::cerr << "Unknown: " << e.what() << std::endl;
+}
+
+PATTERN: Optional return type (C++17)
+#include <optional>
+std::optional<int> find_value(const std::vector<int>& v, int target) {
+    auto it = std::find(v.begin(), v.end(), target);
+    if (it != v.end()) return *it;
+    return std::nullopt;
+}
+auto result = find_value(data, 42);
+if (result) std::cout << *result;
+
+PATTERN: Variant type (C++17)
+#include <variant>
+using Value = std::variant<int, double, std::string>;
+Value v = 42;
+v = "hello";
+std::visit([](auto&& arg) {
+    std::cout << arg << std::endl;
+}, v);
+
+PATTERN: Structured bindings (C++17)
+auto [x, y, z] = std::tuple{1, 2.0, "three"};
+for (const auto& [key, value] : my_map) {
+    std::cout << key << ": " << value << std::endl;
+}
+
+PATTERN: Concepts (C++20)
+template<typename T>
+concept Numeric = std::is_arithmetic_v<T>;
+
+template<Numeric T>
+T square(T x) { return x * x; }
+
+PATTERN: Ranges (C++20)
+#include <ranges>
+auto result = numbers
+    | std::views::filter([](int n) { return n % 2 == 0; })
+    | std::views::transform([](int n) { return n * n; })
+    | std::views::take(5);
+
+PATTERN: Coroutines (C++20)
+#include <coroutine>
+struct Generator {
+    struct promise_type {
+        int value;
+        Generator get_return_object() { return {std::coroutine_handle<promise_type>::from_promise(*this)}; }
+        std::suspend_always initial_suspend() { return {}; }
+        std::suspend_always final_suspend() noexcept { return {}; }
+        std::suspend_always yield_value(int v) { value = v; return {}; }
+        void return_void() {}
+        void unhandled_exception() {}
+    };
+    std::coroutine_handle<promise_type> handle;
+};
+
+PATTERN: Parallel algorithms
+#include <execution>
+#include <algorithm>
+std::sort(std::execution::par, v.begin(), v.end());
+auto sum = std::reduce(std::execution::par, v.begin(), v.end());
+
+PATTERN: File system operations (C++17)
+#include <filesystem>
+namespace fs = std::filesystem;
+for (const auto& entry : fs::directory_iterator("./src")) {
+    if (entry.path().extension() == ".cpp") {
+        std::cout << entry.path() << std::endl;
+    }
+}
+fs::create_directories("output/data");
+fs::copy("src.txt", "dst.txt");
+
+PATTERN: Async and future
+#include <future>
+auto future = std::async(std::launch::async, []() {
+    return expensive_computation();
+});
+// do other work
+int result = future.get(); // blocks until ready
+
+PATTERN: Type traits
+#include <type_traits>
+template<typename T>
+void process(T value) {
+    if constexpr (std::is_integral_v<T>) {
+        // integer handling
+    } else if constexpr (std::is_floating_point_v<T>) {
+        // float handling
+    }
+}
+
+PATTERN: Custom allocator
+template<typename T>
+class PoolAllocator {
+    T* pool_;
+    size_t size_;
+    size_t next_;
+public:
+    using value_type = T;
+    PoolAllocator(size_t size) : pool_(new T[size]), size_(size), next_(0) {}
+    T* allocate(size_t n) {
+        if (next_ + n > size_) throw std::bad_alloc();
+        T* ptr = pool_ + next_;
+        next_ += n;
+        return ptr;
+    }
+    void deallocate(T*, size_t) {} // pool freed in destructor
+    ~PoolAllocator() { delete[] pool_; }
+};
+
+PATTERN: Hash map with custom hash
+struct PairHash {
+    size_t operator()(const std::pair<int,int>& p) const {
+        auto h1 = std::hash<int>{}(p.first);
+        auto h2 = std::hash<int>{}(p.second);
+        return h1 ^ (h2 << 1);
+    }
+};
+std::unordered_map<std::pair<int,int>, int, PairHash> grid;
+
+PATTERN: Binary search
+#include <algorithm>
+std::vector<int> sorted_data = {1, 3, 5, 7, 9, 11};
+bool found = std::binary_search(sorted_data.begin(), sorted_data.end(), 7);
+auto lb = std::lower_bound(sorted_data.begin(), sorted_data.end(), 5);
+
+PATTERN: Priority queue
+#include <queue>
+std::priority_queue<int> max_heap;
+std::priority_queue<int, std::vector<int>, std::greater<int>> min_heap;
+min_heap.push(5);
+min_heap.push(3);
+int top = min_heap.top(); // 3
+min_heap.pop();
+
+PATTERN: Graph adjacency list
+#include <vector>
+#include <queue>
+struct Graph {
+    int V;
+    std::vector<std::vector<std::pair<int,int>>> adj;
+    Graph(int v) : V(v), adj(v) {}
+    void add_edge(int u, int v, int w) {
+        adj[u].push_back({v, w});
+        adj[v].push_back({u, w});
+    }
+};
+
+PATTERN: BFS traversal
+void bfs(const Graph& g, int start) {
+    std::vector<bool> visited(g.V, false);
+    std::queue<int> q;
+    q.push(start);
+    visited[start] = true;
+    while (!q.empty()) {
+        int node = q.front(); q.pop();
+        for (auto [neighbor, weight] : g.adj[node]) {
+            if (!visited[neighbor]) {
+                visited[neighbor] = true;
+                q.push(neighbor);
+            }
+        }
+    }
+}
+
+PATTERN: Linked list
+struct Node {
+    int data;
+    Node* next;
+    Node(int d) : data(d), next(nullptr) {}
+};
+
+class LinkedList {
+    Node* head_ = nullptr;
+public:
+    void push_front(int val) {
+        auto* node = new Node(val);
+        node->next = head_;
+        head_ = node;
+    }
+    ~LinkedList() {
+        while (head_) { auto* t = head_; head_ = head_->next; delete t; }
+    }
+};
+
+PATTERN: Operator overloading
+class Vector2D {
+    double x_, y_;
+public:
+    Vector2D(double x, double y) : x_(x), y_(y) {}
+    Vector2D operator+(const Vector2D& o) const { return {x_+o.x_, y_+o.y_}; }
+    Vector2D operator*(double s) const { return {x_*s, y_*s}; }
+    bool operator==(const Vector2D& o) const { return x_==o.x_ && y_==o.y_; }
+    friend std::ostream& operator<<(std::ostream& os, const Vector2D& v) {
+        return os << "(" << v.x_ << "," << v.y_ << ")";
+    }
+};
+
+PATTERN: CRTP (Curiously Recurring Template)
+template<typename Derived>
+class Base {
+public:
+    void interface() {
+        static_cast<Derived*>(this)->implementation();
+    }
+};
+
+class Concrete : public Base<Concrete> {
+public:
+    void implementation() { /* specific impl */ }
+};
+
+PATTERN: Compile-time computation (constexpr)
+constexpr int factorial(int n) {
+    return n <= 1 ? 1 : n * factorial(n - 1);
+}
+constexpr auto result = factorial(10); // computed at compile time
+static_assert(factorial(5) == 120);
+
+PATTERN: Span (C++20)
+#include <span>
+void process(std::span<int> data) {
+    for (int& x : data) x *= 2;
+}
+std::vector<int> vec = {1, 2, 3};
+int arr[] = {4, 5, 6};
+process(vec);
+process(arr);
+
+PATTERN: String formatting (C++20)
+#include <format>
+std::string msg = std::format("Hello, {}! You are {} years old.", name, age);
+std::string pi = std::format("{:.4f}", 3.14159);
+
+PATTERN: Expected (C++23)
+#include <expected>
+std::expected<int, std::string> divide(int a, int b) {
+    if (b == 0) return std::unexpected("Division by zero");
+    return a / b;
+}
+auto result = divide(10, 2);
+if (result) std::cout << *result;
+else std::cout << result.error();
+
+PATTERN: Network socket (POSIX)
+#include <sys/socket.h>
+#include <netinet/in.h>
+int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+sockaddr_in addr{};
+addr.sin_family = AF_INET;
+addr.sin_port = htons(8080);
+addr.sin_addr.s_addr = INADDR_ANY;
+bind(server_fd, (sockaddr*)&addr, sizeof(addr));
+listen(server_fd, 5);
+int client = accept(server_fd, nullptr, nullptr);
+
+PATTERN: DFS traversal
+void dfs(const Graph& g, int node, std::vector<bool>& visited) {
+    visited[node] = true;
+    for (auto [neighbor, w] : g.adj[node]) {
+        if (!visited[neighbor]) dfs(g, neighbor, visited);
+    }
+}
+
+PATTERN: Dijkstra shortest path
+std::vector<int> dijkstra(const Graph& g, int src) {
+    std::vector<int> dist(g.V, INT_MAX);
+    std::priority_queue<std::pair<int,int>, std::vector<std::pair<int,int>>, std::greater<>> pq;
+    dist[src] = 0;
+    pq.push({0, src});
+    while (!pq.empty()) {
+        auto [d, u] = pq.top(); pq.pop();
+        if (d > dist[u]) continue;
+        for (auto [v, w] : g.adj[u]) {
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+    return dist;
+}
+
+PATTERN: Merge sort
+void merge_sort(std::vector<int>& arr, int l, int r) {
+    if (l >= r) return;
+    int m = l + (r - l) / 2;
+    merge_sort(arr, l, m);
+    merge_sort(arr, m + 1, r);
+    std::vector<int> temp;
+    int i = l, j = m + 1;
+    while (i <= m && j <= r) {
+        if (arr[i] <= arr[j]) temp.push_back(arr[i++]);
+        else temp.push_back(arr[j++]);
+    }
+    while (i <= m) temp.push_back(arr[i++]);
+    while (j <= r) temp.push_back(arr[j++]);
+    for (int k = 0; k < temp.size(); ++k) arr[l+k] = temp[k];
+}
+
+PATTERN: Quick sort
+int partition(std::vector<int>& arr, int lo, int hi) {
+    int pivot = arr[hi], i = lo - 1;
+    for (int j = lo; j < hi; ++j) {
+        if (arr[j] < pivot) std::swap(arr[++i], arr[j]);
+    }
+    std::swap(arr[i+1], arr[hi]);
+    return i + 1;
+}
+void quick_sort(std::vector<int>& arr, int lo, int hi) {
+    if (lo < hi) {
+        int p = partition(arr, lo, hi);
+        quick_sort(arr, lo, p-1);
+        quick_sort(arr, p+1, hi);
+    }
+}
+
+PATTERN: Binary tree
+struct TreeNode {
+    int val;
+    TreeNode* left;
+    TreeNode* right;
+    TreeNode(int v) : val(v), left(nullptr), right(nullptr) {}
+};
+
+void inorder(TreeNode* root) {
+    if (!root) return;
+    inorder(root->left);
+    std::cout << root->val << " ";
+    inorder(root->right);
+}
+
+PATTERN: Stack implementation
+template<typename T>
+class Stack {
+    std::vector<T> data_;
+public:
+    void push(T val) { data_.push_back(std::move(val)); }
+    T pop() { T v = std::move(data_.back()); data_.pop_back(); return v; }
+    T& top() { return data_.back(); }
+    bool empty() const { return data_.empty(); }
+    size_t size() const { return data_.size(); }
+};
+
+PATTERN: Dynamic programming - knapsack
+int knapsack(int W, std::vector<int>& wt, std::vector<int>& val, int n) {
+    std::vector<std::vector<int>> dp(n+1, std::vector<int>(W+1, 0));
+    for (int i = 1; i <= n; ++i) {
+        for (int w = 0; w <= W; ++w) {
+            dp[i][w] = dp[i-1][w];
+            if (wt[i-1] <= w)
+                dp[i][w] = std::max(dp[i][w], dp[i-1][w-wt[i-1]] + val[i-1]);
+        }
+    }
+    return dp[n][W];
+}
+
+PATTERN: LRU Cache
+class LRUCache {
+    int capacity_;
+    std::list<std::pair<int,int>> list_;
+    std::unordered_map<int, std::list<std::pair<int,int>>::iterator> map_;
+public:
+    LRUCache(int cap) : capacity_(cap) {}
+    int get(int key) {
+        if (!map_.count(key)) return -1;
+        list_.splice(list_.begin(), list_, map_[key]);
+        return map_[key]->second;
+    }
+    void put(int key, int val) {
+        if (map_.count(key)) { list_.erase(map_[key]); }
+        list_.push_front({key, val});
+        map_[key] = list_.begin();
+        if (list_.size() > capacity_) { map_.erase(list_.back().first); list_.pop_back(); }
+    }
+};
+
+PATTERN: Thread pool
+class ThreadPool {
+    std::vector<std::thread> workers_;
+    std::queue<std::function<void()>> tasks_;
+    std::mutex mtx_;
+    std::condition_variable cv_;
+    bool stop_ = false;
+public:
+    ThreadPool(size_t n) {
+        for (size_t i = 0; i < n; ++i)
+            workers_.emplace_back([this] {
+                while (true) {
+                    std::function<void()> task;
+                    { std::unique_lock<std::mutex> lock(mtx_);
+                      cv_.wait(lock, [this]{ return stop_ || !tasks_.empty(); });
+                      if (stop_ && tasks_.empty()) return;
+                      task = std::move(tasks_.front()); tasks_.pop(); }
+                    task();
+                }
+            });
+    }
+    void enqueue(std::function<void()> task) {
+        { std::lock_guard<std::mutex> lock(mtx_); tasks_.push(std::move(task)); }
+        cv_.notify_one();
+    }
+    ~ThreadPool() {
+        { std::lock_guard<std::mutex> lock(mtx_); stop_ = true; }
+        cv_.notify_all();
+        for (auto& w : workers_) w.join();
+    }
+};
+
+PATTERN: Trie (prefix tree)
+struct TrieNode {
+    std::unordered_map<char, TrieNode*> children;
+    bool is_end = false;
+};
+class Trie {
+    TrieNode* root_ = new TrieNode;
+public:
+    void insert(const std::string& word) {
+        auto* node = root_;
+        for (char c : word) {
+            if (!node->children[c]) node->children[c] = new TrieNode;
+            node = node->children[c];
+        }
+        node->is_end = true;
+    }
+    bool search(const std::string& word) {
+        auto* node = root_;
+        for (char c : word) {
+            if (!node->children.count(c)) return false;
+            node = node->children[c];
+        }
+        return node->is_end;
+    }
+};
+
+PATTERN: Union-Find (Disjoint Set)
+class UnionFind {
+    std::vector<int> parent_, rank_;
+public:
+    UnionFind(int n) : parent_(n), rank_(n, 0) {
+        std::iota(parent_.begin(), parent_.end(), 0);
+    }
+    int find(int x) {
+        if (parent_[x] != x) parent_[x] = find(parent_[x]);
+        return parent_[x];
+    }
+    void unite(int x, int y) {
+        int px = find(x), py = find(y);
+        if (px == py) return;
+        if (rank_[px] < rank_[py]) std::swap(px, py);
+        parent_[py] = px;
+        if (rank_[px] == rank_[py]) ++rank_[px];
+    }
+};
+
+PATTERN: Matrix multiplication
+std::vector<std::vector<int>> multiply(
+    const std::vector<std::vector<int>>& A,
+    const std::vector<std::vector<int>>& B) {
+    int n = A.size(), m = B[0].size(), k = B.size();
+    std::vector<std::vector<int>> C(n, std::vector<int>(m, 0));
+    for (int i = 0; i < n; ++i)
+        for (int j = 0; j < m; ++j)
+            for (int p = 0; p < k; ++p)
+                C[i][j] += A[i][p] * B[p][j];
+    return C;
+}
+
+PATTERN: Event loop
+class EventLoop {
+    std::queue<std::function<void()>> events_;
+    bool running_ = true;
+public:
+    void post(std::function<void()> fn) { events_.push(std::move(fn)); }
+    void run() {
+        while (running_) {
+            if (!events_.empty()) {
+                auto fn = std::move(events_.front());
+                events_.pop();
+                fn();
+            }
+        }
+    }
+    void stop() { running_ = false; }
+};
+
+PATTERN: Builder pattern
+class QueryBuilder {
+    std::string table_, where_, order_;
+    int limit_ = -1;
+public:
+    QueryBuilder& from(std::string t) { table_ = t; return *this; }
+    QueryBuilder& where(std::string w) { where_ = w; return *this; }
+    QueryBuilder& order_by(std::string o) { order_ = o; return *this; }
+    QueryBuilder& limit(int l) { limit_ = l; return *this; }
+    std::string build() const {
+        std::string q = "SELECT * FROM " + table_;
+        if (!where_.empty()) q += " WHERE " + where_;
+        if (!order_.empty()) q += " ORDER BY " + order_;
+        if (limit_ > 0) q += " LIMIT " + std::to_string(limit_);
+        return q;
+    }
+};
+
+PATTERN: State machine
+enum class State { Idle, Running, Paused, Stopped };
+class StateMachine {
+    State state_ = State::Idle;
+public:
+    void start() { if (state_ == State::Idle) state_ = State::Running; }
+    void pause() { if (state_ == State::Running) state_ = State::Paused; }
+    void resume() { if (state_ == State::Paused) state_ = State::Running; }
+    void stop() { state_ = State::Stopped; }
+    State current() const { return state_; }
+};
+
+PATTERN: Memory-mapped file
+#include <sys/mman.h>
+#include <fcntl.h>
+int fd = open("data.bin", O_RDONLY);
+struct stat st;
+fstat(fd, &st);
+void* data = mmap(nullptr, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+// use data as array
+munmap(data, st.st_size);
+close(fd);
+
+PATTERN: Variadic templates
+template<typename... Args>
+void log(Args... args) {
+    (std::cout << ... << args) << std::endl;
+}
+
+template<typename T, typename... Rest>
+T sum(T first, Rest... rest) {
+    if constexpr (sizeof...(rest) == 0) return first;
+    else return first + sum(rest...);
+}
+
+PATTERN: Ring buffer
+template<typename T, size_t N>
+class RingBuffer {
+    std::array<T, N> buf_;
+    size_t head_ = 0, tail_ = 0, count_ = 0;
+public:
+    void push(T val) {
+        buf_[tail_] = std::move(val);
+        tail_ = (tail_ + 1) % N;
+        if (count_ < N) ++count_;
+        else head_ = (head_ + 1) % N;
+    }
+    T pop() {
+        T val = std::move(buf_[head_]);
+        head_ = (head_ + 1) % N;
+        --count_;
+        return val;
+    }
+    bool empty() const { return count_ == 0; }
+    size_t size() const { return count_; }
+};
+

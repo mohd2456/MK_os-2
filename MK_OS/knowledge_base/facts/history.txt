@@ -1,0 +1,503 @@
+mesopotamia|is|earliest known civilization between Tigris and Euphrates|1.0
+sumer|developed|cuneiform writing around 3400 BCE|1.0
+babylon|was|ancient city in Mesopotamia modern Iraq|1.0
+hammurabi|created|one of earliest written law codes|1.0
+ancient_egypt|lasted|from about 3100 BCE to 30 BCE|1.0
+pyramids_giza|built|around 2560 BCE|1.0
+great_pyramid|is|one of seven wonders of ancient world|1.0
+pharaoh|was|ruler of ancient Egypt|1.0
+hieroglyphics|is|ancient Egyptian writing system|1.0
+rosetta_stone|enabled|decoding of Egyptian hieroglyphics|1.0
+nile_river|enabled|ancient Egyptian civilization|1.0
+tutankhamun|was|Egyptian pharaoh whose tomb found 1922|0.95
+cleopatra|was|last pharaoh of ancient Egypt|1.0
+ancient_greece|birthplace|of democracy and philosophy|1.0
+athens|was|birthplace of democracy|1.0
+sparta|was|ancient Greek military city-state|1.0
+alexander_great|conquered|vast empire from Greece to India|1.0
+persian_empire|was|largest empire of ancient world|0.95
+roman_empire|lasted|from 27 BCE to 476 CE in west|1.0
+julius_caesar|was|Roman dictator assassinated 44 BCE|1.0
+augustus|was|first Roman emperor|1.0
+roman_republic|preceded|the Roman Empire|1.0
+colosseum|built|in Rome around 70-80 CE|1.0
+roman_roads|connected|empire spanning three continents|0.95
+fall_of_rome|occurred|476 CE when last western emperor deposed|1.0
+byzantine_empire|was|eastern Roman Empire until 1453|1.0
+constantinople|was|capital of Byzantine Empire|1.0
+ancient_china|developed|paper printing gunpowder compass|1.0
+great_wall_china|built|over many centuries starting 7th century BCE|1.0
+qin_dynasty|unified|China in 221 BCE|0.95
+han_dynasty|ruled|China 206 BCE to 220 CE|0.95
+silk_road|connected|East and West for trade|1.0
+confucius|was|Chinese philosopher 551-479 BCE|1.0
+indus_valley|was|ancient civilization in modern Pakistan India|1.0
+maurya_empire|was|first major Indian empire 322-185 BCE|0.9
+ashoka|was|Mauryan emperor who spread Buddhism|0.9
+maya_civilization|developed|complex calendar and mathematics|0.95
+aztec_empire|ruled|central Mexico until Spanish conquest|0.95
+inca_empire|was|largest empire in pre-Columbian Americas|0.95
+phoenicians|invented|first alphabet|0.95
+middle_ages|lasted|from about 500 to 1500 CE|1.0
+feudalism|was|medieval social and economic system|1.0
+charlemagne|was|Holy Roman Emperor crowned 800 CE|1.0
+vikings|explored|North America around 1000 CE|0.95
+crusades|were|religious wars from 1096 to 1291|1.0
+magna_carta|signed|1215 limiting English royal power|1.0
+black_death|killed|estimated one third of European population|1.0
+black_death|occurred|1347-1351 in Europe|1.0
+hundred_years_war|fought|between England and France 1337-1453|0.95
+joan_of_arc|led|French forces in Hundred Years War|0.95
+ottoman_empire|lasted|from 1299 to 1922|1.0
+fall_of_constantinople|occurred|1453 to Ottoman Turks|1.0
+printing_press|invented_by|Johannes Gutenberg around 1440|1.0
+renaissance|began|in Italy in 14th century|1.0
+renaissance|means|rebirth of classical learning and arts|1.0
+leonardo_da_vinci|was|Renaissance polymath painter inventor|1.0
+michelangelo|painted|Sistine Chapel ceiling|1.0
+reformation|started_by|Martin Luther in 1517|1.0
+martin_luther|posted|95 Theses challenging Catholic Church|1.0
+machiavelli|wrote|The Prince about political power|0.95
+galileo|supported|heliocentric model of solar system|1.0
+copernicus|proposed|sun-centered model of solar system|1.0
+columbus|reached|Americas in 1492|1.0
+vasco_da_gama|reached|India by sea in 1498|0.95
+magellan_expedition|first|circumnavigation of Earth 1519-1522|1.0
+spanish_conquest|destroyed|Aztec and Inca empires|0.95
+hernan_cortes|conquered|Aztec Empire 1519-1521|0.95
+francisco_pizarro|conquered|Inca Empire 1532|0.9
+colonialism|was|European control of overseas territories|1.0
+atlantic_slave_trade|transported|12 million Africans 1500-1900|0.95
+east_india_company|was|British trading corporation in India|0.95
+american_colonies|established|by British in 17th century|0.95
+jamestown|was|first permanent English settlement America 1607|0.95
+plymouth_colony|founded|by Pilgrims in 1620|0.9
+american_revolution|occurred|1775-1783|1.0
+declaration_independence|signed|July 4 1776|1.0
+george_washington|was|first US president|1.0
+french_revolution|occurred|1789-1799|1.0
+french_revolution|overthrew|absolute monarchy in France|1.0
+napoleon_bonaparte|was|French emperor 1804-1814|1.0
+napoleonic_wars|fought|across Europe 1803-1815|0.95
+battle_of_waterloo|ended|Napoleons rule in 1815|0.95
+industrial_revolution|began|in Britain late 18th century|1.0
+steam_engine|developed_by|James Watt improved 1769|1.0
+cotton_gin|invented_by|Eli Whitney in 1793|0.95
+railroad|transformed|transportation in 19th century|0.95
+american_civil_war|fought|1861-1865 over slavery and union|1.0
+abraham_lincoln|was|US president during Civil War|1.0
+emancipation_proclamation|freed|slaves in Confederate states 1863|1.0
+unification_germany|completed|under Bismarck in 1871|0.95
+unification_italy|completed|in 1861|0.9
+meiji_restoration|modernized|Japan beginning 1868|0.9
+scramble_for_africa|divided|Africa among European powers 1881-1914|0.95
+boxer_rebellion|was|Chinese uprising against foreign influence 1899-1901|0.85
+russian_revolution|occurred|1917 overthrew Tsarist regime|1.0
+lenin|led|Bolshevik Revolution in Russia|1.0
+communism|became|state ideology of Soviet Union|0.95
+world_war_1|fought|1914-1918|1.0
+world_war_1|triggered_by|assassination of Archduke Franz Ferdinand|1.0
+world_war_1|involved|Allied and Central Powers|1.0
+treaty_of_versailles|ended|World War 1 in 1919|1.0
+trench_warfare|characterized|World War 1 western front|0.95
+world_war_2|fought|1939-1945|1.0
+world_war_2|deadliest|conflict in human history|1.0
+world_war_2|started_when|Germany invaded Poland September 1939|1.0
+adolf_hitler|was|Nazi Germany dictator 1933-1945|1.0
+holocaust|was|genocide of six million Jews by Nazis|1.0
+d_day|was|Allied invasion of Normandy June 6 1944|1.0
+pearl_harbor|attacked|by Japan December 7 1941|1.0
+atomic_bomb_hiroshima|dropped|August 6 1945|1.0
+atomic_bomb_nagasaki|dropped|August 9 1945|1.0
+japan_surrendered|on|August 15 1945 ending WW2|1.0
+united_nations|founded|1945 after World War 2|1.0
+nuremberg_trials|prosecuted|Nazi war criminals|0.95
+marshall_plan|rebuilt|Europe after World War 2|0.95
+winston_churchill|was|British PM during World War 2|1.0
+franklin_roosevelt|was|US president during most of WW2|1.0
+joseph_stalin|was|Soviet leader during WW2|1.0
+battle_of_stalingrad|was|turning point on Eastern Front|0.95
+battle_of_midway|was|turning point in Pacific|0.95
+cold_war|lasted|from 1947 to 1991|1.0
+cold_war|was|rivalry between USA and Soviet Union|1.0
+iron_curtain|divided|Europe into East and West|0.95
+berlin_wall|built|1961 divided East and West Berlin|1.0
+berlin_wall|fell|November 9 1989|1.0
+cuban_missile_crisis|occurred|October 1962|1.0
+korean_war|fought|1950-1953|1.0
+vietnam_war|fought|1955-1975|1.0
+space_race|was|competition between US and USSR|1.0
+sputnik|was|first artificial satellite 1957|1.0
+yuri_gagarin|was|first human in space 1961|1.0
+apollo_11_moon|landed|humans on moon July 20 1969|1.0
+neil_armstrong|was|first person to walk on moon|1.0
+nato|founded|1949 western military alliance|0.95
+warsaw_pact|was|Soviet military alliance 1955-1991|0.9
+decolonization|occurred|mostly 1945-1975 in Africa and Asia|0.95
+indian_independence|achieved|from Britain in 1947|1.0
+mahatma_gandhi|led|Indian independence through nonviolence|1.0
+chinese_revolution|established|Peoples Republic of China 1949|1.0
+mao_zedong|was|founding leader of PRC|1.0
+civil_rights_movement|occurred|in US 1950s-1960s|1.0
+martin_luther_king|led|US civil rights movement|1.0
+apartheid|was|racial segregation in South Africa|1.0
+nelson_mandela|ended|apartheid became president 1994|1.0
+soviet_union_collapse|occurred|December 1991|1.0
+mikhail_gorbachev|introduced|glasnost and perestroika|0.95
+european_union|formed|from European Economic Community|0.95
+9_11_attacks|occurred|September 11 2001 in United States|1.0
+arab_spring|began|2010 protests across Middle East|0.9
+covid_19_pandemic|began|2019-2020 global health crisis|1.0
+wheel|invented|around 3500 BCE in Mesopotamia|0.95
+writing|invented|around 3400 BCE in Sumer|0.95
+iron_working|developed|around 1200 BCE|0.9
+compass|invented|in China around 200 BCE|0.95
+paper|invented|in China around 105 CE|0.95
+gunpowder|invented|in China around 9th century|0.95
+printing_press|invented|by Gutenberg around 1440|1.0
+telescope|invented|early 1600s|0.95
+microscope|invented|late 1500s|0.9
+thermometer|invented|early 1600s by Galileo|0.9
+steam_engine|developed|by Thomas Newcomen 1712|0.95
+vaccine|first_developed_by|Edward Jenner 1796 for smallpox|1.0
+electricity|harnessed|by Benjamin Franklin and others 1700s|0.95
+telegraph|invented_by|Samuel Morse 1830s|0.95
+telephone|invented_by|Alexander Graham Bell 1876|1.0
+light_bulb|invented_by|Thomas Edison 1879|1.0
+radio|developed_by|Guglielmo Marconi 1890s|0.95
+airplane|invented_by|Wright Brothers 1903|1.0
+television|developed|in 1920s-1930s|0.95
+penicillin|discovered_by|Alexander Fleming 1928|1.0
+nuclear_energy|first_controlled|1942 Chicago Pile-1|0.95
+transistor|invented|1947 at Bell Labs|1.0
+dna_structure|discovered_by|Watson and Crick 1953|1.0
+internet|originated_from|ARPANET in 1969|1.0
+personal_computer|became_popular|in 1980s|0.95
+world_wide_web|invented_by|Tim Berners-Lee 1989|1.0
+gps|became|fully operational 1995|0.9
+human_genome|sequenced|completed 2003|0.95
+smartphone|popularized_by|iPhone 2007|0.9
+crispr_gene_editing|developed|2012|0.9
+treaty_of_westphalia|established|modern state sovereignty 1648|0.9
+thirty_years_war|fought|1618-1648 in Europe|0.9
+english_civil_war|fought|1642-1651|0.9
+glorious_revolution|occurred|1688 in England|0.85
+seven_years_war|fought|1756-1763 globally|0.9
+french_indian_war|was|North American theater of Seven Years War|0.85
+haitian_revolution|was|successful slave revolt 1791-1804|0.9
+simon_bolivar|liberated|much of South America from Spain|0.9
+opium_wars|fought|between China and Britain 1839-1860|0.9
+crimean_war|fought|1853-1856|0.85
+franco_prussian_war|fought|1870-1871|0.85
+spanish_american_war|fought|1898|0.85
+russo_japanese_war|fought|1904-1905|0.85
+balfour_declaration|supported|Jewish homeland in Palestine 1917|0.9
+league_of_nations|founded|1920 predecessor to UN|0.9
+great_depression|began|1929 stock market crash|1.0
+new_deal|was|FDR economic recovery program 1930s|0.9
+spanish_civil_war|fought|1936-1939|0.9
+partition_of_india|occurred|1947 creating India and Pakistan|0.95
+state_of_israel|established|May 14 1948|0.95
+suez_crisis|occurred|1956|0.85
+cultural_revolution|occurred|in China 1966-1976|0.9
+watergate_scandal|led_to|Nixon resignation 1974|0.9
+iranian_revolution|occurred|1979 establishing Islamic Republic|0.9
+falklands_war|fought|1982 between UK and Argentina|0.85
+tiananmen_square|protests_occurred|1989|0.9
+gulf_war|fought|1990-1991|0.9
+rwanda_genocide|occurred|1994|0.95
+good_friday_agreement|brought|peace to Northern Ireland 1998|0.85
+euro_currency|introduced|1999|0.9
+war_on_terror|began|after September 11 2001|0.9
+iraq_war|began|2003|0.9
+global_financial_crisis|occurred|2008|0.95
+brexit|occurred|UK left EU January 2020|0.9
+paris_climate_agreement|signed|2015|0.9
+mongol_empire|was|largest contiguous land empire|1.0
+genghis_khan|founded|Mongol Empire in 1206|1.0
+black_plague|reached|Europe in 1347|1.0
+gunpowder_revolution|changed|warfare in 14th-15th centuries|0.9
+age_of_sail|dominated|1500s-1800s maritime exploration|0.9
+dutch_golden_age|occurred|17th century Netherlands|0.85
+mughal_empire|ruled|Indian subcontinent 1526-1857|0.9
+tokugawa_shogunate|ruled|Japan 1603-1868|0.9
+enlightenment|was|intellectual movement 17th-18th century|1.0
+voltaire|was|French Enlightenment philosopher|0.9
+jean_jacques_rousseau|wrote|The Social Contract|0.9
+adam_smith|wrote|Wealth of Nations 1776|0.95
+karl_marx|wrote|Das Kapital and Communist Manifesto|1.0
+charles_darwin|published|On the Origin of Species 1859|1.0
+suffragette_movement|fought_for|womens right to vote|0.95
+19th_amendment|gave|US women right to vote 1920|0.9
+prohibition|banned|alcohol in US 1920-1933|0.9
+dust_bowl|devastated|US Great Plains 1930s|0.85
+manhattan_project|developed|first atomic bomb 1942-1945|0.95
+nato_formed|in_year|1949|0.9
+brown_v_board|ended|school segregation 1954|0.9
+cuban_revolution|occurred|1959 Fidel Castro took power|0.9
+kennedy_assassination|occurred|November 22 1963|0.95
+moon_landing|occurred|July 20 1969|1.0
+oil_crisis|occurred|1973 OPEC embargo|0.9
+camp_david_accords|signed|1978 Egypt Israel peace|0.85
+chernobyl_disaster|occurred|April 26 1986|0.95
+german_reunification|occurred|October 3 1990|0.9
+dissolution_yugoslavia|caused|wars in 1990s|0.9
+hong_kong_handover|occurred|1997 to China|0.9
+fukushima_disaster|occurred|March 2011|0.9
+syrian_civil_war|began|2011|0.9
+crimea_annexation|occurred|2014 by Russia|0.9
+ukraine_war|began|February 2022 Russian invasion|0.95
+achaemenid_empire|founded_by|Cyrus the Great 550 BCE|0.9
+darius_great|expanded|Persian Empire to largest extent|0.85
+battle_thermopylae|fought|480 BCE Greeks vs Persians|0.9
+battle_marathon|fought|490 BCE Greeks defeated Persians|0.9
+peloponnesian_war|fought|431-404 BCE Athens vs Sparta|0.9
+socrates|was|Greek philosopher forced to drink hemlock|0.95
+plato|was|Greek philosopher student of Socrates|0.95
+aristotle|was|Greek philosopher teacher of Alexander|0.95
+punic_wars|fought|between Rome and Carthage 264-146 BCE|0.9
+hannibal|crossed|Alps to attack Rome in 218 BCE|0.9
+roman_senate|was|governing body of Roman Republic|0.9
+pax_romana|was|200 years of Roman peace 27 BCE-180 CE|0.9
+roman_aqueducts|transported|water across Roman Empire|0.85
+roman_law|influenced|modern legal systems|0.9
+christianity|became|Roman state religion 380 CE|0.95
+islam|founded|by Prophet Muhammad 7th century CE|1.0
+islamic_golden_age|lasted|8th to 14th century|0.9
+abbasid_caliphate|was|Islamic empire 750-1258|0.85
+tang_dynasty|was|golden age of Chinese civilization 618-907|0.9
+song_dynasty|invented|movable type printing|0.85
+ming_dynasty|built|Forbidden City and restored Great Wall|0.9
+samurai|were|Japanese warrior class|0.9
+shogun|was|military ruler of Japan|0.9
+black_death_origin|likely_came_from|Central Asia|0.85
+medici_family|patronized|Renaissance arts in Florence|0.9
+spanish_inquisition|established|1478 to enforce Catholic orthodoxy|0.85
+reconquista|was|Christian reconquest of Iberian Peninsula|0.85
+treaty_tordesillas|divided|New World between Spain Portugal 1494|0.85
+protestant_reformation|split|Western Christianity|0.95
+counter_reformation|was|Catholic Church response to Protestantism|0.85
+spanish_armada|defeated|by England 1588|0.9
+thirty_years_war_deaths|killed|up to 8 million people|0.85
+louis_xiv|was|Sun King of France ruled 72 years|0.9
+peter_great|modernized|Russia in early 1700s|0.9
+catherine_great|expanded|Russian Empire 1762-1796|0.85
+american_constitution|ratified|1788|1.0
+bill_of_rights|added|to US Constitution 1791|0.95
+louisiana_purchase|doubled|US territory 1803|0.9
+war_of_1812|fought|between US and Britain|0.85
+monroe_doctrine|stated|Americas closed to European colonization|0.85
+trail_of_tears|was|forced relocation of Native Americans 1830s|0.9
+mexican_american_war|fought|1846-1848|0.85
+communist_manifesto|published|by Marx and Engels 1848|0.95
+revolutions_of_1848|swept|across Europe|0.85
+taiping_rebellion|killed|20-30 million in China 1850-1864|0.85
+reconstruction_era|followed|US Civil War 1865-1877|0.85
+ottoman_decline|occurred|throughout 19th century|0.85
+berlin_conference|divided|Africa among Europeans 1884-1885|0.9
+boer_wars|fought|in South Africa 1880-1902|0.85
+boxer_protocol|ended|Boxer Rebellion 1901|0.8
+panama_canal|opened|1914|0.9
+zimmermann_telegram|helped|bring US into WW1 1917|0.85
+armistice_day|ended|WW1 fighting November 11 1918|0.9
+weimar_republic|was|German democracy 1919-1933|0.85
+stock_market_crash|occurred|October 29 1929 Black Tuesday|0.95
+hitler_rise|became|German chancellor January 1933|0.95
+kristallnacht|was|anti-Jewish pogrom November 1938|0.9
+blitzkrieg|was|German lightning war strategy|0.9
+dunkirk_evacuation|rescued|338000 Allied troops 1940|0.9
+battle_of_britain|was|air battle over UK 1940|0.9
+operation_barbarossa|was|German invasion of USSR June 1941|0.9
+midway_battle_date|June|1942|0.85
+italian_surrender|occurred|September 1943|0.85
+yalta_conference|divided|postwar Europe February 1945|0.9
+potsdam_conference|decided|Germanys fate July 1945|0.85
+truman_doctrine|supported|countries resisting communism 1947|0.85
+berlin_blockade|was|Soviet attempt to cut off West Berlin 1948-1949|0.85
+chinese_civil_war|ended|1949 Communist victory|0.9
+korean_war_casualties|approximately|3 million dead|0.85
+mccarthyism|was|anti-communist hysteria 1950s US|0.85
+hungarian_revolution|crushed|by Soviet Union 1956|0.85
+bay_of_pigs|was|failed US invasion of Cuba 1961|0.9
+berlin_wall_built|in_year|1961|0.9
+jfk_cuban_crisis|resolved|through secret diplomacy 1962|0.85
+gulf_of_tonkin|escalated|US involvement in Vietnam 1964|0.85
+tet_offensive|was|major Vietnam War battle 1968|0.85
+prague_spring|crushed|by Soviet invasion 1968|0.85
+nixon_china|visit_occurred|1972|0.85
+vietnam_war_end|occurred|fall of Saigon April 1975|0.9
+khmer_rouge|ruled|Cambodia 1975-1979 killed millions|0.9
+camp_david_peace|between|Egypt and Israel 1978|0.85
+soviet_afghan_war|fought|1979-1989|0.85
+solidarity_movement|began|in Poland 1980|0.85
+glasnost|meant|openness in Soviet policy|0.85
+perestroika|meant|restructuring in Soviet policy|0.85
+eastern_bloc_collapse|occurred|1989-1991|0.9
+mandela_released|from_prison|February 1990|0.9
+first_gulf_war|liberated|Kuwait from Iraq 1991|0.85
+bosnian_war|fought|1992-1995|0.85
+oslo_accords|signed|1993 Israeli-Palestinian|0.85
+south_africa_elections|first_multiracial|1994|0.9
+oklahoma_city_bombing|occurred|1995|0.85
+kosovo_war|fought|1998-1999|0.8
+euro_launched|January|1 1999|0.85
+afghanistan_war|began|October 2001|0.9
+saddam_hussein|captured|December 2003|0.85
+indian_ocean_tsunami|killed|230000 people December 2004|0.9
+hurricane_katrina|devastated|New Orleans 2005|0.85
+arab_spring_tunisia|began|December 2010|0.85
+osama_bin_laden|killed|May 2011|0.9
+fukushima_nuclear|disaster_caused_by|earthquake and tsunami 2011|0.85
+isis_caliphate|declared|June 2014|0.85
+paris_attacks|occurred|November 2015|0.85
+trump_election|occurred|November 2016|0.9
+covid_first_case|reported|December 2019 in Wuhan|0.95
+covid_pandemic|declared|by WHO March 2020|0.95
+us_capitol_breach|occurred|January 6 2021|0.9
+james_webb_launch|occurred|December 2021|0.85
+queen_elizabeth_died|September|2022 after 70 year reign|0.9
+cleopatra_vii|ruled|Egypt 51-30 BCE|0.9
+attila_the_hun|led|Hunnic Empire 434-453|0.85
+william_conqueror|conquered|England 1066|0.95
+saladin|recaptured|Jerusalem from Crusaders 1187|0.9
+kublai_khan|founded|Yuan Dynasty in China|0.85
+tamerlane|conquered|much of Central Asia 14th century|0.8
+henry_viii|had|six wives and broke from Catholic Church|0.95
+elizabeth_i|ruled|England during golden age 1558-1603|0.9
+oliver_cromwell|led|English Commonwealth 1649-1658|0.85
+frederick_great|was|King of Prussia 1740-1786|0.85
+thomas_jefferson|authored|Declaration of Independence|0.95
+napoleon_defeat_russia|failed|invasion of Russia 1812|0.9
+queen_victoria|ruled|British Empire 1837-1901|0.9
+bismarck|unified|Germany through blood and iron|0.9
+tsar_nicholas_ii|was|last Russian emperor|0.9
+woodrow_wilson|proposed|League of Nations|0.85
+mussolini|was|Italian fascist dictator 1922-1943|0.9
+hirohito|was|Japanese emperor during WW2|0.85
+eisenhower|was|US president and WW2 supreme commander|0.9
+jfk|was|youngest elected US president assassinated 1963|0.95
+che_guevara|was|Argentine revolutionary in Cuba|0.85
+ho_chi_minh|led|Vietnamese independence movement|0.85
+deng_xiaoping|modernized|Chinese economy after Mao|0.9
+mikhail_gorbachev|was|last Soviet leader|0.9
+yasser_arafat|led|Palestinian Liberation Organization|0.85
+margaret_thatcher|was|UK Prime Minister 1979-1990|0.9
+ronald_reagan|was|US president during Cold War end|0.9
+lech_walesa|led|Solidarity movement in Poland|0.85
+dalai_lama|is|spiritual leader of Tibetan Buddhism|0.9
+kofi_annan|was|UN Secretary-General 1997-2006|0.8
+vladimir_putin|became|Russian president 1999|0.9
+barack_obama|was|first African American US president 2009|0.95
+angela_merkel|was|German Chancellor 2005-2021|0.9
+stonehenge|built|approximately 3000-2000 BCE|0.9
+minoan_civilization|existed|on Crete 2700-1450 BCE|0.85
+trojan_war|legendary_event|around 1200 BCE|0.8
+zhou_dynasty|longest|Chinese dynasty 1046-256 BCE|0.85
+buddhism_founded|by|Siddhartha Gautama around 500 BCE|0.95
+persian_wars|fought|between Greece and Persia 499-449 BCE|0.9
+library_of_alexandria|was|greatest ancient library|0.9
+dead_sea_scrolls|written|between 3rd century BCE and 1st century CE|0.85
+jesus_christ|born|approximately 4 BCE in Judea|0.9
+destruction_jerusalem|by_Romans|70 CE|0.85
+fall_western_rome|marked|end of classical antiquity 476|0.95
+justinian_code|compiled|Roman law 529-534 CE|0.85
+battle_tours|stopped|Islamic expansion into Europe 732|0.85
+viking_age|lasted|793-1066|0.9
+norman_conquest|of_England|1066 Battle of Hastings|0.95
+first_crusade|captured|Jerusalem 1099|0.9
+genghis_khan_death|occurred|1227|0.85
+marco_polo|traveled|to China 1271-1295|0.9
+ottoman_founded|by|Osman I around 1299|0.85
+aztec_founded|Tenochtitlan|1325|0.85
+zheng_he|explored|Indian Ocean 1405-1433|0.85
+constantinople_renamed|Istanbul|after Ottoman conquest|0.85
+ancient_olympics|began|776 BCE in Greece|0.9
+roman_republic_founded|in_year|509 BCE|0.85
+alexander_death|occurred|323 BCE in Babylon|0.85
+great_fire_london|occurred|1666|0.85
+south_sea_bubble|was|financial crisis 1720|0.8
+boston_tea_party|occurred|1773|0.9
+first_fleet_australia|arrived|1788|0.85
+reign_of_terror|occurred|1793-1794 during French Revolution|0.85
+napoleon_crowned|emperor|1804|0.85
+congress_of_vienna|reorganized|Europe 1814-1815|0.85
+greek_independence|achieved|from Ottomans 1829|0.8
+first_opium_war|fought|1839-1842|0.85
+potato_famine|devastated|Ireland 1845-1852|0.9
+california_gold_rush|began|1848|0.85
+crimean_war_florence|Nightingale modernized nursing|0.85
+suez_canal|opened|1869|0.9
+battle_little_bighorn|occurred|1876|0.8
+first_telephone_call|made_by|Bell 1876|0.9
+edison_light_bulb|invented|1879|0.95
+first_car|built_by|Karl Benz 1885|0.9
+eiffel_tower|built|1889 for Paris exposition|0.9
+first_flight|by_Wright_brothers|December 17 1903|1.0
+san_francisco_earthquake|occurred|1906|0.85
+titanic_sinking|occurred|April 15 1912|0.95
+russian_revolution_february|occurred|March 1917 old calendar|0.85
+spanish_flu|killed|50-100 million people 1918-1919|0.95
+womens_suffrage_uk|achieved|1918 partial 1928 full|0.85
+wall_street_crash|occurred|October 1929|0.95
+holodomor|was|Ukrainian famine 1932-1933|0.85
+hindenburg_disaster|occurred|May 1937|0.8
+invasion_poland|started|WW2 September 1 1939|0.95
+pearl_harbor_date|December|7 1941|0.95
+battle_el_alamein|was|turning point in North Africa 1942|0.85
+normandy_date|June|6 1944|0.95
+hiroshima_date|August|6 1945|0.95
+india_pakistan_partition|caused|massive migration and violence 1947|0.9
+nato_members_original|twelve|countries joined 1949|0.8
+hydrogen_bomb_first|tested|1952 by United States|0.85
+brown_v_board_date|decided|May 17 1954|0.85
+rosa_parks|refused|to give up bus seat December 1955|0.9
+suez_crisis_year|1956|UK France Israel vs Egypt|0.85
+sputnik_date|October|4 1957|0.9
+gagarin_date|April|12 1961|0.9
+cuban_missile_date|October|1962|0.9
+i_have_a_dream|speech_by|MLK August 28 1963|0.95
+kennedy_date|November|22 1963|0.95
+civil_rights_act|signed|1964 by LBJ|0.9
+six_day_war|fought|June 1967|0.85
+apollo_11_date|July|20 1969|1.0
+woodstock|occurred|August 1969|0.8
+watergate_break_in|occurred|June 1972|0.85
+nixon_resignation|occurred|August 9 1974|0.9
+saigon_fall|occurred|April 30 1975|0.9
+elvis_death|occurred|August 16 1977|0.8
+iran_hostage_crisis|lasted|1979-1981|0.85
+john_lennon_death|occurred|December 8 1980|0.8
+falklands_war_year|1982|UK vs Argentina|0.85
+challenger_disaster|occurred|January 28 1986|0.9
+chernobyl_date|April|26 1986|0.9
+berlin_wall_fall_date|November|9 1989|1.0
+tiananmen_date|June|4 1989|0.9
+nelson_mandela_free|February|11 1990|0.9
+german_unification_date|October|3 1990|0.85
+soviet_dissolution_date|December|25 1991|0.9
+rwanda_genocide_date|April_to_July|1994|0.9
+oklahoma_bombing_date|April|19 1995|0.8
+hong_kong_handover_date|July|1 1997|0.85
+princess_diana_death|occurred|August 31 1997|0.85
+september_11_date|September|11 2001|1.0
+iraq_invasion_date|March|20 2003|0.85
+obama_elected_date|November|4 2008|0.9
+bin_laden_killed_date|May|2 2011|0.85
+paris_agreement_date|December|12 2015|0.8
+covid_who_pandemic|declared|March 11 2020|0.9
+capitol_breach_date|January|6 2021|0.85
+webb_telescope_launch|December|25 2021|0.8
+elizabeth_ii_death_date|September|8 2022|0.85
+chatgpt_launched|November|30 2022|0.85
+civilization_first|emerged|in Fertile Crescent|0.9
+agriculture_revolution|began|approximately 10000 BCE|0.95
+bronze_age|began|approximately 3300 BCE|0.9
+iron_age|began|approximately 1200 BCE|0.9
+first_cities|appeared|around 4000-3000 BCE|0.85
+domestication_of_horse|occurred|around 4000 BCE|0.8
+first_writing_systems|appeared|around 3400-3200 BCE|0.9
+ancient_trade_routes|connected|civilizations across continents|0.85
+roman_concrete|lasted|thousands of years|0.8
+viking_longship|enabled|oceanic exploration|0.85
+compass_navigation|revolutionized|maritime travel|0.9
+columbian_exchange|transferred|plants animals diseases between hemispheres|0.9

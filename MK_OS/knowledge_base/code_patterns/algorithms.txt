@@ -1,0 +1,267 @@
+# Algorithm Descriptions
+# Format: Name, complexity, description, key steps
+
+ALGORITHM: Bubble Sort
+Time: O(n^2) | Space: O(1) | Stable: Yes
+Repeatedly swap adjacent elements if in wrong order.
+for i in range(n):
+    for j in range(n-1-i):
+        if arr[j] > arr[j+1]: swap(arr[j], arr[j+1])
+
+ALGORITHM: Selection Sort
+Time: O(n^2) | Space: O(1) | Stable: No
+Find minimum in unsorted portion, swap to front.
+for i in range(n):
+    min_idx = i
+    for j in range(i+1, n):
+        if arr[j] < arr[min_idx]: min_idx = j
+    swap(arr[i], arr[min_idx])
+
+ALGORITHM: Insertion Sort
+Time: O(n^2) | Space: O(1) | Stable: Yes
+Insert each element into correct position in sorted portion.
+for i in range(1, n):
+    key = arr[i]
+    j = i - 1
+    while j >= 0 and arr[j] > key:
+        arr[j+1] = arr[j]
+        j -= 1
+    arr[j+1] = key
+
+ALGORITHM: Merge Sort
+Time: O(n log n) | Space: O(n) | Stable: Yes
+Divide array in half, sort each half, merge sorted halves.
+Split until single elements, then merge pairs in order.
+
+ALGORITHM: Quick Sort
+Time: O(n log n) avg, O(n^2) worst | Space: O(log n) | Stable: No
+Pick pivot, partition into elements less/greater, recurse on partitions.
+Randomized pivot selection avoids worst case.
+
+ALGORITHM: Heap Sort
+Time: O(n log n) | Space: O(1) | Stable: No
+Build max-heap, repeatedly extract maximum element.
+Heapify: ensure parent >= children, swap down if violated.
+
+ALGORITHM: Counting Sort
+Time: O(n+k) | Space: O(k) | Stable: Yes
+Count occurrences of each value, compute positions, place elements.
+Only works for integers in known range [0, k].
+
+ALGORITHM: Radix Sort
+Time: O(d*(n+k)) | Space: O(n+k) | Stable: Yes
+Sort by each digit position using counting sort as subroutine.
+Least significant digit first, or most significant digit first.
+
+ALGORITHM: Binary Search
+Time: O(log n) | Space: O(1)
+Requires sorted array. Compare target with middle, eliminate half.
+lo=0, hi=n-1, mid=(lo+hi)/2, adjust lo or hi based on comparison.
+
+ALGORITHM: Linear Search
+Time: O(n) | Space: O(1)
+Check each element sequentially until found or end reached.
+Simplest search, works on unsorted data.
+
+ALGORITHM: Interpolation Search
+Time: O(log log n) avg for uniform data | Space: O(1)
+Estimate position based on value distribution.
+pos = lo + (target-arr[lo])*(hi-lo)/(arr[hi]-arr[lo])
+
+ALGORITHM: Breadth-First Search (BFS)
+Time: O(V+E) | Space: O(V)
+Explore all neighbors at current depth before going deeper.
+Uses queue. Good for shortest path in unweighted graphs.
+
+ALGORITHM: Depth-First Search (DFS)
+Time: O(V+E) | Space: O(V)
+Explore as deep as possible before backtracking.
+Uses stack (or recursion). Good for topological sort, cycle detection.
+
+ALGORITHM: Dijkstra's Shortest Path
+Time: O((V+E) log V) with priority queue | Space: O(V)
+Greedily select closest unvisited node, update neighbor distances.
+Does not work with negative edge weights.
+
+ALGORITHM: Bellman-Ford
+Time: O(V*E) | Space: O(V)
+Relax all edges V-1 times. Handles negative weights.
+Can detect negative cycles (if still relaxable after V-1 iterations).
+
+ALGORITHM: Floyd-Warshall
+Time: O(V^3) | Space: O(V^2)
+All-pairs shortest paths. Dynamic programming on intermediate nodes.
+dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])
+
+ALGORITHM: A* Search
+Time: O(E) with good heuristic | Space: O(V)
+Best-first search using f(n) = g(n) + h(n).
+g(n) = cost from start, h(n) = heuristic estimate to goal.
+Optimal if heuristic is admissible (never overestimates).
+
+ALGORITHM: Kruskal's MST
+Time: O(E log E) | Space: O(V)
+Sort edges by weight, add smallest that doesn't create cycle.
+Uses Union-Find data structure for cycle detection.
+
+ALGORITHM: Prim's MST
+Time: O((V+E) log V) | Space: O(V)
+Grow tree from single vertex, always add cheapest edge to tree.
+Uses priority queue for efficient next-edge selection.
+
+ALGORITHM: Topological Sort
+Time: O(V+E) | Space: O(V)
+Linear ordering of DAG vertices where u comes before v if edge u->v.
+Using DFS (reverse post-order) or Kahn's algorithm (BFS with in-degree).
+
+ALGORITHM: Strongly Connected Components (Tarjan's)
+Time: O(V+E) | Space: O(V)
+Find maximal sets of mutually reachable vertices.
+Single DFS pass using low-link values and stack.
+
+ALGORITHM: Dynamic Programming - Fibonacci
+Time: O(n) | Space: O(1) with optimization
+Store results of subproblems to avoid recomputation.
+fib[i] = fib[i-1] + fib[i-2], base: fib[0]=0, fib[1]=1
+
+ALGORITHM: Dynamic Programming - Longest Common Subsequence
+Time: O(m*n) | Space: O(m*n)
+Build 2D table comparing characters of both sequences.
+dp[i][j] = dp[i-1][j-1]+1 if match, else max(dp[i-1][j], dp[i][j-1])
+
+ALGORITHM: Dynamic Programming - 0/1 Knapsack
+Time: O(n*W) | Space: O(n*W)
+Maximize value with weight capacity constraint.
+dp[i][w] = max(dp[i-1][w], dp[i-1][w-wt[i]] + val[i])
+
+ALGORITHM: Dynamic Programming - Edit Distance
+Time: O(m*n) | Space: O(m*n)
+Minimum operations to transform one string to another.
+Operations: insert, delete, replace. Each costs 1.
+
+ALGORITHM: Dynamic Programming - Coin Change
+Time: O(n*amount) | Space: O(amount)
+Minimum coins to make target amount.
+dp[i] = min(dp[i], dp[i-coin]+1) for each coin denomination.
+
+ALGORITHM: Greedy - Activity Selection
+Time: O(n log n) | Space: O(1)
+Select maximum non-overlapping activities.
+Sort by end time, greedily pick earliest-ending compatible activity.
+
+ALGORITHM: Greedy - Huffman Coding
+Time: O(n log n) | Space: O(n)
+Optimal prefix-free variable-length encoding.
+Repeatedly merge two lowest-frequency nodes into tree.
+
+ALGORITHM: Backtracking - N-Queens
+Time: O(N!) | Space: O(N)
+Place N queens on NxN board with no conflicts.
+Place queen row by row, backtrack if conflict detected.
+
+ALGORITHM: Backtracking - Sudoku Solver
+Time: O(9^(empty cells)) worst | Space: O(1)
+Fill empty cells trying digits 1-9, backtrack on conflict.
+Check row, column, and 3x3 box constraints.
+
+ALGORITHM: Divide and Conquer - Maximum Subarray
+Time: O(n log n) or O(n) with Kadane's
+Find contiguous subarray with largest sum.
+Kadane: max_ending_here = max(arr[i], max_ending_here + arr[i])
+
+ALGORITHM: Divide and Conquer - Closest Pair of Points
+Time: O(n log n) | Space: O(n)
+Find two closest points in 2D plane.
+Sort by x, divide, solve halves, check strip near dividing line.
+
+ALGORITHM: String Matching - KMP
+Time: O(n+m) | Space: O(m)
+Knuth-Morris-Pratt: precompute failure function for pattern.
+Never re-scan text characters, use failure function to skip.
+
+ALGORITHM: String Matching - Rabin-Karp
+Time: O(n+m) average | Space: O(1)
+Rolling hash comparison. Hash pattern, slide window over text.
+Compare characters only when hashes match.
+
+ALGORITHM: Binary Search Tree Operations
+Time: O(log n) avg, O(n) worst | Space: O(n)
+Insert: compare and go left/right until empty spot.
+Search: compare and go left/right until found or null.
+Delete: handle leaf, one child, two children cases.
+
+ALGORITHM: AVL Tree Rotation
+Time: O(log n) for all operations | Space: O(n)
+Self-balancing BST. Balance factor = height(left) - height(right).
+Rotations: left, right, left-right, right-left to maintain |balance| <= 1.
+
+ALGORITHM: Red-Black Tree
+Time: O(log n) for all operations | Space: O(n)
+Self-balancing BST with color constraints.
+Rules: root black, no two red consecutive, same black-height all paths.
+
+ALGORITHM: Hash Table with Chaining
+Time: O(1) avg, O(n) worst | Space: O(n)
+Array of linked lists. Hash key to index, chain on collision.
+Load factor = n/table_size. Rehash when load factor exceeds threshold.
+
+ALGORITHM: Hash Table with Open Addressing
+Time: O(1) avg | Space: O(n)
+Probe for next empty slot on collision.
+Linear probing, quadratic probing, or double hashing.
+
+ALGORITHM: Trie Operations
+Time: O(m) per operation where m = key length | Space: O(alphabet * n * m)
+Tree where each node represents character.
+Efficient for prefix queries, autocomplete, spell checking.
+
+ALGORITHM: Segment Tree
+Time: O(log n) query/update | Space: O(n)
+Tree for range queries (sum, min, max) with point updates.
+Build O(n), query and update O(log n). Supports lazy propagation.
+
+ALGORITHM: Fenwick Tree (Binary Indexed Tree)
+Time: O(log n) query/update | Space: O(n)
+Efficient prefix sum queries and point updates.
+Uses binary representation of indices for tree structure.
+
+ALGORITHM: Maximum Flow - Ford-Fulkerson
+Time: O(E * max_flow) | Space: O(V+E)
+Find maximum flow from source to sink in network.
+Repeatedly find augmenting paths, add flow along path.
+
+ALGORITHM: Minimum Cut
+Time: Same as max flow | Space: O(V+E)
+Max-flow min-cut theorem: max flow = min cut capacity.
+Find min cut by finding reachable vertices from source in residual graph.
+
+ALGORITHM: Convex Hull - Graham Scan
+Time: O(n log n) | Space: O(n)
+Find smallest convex polygon containing all points.
+Sort by angle, process points maintaining left turns only.
+
+ALGORITHM: Matrix Chain Multiplication
+Time: O(n^3) | Space: O(n^2)
+Find optimal parenthesization to minimize scalar multiplications.
+dp[i][j] = min over k of (dp[i][k] + dp[k+1][j] + cost of final multiply)
+
+ALGORITHM: Longest Increasing Subsequence
+Time: O(n log n) | Space: O(n)
+Find longest strictly increasing subsequence.
+Maintain tails array, use binary search for insertion position.
+
+ALGORITHM: Reservoir Sampling
+Time: O(n) | Space: O(k)
+Select k random items from stream of unknown length.
+Replace i-th item with probability k/i for i > k.
+
+ALGORITHM: Bloom Filter
+Time: O(k) per operation | Space: O(m bits)
+Probabilistic set membership test. No false negatives.
+k hash functions map to m-bit array. Can have false positives.
+
+ALGORITHM: Skip List
+Time: O(log n) avg | Space: O(n)
+Probabilistic alternative to balanced trees.
+Multiple layers of sorted linked lists with express lanes.
+

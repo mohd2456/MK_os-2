@@ -1,0 +1,305 @@
+pi|equals|3.14159265358979|1.0
+e|equals|2.71828182845905|1.0
+golden_ratio|equals|1.61803398874989|1.0
+sqrt_2|equals|1.41421356237|1.0
+sqrt_3|equals|1.73205080757|1.0
+ln_2|equals|0.69314718056|1.0
+euler_mascheroni|equals|0.57721566490|0.95
+imaginary_unit|defined_as|square root of negative one|1.0
+infinity|is|not a real number|1.0
+zero|is|additive identity|1.0
+one|is|multiplicative identity|1.0
+addition|is|combining two quantities|1.0
+subtraction|is|finding difference between quantities|1.0
+multiplication|is|repeated addition|1.0
+division|is|splitting into equal parts|1.0
+division_by_zero|is|undefined|1.0
+even_number|is|divisible by 2|1.0
+odd_number|is|not divisible by 2|1.0
+prime_number|has|exactly two factors 1 and itself|1.0
+composite_number|has|more than two factors|1.0
+two|is|only even prime number|1.0
+one|is|neither prime nor composite|1.0
+factorial|is|product of all positive integers up to n|1.0
+zero_factorial|equals|1|1.0
+percentage|is|parts per hundred|1.0
+ratio|compares|two quantities|1.0
+proportion|states|two ratios are equal|1.0
+order_of_operations|is|PEMDAS parentheses exponents multiplication division addition subtraction|1.0
+commutative_property|states|a plus b equals b plus a|1.0
+associative_property|states|grouping does not change result|1.0
+distributive_property|states|a times b plus c equals ab plus ac|1.0
+variable|represents|unknown quantity|1.0
+equation|states|two expressions are equal|1.0
+inequality|compares|expressions with less or greater than|1.0
+linear_equation|has|form ax plus b equals c|1.0
+quadratic_equation|has|form ax^2 plus bx plus c equals 0|1.0
+quadratic_formula|is|x equals negative b plus minus sqrt b^2 minus 4ac over 2a|1.0
+slope|measures|steepness of a line|1.0
+slope_formula|is|rise over run or y2-y1 over x2-x1|1.0
+y_intercept|is|where line crosses y-axis|1.0
+slope_intercept_form|is|y equals mx plus b|1.0
+point_slope_form|is|y minus y1 equals m times x minus x1|1.0
+systems_of_equations|can_be_solved_by|substitution or elimination|1.0
+polynomial|is|expression with terms of variables and coefficients|1.0
+degree_of_polynomial|is|highest power of variable|1.0
+factoring|breaks_down|polynomial into product of simpler expressions|1.0
+foil_method|multiplies|two binomials|0.95
+exponent|indicates|how many times to multiply base|1.0
+negative_exponent|means|reciprocal of positive exponent|1.0
+zero_exponent|makes|any nonzero base equal to 1|1.0
+logarithm|is|inverse of exponentiation|1.0
+log_base_10|of_100|equals 2|1.0
+natural_log|uses|base e|1.0
+absolute_value|is|distance from zero|1.0
+function|maps|input to exactly one output|1.0
+domain|is|set of valid inputs for function|1.0
+range|is|set of possible outputs|1.0
+inverse_function|reverses|the original function|0.95
+composition|applies|one function then another|0.95
+point|has|no dimensions|1.0
+line|has|one dimension length|1.0
+plane|has|two dimensions|1.0
+angle|measured_in|degrees or radians|1.0
+right_angle|equals|90 degrees|1.0
+straight_angle|equals|180 degrees|1.0
+full_rotation|equals|360 degrees|1.0
+acute_angle|is|less than 90 degrees|1.0
+obtuse_angle|is|between 90 and 180 degrees|1.0
+complementary_angles|sum_to|90 degrees|1.0
+supplementary_angles|sum_to|180 degrees|1.0
+triangle_angles|sum_to|180 degrees|1.0
+equilateral_triangle|has|all sides equal|1.0
+isosceles_triangle|has|two sides equal|1.0
+scalene_triangle|has|no sides equal|1.0
+pythagorean_theorem|states|a^2 plus b^2 equals c^2|1.0
+area_of_rectangle|formula|length times width|1.0
+area_of_triangle|formula|one half base times height|1.0
+area_of_circle|formula|pi times radius squared|1.0
+circumference|formula|2 times pi times radius|1.0
+volume_of_cube|formula|side cubed|1.0
+volume_of_sphere|formula|four thirds pi r cubed|1.0
+volume_of_cylinder|formula|pi r squared times height|1.0
+volume_of_cone|formula|one third pi r squared times height|1.0
+perimeter|is|distance around a shape|1.0
+diagonal_of_square|equals|side times sqrt 2|1.0
+surface_area_sphere|formula|4 pi r squared|1.0
+similar_triangles|have|proportional sides|1.0
+congruent_shapes|have|same size and shape|1.0
+parallel_lines|have|same slope|1.0
+perpendicular_lines|have|negative reciprocal slopes|1.0
+tangent_line|touches|circle at exactly one point|1.0
+chord|is|line segment within circle|1.0
+diameter|is|longest chord equals 2r|1.0
+radius|is|distance from center to edge of circle|1.0
+sine|is|opposite over hypotenuse|1.0
+cosine|is|adjacent over hypotenuse|1.0
+tangent|is|opposite over adjacent|1.0
+sin_0|equals|0|1.0
+sin_30|equals|0.5|1.0
+sin_45|equals|sqrt2 over 2|1.0
+sin_60|equals|sqrt3 over 2|1.0
+sin_90|equals|1|1.0
+cos_0|equals|1|1.0
+cos_90|equals|0|1.0
+tan_45|equals|1|1.0
+pythagorean_identity|states|sin^2 plus cos^2 equals 1|1.0
+law_of_sines|relates|sides and angles in any triangle|1.0
+law_of_cosines|generalizes|Pythagorean theorem|1.0
+radian|equals|approximately 57.3 degrees|1.0
+pi_radians|equals|180 degrees|1.0
+unit_circle|has|radius 1 centered at origin|1.0
+period_of_sine|is|2 pi|1.0
+amplitude|is|maximum displacement from center|1.0
+derivative|measures|instantaneous rate of change|1.0
+integral|measures|accumulated quantity or area under curve|1.0
+limit|describes|value function approaches|1.0
+derivative_of_x^n|is|n times x^(n-1)|1.0
+derivative_of_sin|is|cos|1.0
+derivative_of_cos|is|negative sin|1.0
+derivative_of_e^x|is|e^x|1.0
+derivative_of_ln_x|is|1 over x|1.0
+chain_rule|multiplies|outer derivative by inner derivative|1.0
+product_rule|is|first times derivative second plus second times derivative first|1.0
+quotient_rule|is|low d high minus high d low over low squared|1.0
+fundamental_theorem_calculus|connects|differentiation and integration|1.0
+integral_of_x^n|is|x^(n+1) over (n+1) plus C|1.0
+definite_integral|gives|exact area under curve between bounds|1.0
+indefinite_integral|includes|constant of integration C|1.0
+integration_by_parts|formula|integral u dv equals uv minus integral v du|1.0
+mean_value_theorem|guarantees|point where derivative equals average rate|0.95
+lhopitals_rule|evaluates|indeterminate forms 0/0 or inf/inf|0.95
+taylor_series|approximates|function as infinite polynomial|0.95
+maclaurin_series|is|Taylor series centered at zero|0.95
+convergence|means|series approaches finite value|0.95
+divergence|means|series does not approach finite value|0.95
+mean|is|sum of values divided by count|1.0
+median|is|middle value when sorted|1.0
+mode|is|most frequently occurring value|1.0
+range|is|maximum minus minimum|1.0
+standard_deviation|measures|spread of data from mean|1.0
+variance|is|standard deviation squared|1.0
+normal_distribution|is|bell-shaped symmetric curve|1.0
+68_95_99_rule|states|percent within 1 2 3 standard deviations|0.95
+probability|ranges_from|0 to 1|1.0
+probability_of_certain|equals|1|1.0
+probability_of_impossible|equals|0|1.0
+independent_events|have|no effect on each other|1.0
+conditional_probability|is|probability given another event occurred|0.95
+bayes_theorem|updates|probability with new evidence|0.95
+permutation|is|ordered arrangement|1.0
+combination|is|unordered selection|1.0
+n_choose_k|formula|n factorial over k factorial times n-k factorial|1.0
+expected_value|is|long-run average of random variable|0.95
+law_of_large_numbers|states|average converges to expected value|0.95
+central_limit_theorem|states|sample means approach normal distribution|0.95
+correlation|measures|linear relationship strength|0.95
+regression|finds|best-fit line through data|0.95
+p_value|measures|evidence against null hypothesis|0.9
+confidence_interval|estimates|range containing true parameter|0.9
+hypothesis_test|decides|whether to reject null hypothesis|0.9
+prime_factorization|breaks|number into product of primes|1.0
+gcd|is|greatest common divisor|1.0
+lcm|is|least common multiple|1.0
+euclidean_algorithm|finds|GCD efficiently|0.95
+fundamental_theorem_arithmetic|states|every integer has unique prime factorization|1.0
+modular_arithmetic|uses|remainders after division|0.95
+fibonacci_sequence|starts|0 1 1 2 3 5 8 13 21|1.0
+fibonacci_ratio|approaches|golden ratio|0.95
+prime_numbers_infinite|proved_by|Euclid|0.95
+twin_primes|are|primes differing by 2|0.9
+mersenne_prime|has_form|2^p minus 1 where p is prime|0.9
+fermat_last_theorem|states|no integer solutions to a^n+b^n=c^n for n>2|0.95
+riemann_hypothesis|is|unsolved millennium problem|0.9
+goldbach_conjecture|states|every even integer greater than 2 is sum of two primes|0.9
+matrix|is|rectangular array of numbers|1.0
+vector|has|magnitude and direction|1.0
+dot_product|gives|scalar from two vectors|1.0
+cross_product|gives|vector perpendicular to two vectors|1.0
+determinant|is|scalar value from square matrix|1.0
+inverse_matrix|when_multiplied|gives identity matrix|1.0
+identity_matrix|has|ones on diagonal zeros elsewhere|1.0
+eigenvalue|scales|eigenvector under transformation|0.95
+eigenvector|maintains|direction under transformation|0.95
+rank_of_matrix|is|number of linearly independent rows or columns|0.9
+linear_independence|means|no vector is combination of others|0.95
+basis|spans|vector space with minimal vectors|0.9
+dimension|is|number of vectors in basis|0.9
+transpose|flips|matrix along diagonal|1.0
+symmetric_matrix|equals|its own transpose|0.9
+orthogonal_vectors|have|dot product of zero|0.95
+binomial_theorem|expands|(a+b)^n|0.95
+pascals_triangle|gives|binomial coefficients|0.95
+eulers_formula|states|e^(i*pi) plus 1 equals 0|1.0
+eulers_identity|connects|five fundamental constants|1.0
+de_moivres_theorem|raises|complex numbers to powers|0.9
+cauchy_schwarz|states|dot product squared leq product of norms squared|0.9
+triangle_inequality|states|sum of two sides greater than third|1.0
+am_gm_inequality|states|arithmetic mean geq geometric mean|0.9
+pigeonhole_principle|states|n+1 items in n boxes means one box has 2|0.95
+inclusion_exclusion|counts|union of sets correctly|0.9
+mathematical_induction|proves|statements for all natural numbers|1.0
+proof_by_contradiction|assumes|opposite and derives contradiction|1.0
+proof_by_contrapositive|proves|contrapositive instead of direct|0.9
+direct_proof|shows|hypothesis implies conclusion|1.0
+set_theory|studies|collections of objects|0.95
+union|combines|all elements of two sets|1.0
+intersection|finds|common elements of two sets|1.0
+empty_set|contains|no elements|1.0
+subset|is|set contained within another set|1.0
+cardinality|counts|number of elements in set|0.95
+countable_infinity|is|cardinality of natural numbers|0.9
+uncountable_infinity|is|cardinality of real numbers|0.9
+distance_formula|is|sqrt of (x2-x1)^2 plus (y2-y1)^2|1.0
+midpoint_formula|is|(x1+x2)/2 and (y1+y2)/2|1.0
+circle_equation|is|(x-h)^2 plus (y-k)^2 equals r^2|1.0
+ellipse_equation|is|x^2/a^2 plus y^2/b^2 equals 1|0.95
+parabola_equation|is|y equals ax^2 plus bx plus c|1.0
+hyperbola_equation|is|x^2/a^2 minus y^2/b^2 equals 1|0.9
+arithmetic_sequence|has|constant difference between terms|1.0
+geometric_sequence|has|constant ratio between terms|1.0
+arithmetic_sum|formula|n/2 times first plus last|1.0
+geometric_sum|formula|a times (1-r^n) over (1-r)|1.0
+infinite_geometric_sum|formula|a over (1-r) when |r|<1|0.95
+sum_of_first_n|formula|n times (n+1) over 2|1.0
+sum_of_squares|formula|n(n+1)(2n+1) over 6|0.95
+compound_interest|formula|P times (1+r/n)^(nt)|1.0
+simple_interest|formula|P times r times t|1.0
+exponential_growth|formula|A equals A0 times e^(kt)|0.95
+exponential_decay|formula|A equals A0 times e^(-kt)|0.95
+logistic_growth|formula|L over (1 plus e^(-k(x-x0)))|0.9
+area_of_trapezoid|formula|half times (a+b) times h|1.0
+area_of_parallelogram|formula|base times height|1.0
+area_of_rhombus|formula|half times d1 times d2|0.95
+area_of_regular_polygon|formula|half times perimeter times apothem|0.9
+herons_formula|finds|triangle area from three sides|0.95
+arc_length|formula|radius times angle in radians|1.0
+sector_area|formula|half times r squared times theta|0.95
+surface_area_cylinder|formula|2*pi*r^2 plus 2*pi*r*h|0.95
+surface_area_cone|formula|pi*r^2 plus pi*r*slant_height|0.9
+volume_of_rectangular_prism|formula|length times width times height|1.0
+volume_of_pyramid|formula|one third base area times height|1.0
+volume_of_torus|formula|2*pi^2*R*r^2|0.85
+boolean_logic|uses|AND OR NOT operations|1.0
+truth_table|lists|all possible input output combinations|1.0
+de_morgans_law|states|NOT (A AND B) equals (NOT A) OR (NOT B)|1.0
+tautology|is|always true statement|0.95
+contradiction|is|always false statement|0.95
+contrapositive|of_p_implies_q|is NOT q implies NOT p|0.95
+converse|of_p_implies_q|is q implies p|0.95
+biconditional|means|if and only if|0.95
+graph_theory|studies|vertices and edges|0.95
+tree|is|connected graph with no cycles|0.95
+complete_graph|has|edge between every pair of vertices|0.9
+planar_graph|can_be|drawn without crossing edges|0.9
+eulers_formula_graphs|states|V minus E plus F equals 2|0.9
+hamiltonian_path|visits|every vertex exactly once|0.9
+eulerian_path|visits|every edge exactly once|0.9
+chromatic_number|is|minimum colors to color graph|0.85
+four_color_theorem|states|any map needs at most 4 colors|0.9
+binary_number|uses|base 2|1.0
+hexadecimal|uses|base 16|1.0
+octal|uses|base 8|0.95
+ordinary_diff_eq|involves|functions of one variable|0.95
+partial_diff_eq|involves|functions of multiple variables|0.9
+first_order_linear|has_form|dy/dx plus P(x)y equals Q(x)|0.9
+separable_equation|can_be|written as f(y)dy equals g(x)dx|0.9
+homogeneous_equation|has|all terms containing y|0.85
+characteristic_equation|solves|linear diff eq with constant coefficients|0.85
+laplace_transform|converts|diff eq to algebraic equation|0.85
+fourier_series|represents|periodic function as sum of sines and cosines|0.9
+fourier_transform|converts|function from time to frequency domain|0.9
+topology|studies|properties preserved under continuous deformation|0.9
+homeomorphism|is|continuous bijection with continuous inverse|0.85
+open_set|is|fundamental concept in topology|0.85
+compact_set|is|closed and bounded in Euclidean space|0.85
+connected_space|cannot_be|split into disjoint open sets|0.8
+group|is|set with associative binary operation identity and inverses|0.9
+ring|is|group under addition with multiplication|0.85
+field|is|ring where every nonzero element has multiplicative inverse|0.85
+vector_space|has|addition and scalar multiplication|0.9
+isomorphism|preserves|structure between algebraic objects|0.85
+homomorphism|is|structure-preserving map|0.85
+optimization|finds|maximum or minimum of function|0.95
+gradient|points|in direction of steepest ascent|0.95
+gradient_descent|iteratively|minimizes a function|0.95
+newton_method|approximates|roots of equations|0.95
+bisection_method|finds|roots by halving interval|0.9
+simpsons_rule|approximates|definite integrals|0.9
+trapezoidal_rule|approximates|integrals using trapezoids|0.9
+euler_method|approximates|solutions to ODEs|0.9
+runge_kutta|more_accurately|approximates ODE solutions|0.85
+monte_carlo|uses|random sampling for computation|0.9
+linear_programming|optimizes|linear objective with constraints|0.9
+simplex_method|solves|linear programming problems|0.85
+convex_optimization|has|single global minimum|0.85
+markov_chain|describes|sequence of events with transition probabilities|0.9
+random_walk|is|path of random steps|0.9
+fractal|has|self-similar structure at different scales|0.9
+mandelbrot_set|is|famous fractal in complex plane|0.85
+chaos_theory|studies|sensitive dependence on initial conditions|0.9
+butterfly_effect|shows|small changes causing large effects|0.9
+game_theory|studies|strategic decision making|0.95
+nash_equilibrium|is|stable state where no player benefits from changing strategy|0.9
+zero_sum_game|means|one players gain equals others loss|0.9
+prisoners_dilemma|demonstrates|conflict between cooperation and self-interest|0.9

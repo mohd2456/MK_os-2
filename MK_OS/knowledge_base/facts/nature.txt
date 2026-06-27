@@ -1,0 +1,306 @@
+blue_whale|is|largest animal ever lived up to 30 meters|1.0
+blue_whale|weighs|up to 150 tons|0.95
+african_elephant|is|largest land animal up to 6 tons|1.0
+giraffe|is|tallest living animal up to 5.5 meters|1.0
+cheetah|runs|up to 120 km/h fastest land animal|1.0
+peregrine_falcon|dives|at over 380 km/h fastest animal|1.0
+sailfish|is|fastest fish up to 110 km/h|0.9
+ostrich|is|largest bird cannot fly|1.0
+hummingbird|is|smallest bird can hover|0.95
+bee_hummingbird|is|smallest bird at 5 cm|0.9
+komodo_dragon|is|largest living lizard|0.95
+saltwater_crocodile|is|largest living reptile|0.95
+anaconda|is|heaviest snake|0.9
+king_cobra|is|longest venomous snake|0.9
+whale_shark|is|largest fish|0.95
+great_white_shark|is|largest predatory fish|0.95
+giant_squid|has|largest eyes in animal kingdom|0.9
+octopus|has|three hearts and blue blood|0.95
+octopus|is|highly intelligent invertebrate|0.9
+dolphin|is|highly intelligent marine mammal|1.0
+dolphin|uses|echolocation to navigate|0.95
+bat|is|only mammal that can truly fly|1.0
+bat|uses|echolocation to find prey|0.95
+platypus|is|egg-laying mammal|1.0
+platypus|has|venomous spurs|0.9
+koala|eats|only eucalyptus leaves|0.95
+panda|eats|primarily bamboo|1.0
+sloth|is|slowest mammal|0.95
+gorilla|is|largest living primate|0.95
+gorilla|shares|98 percent DNA with humans|0.9
+chimpanzee|is|closest living relative to humans|1.0
+chimpanzee|uses|tools in the wild|0.95
+elephant|has|excellent memory|0.95
+elephant|communicates|through infrasound|0.9
+wolf|hunts|in packs|1.0
+lion|is|only social cat species|0.9
+lion_male|has|mane|1.0
+tiger|is|largest cat species|1.0
+polar_bear|is|largest land carnivore|0.95
+penguin|is|flightless bird that swims|1.0
+emperor_penguin|survives|Antarctic winters|0.95
+albatross|has|largest wingspan up to 3.5 meters|0.9
+eagle|has|exceptional vision|0.95
+owl|can|rotate head 270 degrees|0.95
+owl|hunts|primarily at night|0.95
+parrot|can|mimic human speech|0.95
+crow|is|highly intelligent bird|0.9
+crow|can|use tools and solve puzzles|0.9
+honeybee|communicates|through waggle dance|0.95
+ant_colony|has|complex social structure|0.95
+monarch_butterfly|migrates|thousands of miles annually|0.95
+chameleon|can|change color|1.0
+gecko|can|walk on walls and ceilings|0.95
+sea_turtle|can_live|over 100 years|0.9
+tortoise|can_live|over 150 years|0.9
+jellyfish|has|no brain heart or blood|0.95
+starfish|can|regenerate lost arms|0.95
+seahorse|male|carries and births young|0.95
+electric_eel|generates|up to 860 volts|0.9
+axolotl|can|regenerate limbs and organs|0.9
+tardigrade|survives|extreme conditions including space|0.95
+mantis_shrimp|has|most complex eyes in animal kingdom|0.85
+pistol_shrimp|creates|shockwave with claw snap|0.85
+bombardier_beetle|sprays|boiling chemical defense|0.85
+archerfish|shoots|water to knock down insects|0.85
+mimic_octopus|imitates|other marine animals|0.85
+cuttlefish|changes|skin pattern instantly|0.9
+firefly|produces|bioluminescent light|0.95
+anglerfish|uses|bioluminescent lure|0.9
+salmon|returns|to birthplace to spawn|0.95
+arctic_tern|migrates|from Arctic to Antarctic yearly|0.9
+sequoia|is|tallest tree species over 100 meters|0.95
+baobab|can_live|over 1000 years|0.9
+bristlecone_pine|is|oldest living tree over 5000 years|0.9
+venus_flytrap|catches|insects by closing leaves|1.0
+pitcher_plant|traps|insects in liquid-filled cup|0.95
+sundew|traps|insects with sticky tentacles|0.9
+bamboo|is|fastest growing plant up to 91 cm per day|0.95
+rafflesia|produces|largest flower up to 1 meter|0.9
+titan_arum|produces|tallest flower structure|0.85
+cactus|stores|water in stem for desert survival|1.0
+mangrove|grows|in saltwater coastal areas|0.95
+moss|is|non-vascular plant|0.9
+fern|reproduces|through spores not seeds|0.95
+oak_tree|can_live|over 500 years|0.9
+redwood|is|among tallest and oldest organisms|0.9
+dandelion|spreads|seeds by wind|0.95
+coconut_palm|spreads|seeds by ocean currents|0.9
+lotus|can|bloom in muddy water|0.9
+algae|produces|most of earths oxygen|0.9
+kelp|is|fastest growing marine organism|0.85
+lichen|is|symbiosis of fungus and algae|0.9
+mistletoe|is|parasitic plant on trees|0.9
+orchid|is|largest family of flowering plants|0.9
+sunflower|follows|the sun during the day|0.9
+rose|is|most popular ornamental flower|0.85
+tulip|originated|from Central Asia|0.85
+wheat|is|most widely grown crop globally|0.9
+rice|feeds|more than half world population|0.9
+corn|is|most produced grain in the world|0.85
+potato|is|most important non-cereal crop|0.85
+coffee_plant|originated|from Ethiopia|0.9
+tea_plant|originated|from China|0.9
+rubber_tree|produces|natural rubber latex|0.9
+willow_bark|contains|salicin basis for aspirin|0.85
+foxglove|source_of|digitalis heart medicine|0.85
+aloe_vera|has|medicinal healing properties|0.9
+lavender|has|calming aromatic properties|0.85
+coral_reef|supports|25 percent of marine species|0.95
+rainforest|contains|over half of all species|0.9
+wetland|filters|water and prevents flooding|0.9
+estuary|is|where river meets ocean|0.95
+tide_pool|is|marine habitat in rocky shore|0.85
+kelp_forest|supports|diverse marine ecosystem|0.85
+deep_sea|is|largest habitat on Earth|0.9
+hydrothermal_vent|supports|life without sunlight|0.95
+grassland|covers|about 40 percent of Earths land|0.85
+boreal_forest|is|largest land biome|0.9
+mangrove_forest|protects|coastlines from erosion|0.9
+old_growth_forest|has|never been logged|0.9
+alpine_ecosystem|exists|above tree line on mountains|0.85
+desert_ecosystem|has|organisms adapted to extreme heat and drought|0.9
+freshwater_ecosystem|includes|rivers lakes ponds wetlands|0.95
+marine_ecosystem|covers|71 percent of Earths surface|0.95
+food_web|shows|complex feeding relationships|0.95
+keystone_species|has|disproportionate effect on ecosystem|0.9
+apex_predator|has|no natural predators|0.95
+invasive_species|can|devastate native ecosystems|0.95
+biodiversity_hotspot|has|high species richness under threat|0.9
+deforestation|destroys|1 percent of rainforest per year|0.85
+ocean_acidification|threatens|shell-forming organisms|0.9
+eutrophication|causes|algal blooms from excess nutrients|0.85
+desertification|expands|desert due to climate and human activity|0.9
+weather|is|short-term atmospheric conditions|1.0
+climate|is|long-term weather patterns|1.0
+atmosphere|has|five main layers|0.95
+troposphere|is|lowest layer where weather occurs|0.95
+stratosphere|contains|ozone layer|0.95
+ozone_layer|absorbs|harmful UV radiation|1.0
+greenhouse_effect|traps|heat in atmosphere|1.0
+carbon_dioxide|is|major greenhouse gas|1.0
+methane|is|potent greenhouse gas|0.95
+global_warming|is|increase in average Earth temperature|1.0
+ice_age|is|period of extensive glaciation|0.95
+last_ice_age|ended|approximately 11700 years ago|0.9
+hurricane|forms_over|warm tropical ocean water|1.0
+tornado|forms_from|severe thunderstorms|1.0
+lightning|is|electrical discharge in storm|1.0
+thunder|is|sound of rapid air expansion from lightning|1.0
+hailstorm|produces|ice stones from strong updrafts|0.9
+blizzard|is|severe snowstorm with strong winds|0.9
+drought|is|extended period of below-normal rainfall|1.0
+flood|is|overflow of water onto normally dry land|1.0
+tsunami|is|giant ocean wave from seismic activity|1.0
+avalanche|is|rapid flow of snow down slope|0.95
+landslide|is|mass movement of rock and soil downhill|0.9
+waterspout|is|tornado over water|0.85
+dust_storm|occurs_in|arid regions with strong winds|0.9
+monsoon_season|brings|heavy rainfall to tropical regions|0.95
+el_nino_event|occurs|every 2-7 years|0.85
+polar_vortex|is|large area of cold air near poles|0.85
+jet_stream|influences|weather patterns globally|0.9
+trade_winds|blow|from subtropical highs toward equator|0.85
+earth_core|is|mostly iron and nickel|0.95
+earth_mantle|is|thickest layer of Earth|0.95
+earth_crust|is|thinnest outer layer 5-70 km|0.95
+continental_crust|is|thicker than oceanic crust|0.9
+plate_tectonics|drives|earthquakes and volcanism|1.0
+igneous_rock|formed_from|cooled magma or lava|1.0
+sedimentary_rock|formed_from|accumulated sediments|1.0
+metamorphic_rock|formed_from|heat and pressure on existing rock|1.0
+granite|is|common igneous rock|0.95
+basalt|is|most common igneous rock on Earth surface|0.9
+limestone|is|sedimentary rock from calcium carbonate|0.95
+marble|is|metamorphic rock from limestone|0.95
+diamond|is|hardest natural material|1.0
+diamond|made_of|carbon under extreme pressure|1.0
+fossil|is|preserved remains of ancient organism|1.0
+mineral|is|naturally occurring inorganic solid|0.95
+volcano|erupts|when magma reaches surface|1.0
+earthquake|caused_by|sudden release of built-up stress|1.0
+seismograph|measures|earthquake intensity|0.95
+richter_scale|measures|earthquake magnitude logarithmically|0.95
+erosion|wears_away|rock and soil over time|1.0
+weathering|breaks_down|rocks through physical and chemical processes|0.95
+glacier|is|slow-moving mass of ice|1.0
+glacier|carves|valleys and deposits moraines|0.95
+water_table|is|upper level of groundwater|0.9
+aquifer|is|underground water-bearing rock|0.9
+stalactite|grows|down from cave ceiling|0.95
+stalagmite|grows|up from cave floor|0.95
+geode|is|rock with crystal-lined cavity inside|0.85
+petrified_wood|is|wood replaced by minerals over millions of years|0.9
+migration|is|seasonal movement of animals|1.0
+hibernation|is|state of reduced activity in winter|1.0
+metamorphosis|is|transformation in life cycle|1.0
+pollination|transfers|pollen enabling plant reproduction|1.0
+seed_dispersal|spreads|plants to new areas|0.95
+photosynthesis|converts|light to chemical energy in plants|1.0
+decomposition|returns|nutrients to soil|1.0
+nitrogen_fixation|converts|atmospheric nitrogen to usable form|0.9
+carbon_cycle|circulates|carbon through living and non-living systems|0.95
+water_cycle|circulates|water through evaporation precipitation runoff|1.0
+oxygen_cycle|maintains|atmospheric oxygen levels|0.9
+tides|caused_by|gravitational pull of moon and sun|1.0
+seasons|caused_by|Earths axial tilt|1.0
+day_night|caused_by|Earths rotation|1.0
+lunar_phases|caused_by|moons orbit around Earth|1.0
+spring_equinox|has|equal day and night length|0.95
+summer_solstice|has|longest day in hemisphere|0.95
+autumn_equinox|has|equal day and night length|0.95
+winter_solstice|has|shortest day in hemisphere|0.95
+circadian_rhythm|is|natural 24-hour biological cycle|0.9
+hippopotamus|is|third largest land mammal|0.9
+rhinoceros|is|second largest land mammal|0.9
+kangaroo|carries|joey in pouch|1.0
+kangaroo|is|native to Australia|1.0
+flamingo|is|pink from carotenoids in diet|0.9
+woodpecker|has|shock-absorbing skull|0.85
+hummingbird|beats_wings|up to 80 times per second|0.9
+arctic_fox|changes|coat color with seasons|0.9
+chameleon|has|independently moving eyes|0.9
+spider|produces|silk stronger than steel by weight|0.9
+black_widow|has|venomous bite|0.95
+tarantula|is|largest spider|0.9
+scorpion|glows|under ultraviolet light|0.85
+cockroach|can_survive|weeks without head|0.85
+ant|can_lift|50 times its body weight|0.9
+termite|builds|mounds up to 9 meters tall|0.85
+butterfly|tastes_with|its feet|0.85
+dragonfly|is|one of oldest insect species|0.85
+praying_mantis|female|sometimes eats male after mating|0.85
+caterpillar|has|12 eyes|0.8
+snail|can_sleep|for three years|0.8
+goldfish|has|memory longer than three seconds|0.85
+clownfish|lives_in|sea anemones|0.9
+hammerhead_shark|has|360 degree vision|0.85
+great_white|can_detect|single drop of blood in 100 liters|0.85
+blue_ringed_octopus|is|one of most venomous marine animals|0.85
+narwhal|has|long spiral tusk|0.9
+beluga_whale|is|called canary of the sea|0.8
+manatee|is|gentle marine herbivore|0.85
+sea_otter|uses|rocks as tools to open shells|0.9
+beaver|builds|dams to create ponds|0.95
+mole|digs|extensive underground tunnels|0.9
+pangolin|is|most trafficked mammal|0.85
+snow_leopard|lives|in high mountain regions|0.9
+jaguar|is|strongest bite of big cats|0.85
+hyena|has|strongest bite force among mammals|0.85
+elephant_seal|can_dive|to 1500 meters depth|0.8
+sperm_whale|can_dive|to 2000 meters depth|0.85
+flying_fish|glides|above water to escape predators|0.85
+pufferfish|inflates|body as defense mechanism|0.9
+poison_dart_frog|has|toxic skin from diet|0.9
+axolotl|is|permanently aquatic salamander from Mexico|0.85
+komodo_dragon|has|bacteria-laden bite causing infection|0.85
+crocodile|has|strongest bite measured in animal kingdom|0.9
+albatross|can_fly|for years without landing|0.85
+swift|sleeps|while flying|0.8
+emperor_penguin|can_dive|to 500 meters|0.85
+kakapo|is|only flightless parrot|0.8
+cassowary|is|most dangerous bird|0.8
+corpse_flower|smells|like rotting flesh to attract pollinators|0.85
+strangler_fig|grows|around host tree eventually killing it|0.85
+epiphyte|grows|on other plants without parasitizing|0.9
+mycelium|is|underground fungal network connecting trees|0.9
+trees_communicate|through|mycelial fungal networks|0.85
+oldest_tree|is|over 5000 years old bristlecone pine|0.9
+tallest_tree|is|Hyperion redwood at 115.7 meters|0.85
+heaviest_organism|is|Pando aspen grove single root system|0.8
+largest_flower|is|Rafflesia arnoldii at 1 meter|0.85
+smallest_flower|is|Wolffia globosa|0.8
+largest_seed|is|coco de mer palm|0.8
+smallest_seed|is|orchid seed|0.8
+oldest_seed_germinated|was|2000 year old date palm|0.8
+welwitschia|can_live|over 1000 years with just two leaves|0.8
+amazon_water_lily|has|leaves up to 3 meters wide|0.8
+banyan_tree|has|aerial roots forming new trunks|0.85
+mangrove_roots|filter|salt from seawater|0.85
+carnivorous_plants|get|nutrients from captured insects|0.95
+resurrection_plant|survives|complete desiccation|0.8
+seagrass_meadow|stores|carbon more efficiently than forests|0.8
+highest_temperature_recorded|is|56.7 C in Death Valley 1913|0.85
+lowest_temperature_recorded|is|minus 89.2 C Vostok Antarctica 1983|0.85
+wettest_place|is|Mawsynram India 11871 mm rainfall|0.8
+driest_place|is|Atacama Desert parts with no recorded rain|0.85
+windiest_place|is|Mount Washington recorded 372 km/h|0.8
+largest_hailstone|was|20 cm diameter in Bangladesh 1986|0.75
+tallest_cloud|cumulonimbus|can reach 20 km height|0.85
+snowflake|is|unique crystalline ice structure|0.9
+fog|forms_when|air temperature meets dew point|0.9
+frost|forms_when|surfaces cool below freezing|0.9
+rainbow|is|spectrum of light refracted by water drops|1.0
+double_rainbow|has|reversed color order in second arc|0.85
+ball_lightning|is|rare atmospheric phenomenon|0.75
+st_elmos_fire|is|electrical weather phenomenon|0.75
+worm|aerates|soil through burrowing|0.9
+earthworm|has|five hearts|0.85
+leech|was_used|in medicine historically|0.8
+coral_bleaching|occurs_when|water temperature rises|0.9
+plankton|forms|base of ocean food chain|0.95
+krill|is|key food source in Antarctic|0.9
+bioluminescence|produces|light in deep sea organisms|0.9
+symbiosis_example|clownfish_and|sea anemone|0.85
+parasitism_example|tick_feeds|on blood of host|0.9
+mutualism_example|bee_and|flower pollination|0.95
