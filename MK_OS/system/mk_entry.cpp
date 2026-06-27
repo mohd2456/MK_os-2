@@ -20,6 +20,40 @@
 #include <algorithm>
 
 // ============================================================
+// ANSI Color & Style Codes
+// ============================================================
+namespace Color {
+    // Reset
+    const char* RESET   = "\033[0m";
+    // Styles
+    const char* BOLD    = "\033[1m";
+    const char* DIM     = "\033[2m";
+    const char* ITALIC  = "\033[3m";
+    const char* UNDER   = "\033[4m";
+    // Foreground colors
+    const char* BLACK   = "\033[30m";
+    const char* RED     = "\033[31m";
+    const char* GREEN   = "\033[32m";
+    const char* YELLOW  = "\033[33m";
+    const char* BLUE    = "\033[34m";
+    const char* MAGENTA = "\033[35m";
+    const char* CYAN    = "\033[36m";
+    const char* WHITE   = "\033[37m";
+    // Bright variants
+    const char* BRED    = "\033[91m";
+    const char* BGREEN  = "\033[92m";
+    const char* BYELLOW = "\033[93m";
+    const char* BBLUE   = "\033[94m";
+    const char* BMAGENTA= "\033[95m";
+    const char* BCYAN   = "\033[96m";
+    const char* BWHITE  = "\033[97m";
+    // Background
+    const char* BG_BLACK = "\033[40m";
+    const char* BG_BLUE  = "\033[44m";
+    const char* BG_CYAN  = "\033[46m";
+}
+
+// ============================================================
 // Include real module implementations
 // ============================================================
 #include "diagnostics.cpp"
@@ -49,13 +83,19 @@ static void mk_signal_handler(int sig) {
 // MK Banner
 // ============================================================
 static void print_banner() {
-    std::cout << R"(
-    =====================================================
-    |   MK OS - Hybrid Reasoning Engine v2.0            |
-    |   Custom AI Operating System                      |
-    |   Built for low-end hardware. Thinks like a human.|
-    =====================================================
-)" << std::endl;
+    std::cout << Color::BCYAN << Color::BOLD << R"(
+    ╔══════════════════════════════════════════════════════════╗
+    ║)" << Color::BWHITE << "   ███╗   ███╗██╗  ██╗     ██████╗ ███████╗             " << Color::BCYAN << R"(║
+    ║)" << Color::BWHITE << "   ████╗ ████║██║ ██╔╝    ██╔═══██╗██╔════╝             " << Color::BCYAN << R"(║
+    ║)" << Color::BWHITE << "   ██╔████╔██║█████╔╝     ██║   ██║███████╗             " << Color::BCYAN << R"(║
+    ║)" << Color::BWHITE << "   ██║╚██╔╝██║██╔═██╗     ██║   ██║╚════██║             " << Color::BCYAN << R"(║
+    ║)" << Color::BWHITE << "   ██║ ╚═╝ ██║██║  ██╗    ╚██████╔╝███████║             " << Color::BCYAN << R"(║
+    ║)" << Color::BWHITE << "   ╚═╝     ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚══════╝             " << Color::BCYAN << R"(║
+    ║                                                          ║
+    ║)" << Color::GREEN << "   Hybrid Reasoning Engine v2.0                          " << Color::BCYAN << R"( ║
+    ║)" << Color::DIM << Color::WHITE << "   Accuracy-First AI • Runs Locally • Never Hallucin" << Color::BCYAN << R"(ates  ║
+    ╚══════════════════════════════════════════════════════════╝
+)" << Color::RESET << std::endl;
 }
 
 // ============================================================
@@ -103,23 +143,69 @@ static std::string trim(const std::string& s) {
 // ============================================================
 
 static void cmd_help() {
-    std::cout << "\n  MK OS Commands:\n"
-              << "    /help             - Show this help\n"
-              << "    /ask <query>      - Knowledge graph lookup\n"
-              << "    /search <query>   - Internet search (cited answer)\n"
-              << "    /status           - System diagnostics and module stats\n"
-              << "    /learn <s|r|t>    - Add fact (source|relation|target)\n"
-              << "    /weather <city>   - Get weather for a city\n"
-              << "    /time [timezone]  - Get current time\n"
-              << "    /news             - Latest tech news headlines\n"
-              << "    /think <topic>    - Deep multi-hop reasoning\n"
-              << "    /quit             - Save and exit\n"
-              << "\n  Or just type naturally and MK will route your query.\n\n";
+    std::cout << "\n"
+        << Color::BOLD << Color::BCYAN << "  ╭─────────────────────────────────────────────╮\n"
+        << "  │           MK OS — COMMAND REFERENCE          │\n"
+        << "  ╰─────────────────────────────────────────────╯\n" << Color::RESET << "\n"
+        << Color::BOLD << Color::YELLOW << "  ⚡ KNOWLEDGE" << Color::RESET << "\n"
+        << "    " << Color::GREEN << "/ask" << Color::RESET << " <query>       Look up facts in knowledge graph\n"
+        << "    " << Color::GREEN << "/think" << Color::RESET << " <topic>    Deep multi-hop reasoning\n"
+        << "    " << Color::GREEN << "/learn" << Color::RESET << " <s|r|t>    Teach MK a new fact (source|relation|target)\n"
+        << "\n"
+        << Color::BOLD << Color::YELLOW << "  🌐 INTERNET" << Color::RESET << "\n"
+        << "    " << Color::GREEN << "/search" << Color::RESET << " <query>   Internet search (verified + cited)\n"
+        << "    " << Color::GREEN << "/weather" << Color::RESET << " <city>   Live weather for any city\n"
+        << "    " << Color::GREEN << "/time" << Color::RESET << " [timezone]   Current time in any timezone\n"
+        << "    " << Color::GREEN << "/news" << Color::RESET << "              Latest tech headlines\n"
+        << "\n"
+        << Color::BOLD << Color::YELLOW << "  🖥️  SYSTEM" << Color::RESET << "\n"
+        << "    " << Color::GREEN << "/status" << Color::RESET << "            Full system diagnostics\n"
+        << "    " << Color::GREEN << "/quit" << Color::RESET << "              Save and exit\n"
+        << "\n"
+        << Color::DIM << "  Or just type naturally — MK will figure out what you mean.\n"
+        << "  Example: \"what is python?\" or \"weather in london\"\n" << Color::RESET << "\n";
+}
+
+// Show command suggestions when user types just "/"
+static void show_slash_suggestions(const std::string& partial) {
+    struct CmdInfo {
+        const char* cmd;
+        const char* desc;
+    };
+    static const CmdInfo all_commands[] = {
+        {"/ask",     "Knowledge graph lookup"},
+        {"/search",  "Internet search (cited)"},
+        {"/think",   "Deep reasoning"},
+        {"/learn",   "Teach MK a fact"},
+        {"/weather", "Live weather"},
+        {"/time",    "Current time"},
+        {"/news",    "Tech headlines"},
+        {"/status",  "System diagnostics"},
+        {"/help",    "Show all commands"},
+        {"/quit",    "Save and exit"},
+    };
+
+    std::vector<const CmdInfo*> matches;
+    for (const auto& ci : all_commands) {
+        std::string cmd_str(ci.cmd);
+        if (cmd_str.find(partial) == 0) {
+            matches.push_back(&ci);
+        }
+    }
+
+    if (matches.empty()) return;
+
+    std::cout << Color::DIM << "\n  Available commands:\n";
+    for (const auto* m : matches) {
+        std::cout << "    " << Color::CYAN << m->cmd << Color::RESET 
+                  << Color::DIM << "  — " << m->desc << Color::RESET << "\n";
+    }
+    std::cout << Color::RESET;
 }
 
 static void cmd_ask(MKSystem& sys, const std::string& query) {
     if (query.empty()) {
-        std::cout << "\n  Usage: /ask <query>\n";
+        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET << " /ask <query>\n";
         return;
     }
     // Try to find info in the knowledge graph
@@ -130,10 +216,12 @@ static void cmd_ask(MKSystem& sys, const std::string& query) {
         if (pathResult.found) {
             std::string raw = query + " is " + pathResult.answer;
             std::string formatted = sys.style.format_response(raw, query, pathResult.confidence);
-            std::cout << "\n  " << formatted << "\n";
+            std::cout << "\n  " << Color::GREEN << "●" << Color::RESET << " " << formatted << "\n";
         } else {
-            std::cout << "\n  No knowledge found for: " << query
-                      << "\n  Try teaching me with /learn or use /search for internet.\n";
+            std::cout << "\n  " << Color::YELLOW << "○" << Color::RESET 
+                      << " No knowledge found for: " << Color::BOLD << query << Color::RESET
+                      << "\n  " << Color::DIM << "Try /learn to teach me or /search for internet." 
+                      << Color::RESET << "\n";
         }
     } else {
         std::string raw;
@@ -141,7 +229,7 @@ static void cmd_ask(MKSystem& sys, const std::string& query) {
             raw += edge.source + " " + edge.relation + " " + edge.target + ". ";
         }
         std::string formatted = sys.style.format_response(raw, query, 0.8f);
-        std::cout << "\n  " << formatted << "\n";
+        std::cout << "\n  " << Color::GREEN << "●" << Color::RESET << " " << formatted << "\n";
     }
 }
 
@@ -174,7 +262,9 @@ static void cmd_status(MKSystem& sys) {
 
 static void cmd_learn(MKSystem& sys, const std::string& fact) {
     if (fact.empty()) {
-        std::cout << "\n  Usage: /learn source|relation|target\n";
+        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET 
+                  << " /learn source|relation|target\n"
+                  << "  " << Color::DIM << "Example: /learn earth|has|moon" << Color::RESET << "\n";
         return;
     }
     // Parse: source|relation|target
@@ -189,7 +279,10 @@ static void cmd_learn(MKSystem& sys, const std::string& fact) {
             return;
         }
         sys.graph.persistNewFact(source, relation, target, 1.0f);
-        std::cout << "\n  Learned: " << source << " " << relation << " " << target << "\n";
+        std::cout << "\n  " << Color::BGREEN << "✓" << Color::RESET << " Learned: " 
+                  << Color::BOLD << source << Color::RESET << " " 
+                  << Color::CYAN << relation << Color::RESET << " " 
+                  << Color::BOLD << target << Color::RESET << "\n";
     } else {
         // Try getting just the remaining part as target
         source = trim(source);
@@ -205,18 +298,21 @@ static void cmd_learn(MKSystem& sys, const std::string& fact) {
 
 static void cmd_weather(MKSystem& sys, const std::string& city) {
     if (city.empty()) {
-        std::cout << "\n  Usage: /weather <city>\n";
+        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET << " /weather <city>\n";
         return;
     }
     auto data = sys.realtimeApis.getWeather(city);
     if (data.valid) {
-        std::cout << "\n  Weather for " << data.city << ":\n"
-                  << "    Temperature: " << data.temperature << " C\n"
-                  << "    Conditions: " << data.description << "\n"
-                  << "    Wind: " << data.windSpeed << " km/h\n"
-                  << "    Humidity: " << data.humidity << "%\n\n";
+        std::cout << "\n  " << Color::BOLD << Color::BCYAN << "☁ Weather" << Color::RESET 
+                  << " for " << Color::BOLD << data.city << Color::RESET << ":\n"
+                  << "    " << Color::BYELLOW << "🌡" << Color::RESET << " Temperature: " 
+                  << Color::BOLD << data.temperature << " °C" << Color::RESET << "\n"
+                  << "    " << Color::WHITE << "☀" << Color::RESET << " Conditions:  " << data.description << "\n"
+                  << "    " << Color::BBLUE << "💨" << Color::RESET << " Wind:        " << data.windSpeed << " km/h\n"
+                  << "    " << Color::BLUE << "💧" << Color::RESET << " Humidity:    " << data.humidity << "%\n\n";
     } else {
-        std::cout << "\n  Could not fetch weather for: " << city << "\n";
+        std::cout << "\n  " << Color::RED << "✗" << Color::RESET 
+                  << " Could not fetch weather for: " << city << "\n";
     }
 }
 
@@ -304,33 +400,39 @@ static void cmd_time(MKSystem& sys, const std::string& timezone) {
 static void cmd_news(MKSystem& sys) {
     auto data = sys.realtimeApis.getTechNews(5);
     if (data.valid && !data.headlines.empty()) {
-        std::cout << "\n  Latest Tech News:\n";
+        std::cout << "\n  " << Color::BOLD << Color::BMAGENTA << "📰 Tech News" << Color::RESET << "\n";
         int i = 1;
         for (const auto& item : data.headlines) {
-            std::cout << "    " << i++ << ". " << item.title;
-            if (item.score > 0) std::cout << " (score: " << item.score << ")";
+            std::cout << "    " << Color::CYAN << i++ << "." << Color::RESET << " " << item.title;
+            if (item.score > 0) std::cout << Color::DIM << " (" << item.score << " pts)" << Color::RESET;
             std::cout << "\n";
         }
         std::cout << "\n";
     } else {
-        std::cout << "\n  Could not fetch news headlines.\n";
+        std::cout << "\n  " << Color::RED << "✗" << Color::RESET 
+                  << " Could not fetch news headlines.\n";
     }
 }
 
 static void cmd_think(MKSystem& sys, const std::string& topic) {
     if (topic.empty()) {
-        std::cout << "\n  Usage: /think <topic>\n";
+        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET << " /think <topic>\n";
         return;
     }
+    std::cout << "  " << Color::DIM << "Thinking..." << Color::RESET << "\n";
     auto chain = sys.reasoner.think(topic, sys.graph);
     if (!chain.finalAnswer.empty()) {
         std::string formatted = sys.style.format_response(chain.finalAnswer, topic, chain.overallConfidence);
-        std::cout << "\n  Deep Reasoning Result (" << chain.steps.size() << " steps, "
-                  << chain.totalHops << " hops):\n"
-                  << "  " << formatted << "\n";
+        std::cout << "\n  " << Color::BMAGENTA << "🧠" << Color::RESET << Color::BOLD 
+                  << " Deep Reasoning" << Color::RESET << Color::DIM 
+                  << " (" << chain.steps.size() << " steps, " << chain.totalHops << " hops)" 
+                  << Color::RESET << "\n"
+                  << "  " << Color::GREEN << "●" << Color::RESET << " " << formatted << "\n";
     } else {
-        std::cout << "\n  Could not find a reasoning path for: " << topic
-                  << "\n  Try teaching me related facts with /learn.\n";
+        std::cout << "\n  " << Color::YELLOW << "○" << Color::RESET 
+                  << " No reasoning path found for: " << Color::BOLD << topic << Color::RESET
+                  << "\n  " << Color::DIM << "Try teaching related facts with /learn." 
+                  << Color::RESET << "\n";
     }
 }
 
@@ -514,10 +616,14 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
     // Format response through style engine
     if (answered && !response.empty()) {
         std::string formatted = sys.style.format_response(response, input, confidence);
-        std::cout << "\n  " << formatted << "\n";
+        std::cout << "\n  " << Color::GREEN << "●" << Color::RESET << " " << formatted << "\n";
     } else {
-        std::cout << "\n  I don't have enough knowledge to answer that yet.\n"
-                  << "  Try: /learn to teach me, /search for internet lookup, or /think for reasoning.\n";
+        std::cout << "\n  " << Color::YELLOW << "○" << Color::RESET 
+                  << " I don't have enough knowledge to answer that yet.\n"
+                  << "  " << Color::DIM << "Try: " << Color::GREEN << "/learn" << Color::RESET 
+                  << Color::DIM << " to teach me, " << Color::GREEN << "/search" << Color::RESET
+                  << Color::DIM << " for internet, or " << Color::GREEN << "/think" << Color::RESET 
+                  << Color::DIM << " for reasoning." << Color::RESET << "\n";
     }
 
     // Record outcome
@@ -551,10 +657,10 @@ int main(int argc, char* argv[]) {
     #else
     platform = "Unknown";
     #endif
-    std::cout << "  Platform: " << platform << "\n";
+    std::cout << "  " << Color::DIM << "Platform:" << Color::RESET << " " << Color::BOLD << platform << Color::RESET << "\n";
 
     // Step 3: Initialize all modules
-    std::cout << "  Initializing modules...\n\n";
+    std::cout << "  " << Color::DIM << "Initializing modules..." << Color::RESET << "\n\n";
     MKSystem sys;
 
     // Step 4: Load knowledge
@@ -564,9 +670,12 @@ int main(int argc, char* argv[]) {
     sys.memory.loadFromDisk();
 
     // Step 6: Print status
-    std::cout << "\n  System ready. Knowledge: " << sys.graph.edgeCount() << " facts | Nodes: "
-              << sys.graph.nodeCount() << "\n";
-    std::cout << "  Type your message or /help for commands.\n";
+    std::cout << "\n  " << Color::BGREEN << "✓" << Color::RESET << " System ready. "
+              << Color::BOLD << "Knowledge: " << Color::BCYAN << sys.graph.edgeCount() << Color::RESET
+              << " facts | " << Color::BOLD << "Nodes: " << Color::BCYAN << sys.graph.nodeCount() 
+              << Color::RESET << "\n";
+    std::cout << "  " << Color::DIM << "Type your message or " << Color::GREEN << "/help" 
+              << Color::RESET << Color::DIM << " for commands." << Color::RESET << "\n";
 
     // ============================================================
     // Main REPL Loop
@@ -575,7 +684,8 @@ int main(int argc, char* argv[]) {
     const unsigned int AUTO_SAVE_INTERVAL = 50;
 
     while (g_running) {
-        std::cout << "\n  MK > ";
+        std::cout << "\n  " << Color::BOLD << Color::BCYAN << "MK" 
+                  << Color::RESET << Color::CYAN << " › " << Color::RESET;
         std::cout.flush();
 
         std::string input;
@@ -589,40 +699,54 @@ int main(int argc, char* argv[]) {
 
         // Handle commands
         if (!input.empty() && input[0] == '/') {
+            // If user typed just "/" alone, show all commands
+            if (input == "/") {
+                show_slash_suggestions("/");
+                continue;
+            }
+            // If user typed a partial command that doesn't match exactly, suggest
+            bool commandFound = false;
+
             if (input == "/quit" || input == "/exit" || input == "/shutdown") {
-                g_running = false;
+                g_running = false; commandFound = true;
             } else if (input == "/help") {
-                cmd_help();
+                cmd_help(); commandFound = true;
             } else if (input == "/status") {
-                cmd_status(sys);
+                cmd_status(sys); commandFound = true;
             } else if (input == "/news") {
-                cmd_news(sys);
+                cmd_news(sys); commandFound = true;
             } else if (input.size() > 5 && input.substr(0, 5) == "/ask ") {
-                cmd_ask(sys, trim(input.substr(5)));
+                cmd_ask(sys, trim(input.substr(5))); commandFound = true;
             } else if (input == "/ask") {
-                cmd_ask(sys, "");
+                cmd_ask(sys, ""); commandFound = true;
             } else if (input.size() > 8 && input.substr(0, 8) == "/search ") {
-                cmd_search(sys, trim(input.substr(8)));
+                cmd_search(sys, trim(input.substr(8))); commandFound = true;
             } else if (input == "/search") {
-                cmd_search(sys, "");
+                cmd_search(sys, ""); commandFound = true;
             } else if (input.size() > 7 && input.substr(0, 7) == "/learn ") {
-                cmd_learn(sys, trim(input.substr(7)));
+                cmd_learn(sys, trim(input.substr(7))); commandFound = true;
             } else if (input == "/learn") {
-                cmd_learn(sys, "");
+                cmd_learn(sys, ""); commandFound = true;
             } else if (input.size() > 9 && input.substr(0, 9) == "/weather ") {
-                cmd_weather(sys, trim(input.substr(9)));
+                cmd_weather(sys, trim(input.substr(9))); commandFound = true;
             } else if (input == "/weather") {
-                cmd_weather(sys, "");
+                cmd_weather(sys, ""); commandFound = true;
             } else if (input.size() > 6 && input.substr(0, 6) == "/time ") {
-                cmd_time(sys, trim(input.substr(6)));
+                cmd_time(sys, trim(input.substr(6))); commandFound = true;
             } else if (input == "/time") {
-                cmd_time(sys, "");
+                cmd_time(sys, ""); commandFound = true;
             } else if (input.size() > 7 && input.substr(0, 7) == "/think ") {
-                cmd_think(sys, trim(input.substr(7)));
+                cmd_think(sys, trim(input.substr(7))); commandFound = true;
             } else if (input == "/think") {
-                cmd_think(sys, "");
-            } else {
-                std::cout << "\n  Unknown command. Type /help for options.\n";
+                cmd_think(sys, ""); commandFound = true;
+            }
+
+            if (!commandFound) {
+                // Show suggestions for the partial command
+                show_slash_suggestions(input);
+                std::cout << "\n  " << Color::YELLOW << "⚠" << Color::RESET 
+                          << " Unknown command: " << Color::RED << input << Color::RESET
+                          << ". Type " << Color::GREEN << "/help" << Color::RESET << " for options.\n";
             }
         } else {
             // Natural language routing
@@ -640,11 +764,12 @@ int main(int argc, char* argv[]) {
     // ============================================================
     // Graceful Shutdown
     // ============================================================
-    std::cout << "\n  Shutting down...\n";
+    std::cout << "\n  " << Color::YELLOW << "⏻" << Color::RESET << " Shutting down...\n";
     sys.memory.saveToDisk();
     sys.improver.saveLog();
-    std::cout << "  Memory saved. Improvement log saved.\n";
-    std::cout << "  MK OS shut down cleanly. Goodbye.\n\n";
+    std::cout << "  " << Color::GREEN << "✓" << Color::RESET << " Memory saved. Improvement log saved.\n";
+    std::cout << "  " << Color::BOLD << Color::CYAN << "MK OS shut down cleanly. Goodbye." 
+              << Color::RESET << "\n\n";
 
     return 0;
 }
