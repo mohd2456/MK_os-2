@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "refactor",
   "description": "Kill dead main() functions and secure the hardcoded Telegram token. Remove main() from all orphaned entry points (main_system.cpp, main_plugins.cpp, main_network.cpp, ai_core/main.cpp, scheduler/main_scheduler.cpp, ai_core/hre/hre_main.cpp) by either deleting the file or converting it to a module-only file. Also move the hardcoded Telegram bot token from source code to environment variable loading.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Delete MK_OS/system/main_system.cpp entirely - it is fully superseded by mk_entry.cpp and only contains a dead demo sequence",
     "Delete MK_OS/plugins/main_plugins.cpp entirely - same reason, dead standalone demo that duplicates plugin initialization",
@@ -28,5 +28,5 @@
     "Run: grep -rn 'int main()' /projects/sandbox/MK_os-2/MK_OS/ --include='*.cpp' | grep -v mk_entry | grep -v tools/ | grep -v Kernel/ (should return nothing or only code_intelligence.cpp string literals)"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Build succeeds with same 3 pre-existing warnings (unused-parameter, unused-private-field x2). Additional dead main() functions exist in datasets/main_datasets.cpp, memory_mgmt/main_memory.cpp, mk_brain/cashe/Main_cache.cpp, mk_brain/embeddings/main_embeddings.cpp, mk_brain/memory/main_memory.cpp, mk_brain/personality/main_personality.cpp, mk_brain/reasoning/main_reasoning.cpp - these were not in scope for this feature but could be cleaned up later."
 }
