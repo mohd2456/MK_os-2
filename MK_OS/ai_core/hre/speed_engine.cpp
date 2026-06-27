@@ -39,8 +39,8 @@
 // ===================================================================================
 
 
-// Forward declarations
-class MKPatternGraph;
+// Forward declarations (MKPatternGraph included from pattern_graph.cpp)
+#include "pattern_graph.cpp"
 
 // ─────────────────────────────────────────────────────────────────────────────────
 //  DATA STRUCTURES
@@ -683,7 +683,7 @@ public:
     }
 
     // Get memory saved by interning
-    size_t getInterningSavedBytes() {
+    size_t getInterningSavedBytes() const {
         size_t saved = 0;
         for (const auto& pair : stringToId) {
             // Each reference beyond the first saves the string length

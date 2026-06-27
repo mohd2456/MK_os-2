@@ -12,6 +12,8 @@
 #include <cmath>
 #include <functional>
 
+#include "pattern_graph.cpp"
+
 // ===================================================================================
 // MK DEEP REASONER — Multi-step complex problem solving
 // ===================================================================================
@@ -30,8 +32,8 @@
 // With enough knowledge (450GB), structured reasoning beats pattern matching.
 // ===================================================================================
 
-// Forward declaration
-class MKPatternGraph;
+// Forward declaration (MKPatternGraph included above)
+// class MKPatternGraph;
 
 // A single reasoning step
 struct MKThinkStep {

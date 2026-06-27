@@ -37,7 +37,8 @@
 
 
 // Forward declarations — these are defined in other HRE layers
-class MKPatternGraph;
+// MKPatternGraph included from pattern_graph.cpp
+#include "pattern_graph.cpp"
 class MKReasoningChains;
 
 // ─────────────────────────────────────────────────────────────────────────────────

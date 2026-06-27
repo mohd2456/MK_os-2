@@ -13,6 +13,8 @@
 #include <ctime>
 #include <functional>
 
+#include "pattern_graph.cpp"
+
 // ===================================================================================
 // MK CONVERSATION ENGINE — Real Conversational AI
 // ===================================================================================
@@ -35,8 +37,7 @@
 // ===================================================================================
 
 
-// Forward declarations
-class MKPatternGraph;
+// Forward declarations (MKPatternGraph included above)
 
 // ─────────────────────────────────────────────────────────────────────────────────
 //  DATA STRUCTURES

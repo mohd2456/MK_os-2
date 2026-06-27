@@ -27,6 +27,8 @@ SOURCES   := $(shell find . -name '*.cpp' \
                ! -path './memory_mgmt/main_memory.cpp' \
                ! -path './mk_brain/cashe/Main_cache.cpp' \
                ! -path './mk_brain/embeddings/main_embeddings.cpp' \
+               ! -path './Kernel/kernel_main.cpp' \
+               ! -path './ai_core/hre/hre_main.cpp' \
                ! -name 'main_*.cpp' \
                -type f)
 

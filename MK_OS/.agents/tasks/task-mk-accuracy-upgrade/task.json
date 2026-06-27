@@ -1,0 +1,7 @@
+{
+  "task_id": "task-mk-accuracy-upgrade",
+  "task_description": "Massively upgrade MK OS with accuracy-first AI capabilities: internet search, fact verification, freshness tracking, cited responses, honesty engine, LLM knowledge extraction tool, knowledge integrator, and 700+ new knowledge base facts",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}

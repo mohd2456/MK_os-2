@@ -1,0 +1,25 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Upgrade existing MK modules: enhance autonomous_agent.cpp with search engine integration, improve pattern graph query speed, and update Makefile for new tools",
+  "status": "pending",
+  "steps": [
+    "Enhance network/autonomous_agent.cpp - Add integration with MKSearchEngine: add a new method researchWithSearch(topic) that uses the search engine to find URLs before crawling. Add a method verifyFact(fact_string) that uses MKFactVerifier to cross-check gathered facts. Add better content scoring that weights trusted domains higher. Add a method getVerifiedFacts() that returns only facts that passed verification. Keep the existing code intact and add the new methods at the end of the class.",
+    "Update Makefile - Add tools/llm_eater.cpp to the tools target. Add a new LLM_EATER variable and build rule: $(LLM_EATER): tools/llm_eater.cpp with the appropriate compile command (clang++ -std=c++17 -O2 -o $@ $< -lcurl). Update the 'tools' target to include $(LLM_EATER). Update the 'clean' target to remove the new binary. Update the help text to mention the new tool.",
+    "Create a new ai_core/knowledge_integrator.cpp - A coordination module that ties together the search engine, fact verifier, freshness manager, and learning engine into a single workflow. Class MKKnowledgeIntegrator with methods: learnFromInternet(topic) that searches -> verifies -> stores with freshness tracking; refreshStaleKnowledge() that finds stale facts and re-verifies them; buildCitedAnswer(query) that searches, verifies, and builds a fully cited response. This is the glue that connects all the new modules together."
+  ],
+  "acceptance_criteria": [
+    "autonomous_agent.cpp compiles with the new methods and no errors",
+    "Makefile correctly builds tools/llm_eater.cpp as a standalone binary",
+    "knowledge_integrator.cpp compiles as part of 'make all'",
+    "The integrator references the search engine, verifier, freshness manager, and cited response modules",
+    "make all produces zero errors",
+    "make tools produces zero errors"
+  ],
+  "verification": [
+    "Run 'make all' from /projects/sandbox/MK_os-2/MK_OS/ and confirm zero compile errors",
+    "Run 'make tools' from /projects/sandbox/MK_os-2/MK_OS/ and confirm zero compile errors including llm_eater"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

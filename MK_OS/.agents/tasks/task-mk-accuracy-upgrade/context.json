@@ -1,0 +1,28 @@
+{
+  "project_type": "Custom AI operating system (C++17) - hybrid reasoning engine",
+  "language": "C++17",
+  "build_system": "Makefile using clang++ with -std=c++17 -O2, links against libcurl and libsqlite3. All .cpp files under MK_OS are compiled except tools/ and main_*.cpp files.",
+  "test_framework": "No formal test framework - the project uses compile-time validation",
+  "build_command": "make -C /projects/sandbox/MK_os-2/MK_OS all 2>&1",
+  "test_command": "make -C /projects/sandbox/MK_os-2/MK_OS all 2>&1",
+  "verification_instructions": "Run 'make all' from MK_OS/ directory and confirm zero compile errors. All .cpp files are header-guarded and included via the find-based compilation in the Makefile.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "clang++ with C++17 support, libcurl, libsqlite3 must be available",
+  "environment_constraints": "COMMON_DEPENDENCIES network mode. Build tools and standard packages available. Project targets macOS (Darwin) but compiles on Linux too.",
+  "contribution_requirements": "Do NOT create duplicate directories. New files go into existing directories. Follow the existing code style: header guards (#ifndef/#define/#endif), class-based design with iostream logging, format: source|relation|target|weight for .mk files.",
+  "key_patterns": "Each .cpp file uses #ifndef header guards and is self-contained. Classes use constructor logging (std::cout << [MODULE]). The MKHTTP class in network/http.cpp provides HTTP GET via libcurl. Knowledge files use pipe-delimited format. The Makefile auto-discovers all .cpp files except tools/ and main_* files.",
+  "relevant_files": [
+    "network/http.cpp",
+    "network/autonomous_agent.cpp",
+    "ai_core/confidence.cpp",
+    "ai_core/hre/knowledge_files/core_facts.mk",
+    "ai_core/hre/knowledge_files/coding_knowledge.mk",
+    "ai_core/hre/knowledge_files/system_knowledge.mk",
+    "mk_brain/learning/learning_engine.cpp",
+    "mk_brain/fact_extractor/biographical.cpp",
+    "tools/knowledge_ingest.cpp",
+    "system/mk_entry.cpp",
+    "Makefile"
+  ],
+  "directory_structure": "MK_OS/ is root. ai_core/ has reasoning modules. network/ has HTTP and autonomous agent. mk_brain/ has learning, reasoning, vector search. tools/ has standalone utilities. system/ has entry point. ai_core/hre/knowledge_files/ has all .mk knowledge files."
+}
