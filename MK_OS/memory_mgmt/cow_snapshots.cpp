@@ -100,17 +100,33 @@ public:
     }
     
     ~MKCoWSnapshots() {
-        // Collect all unique page pointers to avoid double-free when pages
-        // are shared between livePages and snapshots (the normal case after
-        // takeSnapshot). Each page is freed exactly once.
+        // Decrement refCount for each reference (live + snapshots), then free
+        // only pages whose refCount drops to 0.  Using a set ensures each
+        // unique page pointer is freed at most once, preventing double-free
+        // when a page is shared between livePages and snapshot pageTables.
         std::set<MKMemoryPage*> allPages;
-        for (auto& kv : livePages) allPages.insert(kv.second);
-        for (auto& snap : snapshots) {
-            for (auto& kv : snap.pageTable) allPages.insert(kv.second);
+
+        // Decrement refCount for each live reference
+        for (auto& kv : livePages) {
+            if (kv.second) {
+                kv.second->refCount--;
+                allPages.insert(kv.second);
+            }
         }
+
+        // Decrement refCount for each snapshot reference
+        for (auto& snap : snapshots) {
+            for (auto& kv : snap.pageTable) {
+                if (kv.second) {
+                    kv.second->refCount--;
+                    allPages.insert(kv.second);
+                }
+            }
+        }
+
+        // Free only pages whose refCount dropped to 0 or below
         for (auto* page : allPages) {
-            if (page) {
-                usedMemory -= page->size;
+            if (page && page->refCount <= 0) {
                 delete[] page->data;
                 delete page;
             }

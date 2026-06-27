@@ -392,6 +392,7 @@ private:
     float calculateConfidence(const std::string& source, const std::string& relation,
                               const std::string& target, const std::string& sourceName,
                               float sourceTrustLevel, MKPatternGraph& graph) {
+        (void)sourceName; // Reserved for future per-source weighting
         float confidence = 0.0f;
         std::string factKey = makeFactKey(source, relation, target);
         

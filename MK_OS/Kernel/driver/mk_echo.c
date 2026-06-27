@@ -154,6 +154,12 @@ static int __init mk_init(void)
 static void __exit mk_exit(void)
 {
     misc_deregister(&mk_misc);
+    /* Serialize against any in-flight read/write that already acquired the
+     * mutex before misc_deregister removed the device.  Acquiring and
+     * releasing the lock here guarantees those operations have completed
+     * before we free the backing memory. */
+    mutex_lock(&edev->lock);
+    mutex_unlock(&edev->lock);
     kfree(edev->buf);
     kfree(edev);
     pr_info("%s: driver unloaded\n", DRIVER_NAME);
