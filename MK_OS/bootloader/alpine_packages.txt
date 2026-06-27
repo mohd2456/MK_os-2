@@ -1,0 +1,42 @@
+# =============================================================================
+# MK OS - Required Alpine Linux Packages
+# =============================================================================
+# One package per line. These are installed in the Alpine rootfs during
+# image build (build_image.sh) or on first boot.
+# =============================================================================
+
+# Build tools (for native compilation inside VM)
+build-base
+
+# Libraries required by MK OS
+libcurl-dev
+sqlite-dev
+zlib-dev
+
+# Security and networking
+openssl
+openssh
+
+# Version control (for knowledge sync with GitHub)
+git
+
+# HTTP client (used by MK OS for API calls)
+curl
+
+# Extended busybox utilities (wget, telnet, etc.)
+busybox-extras
+
+# Networking tools
+dhcpcd
+iptables
+
+# System utilities
+procps
+util-linux
+
+# Text processing (for knowledge file management)
+grep
+sed
+
+# Timezone data
+tzdata

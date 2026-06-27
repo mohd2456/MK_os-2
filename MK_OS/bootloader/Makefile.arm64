@@ -1,0 +1,157 @@
+# ============================================================
+# MK OS - Cross-Compilation Makefile for aarch64 (iPhone ARM)
+# ============================================================
+#
+# Targets:
+#   build   - Build MK OS for aarch64-linux (dynamic linking)
+#   static  - Build MK OS for aarch64-linux (static, no shared lib deps)
+#   x86_64  - Build MK OS for x86_64-linux (testing in QEMU on Mac)
+#   install - Install binary to staging directory
+#   clean   - Remove build artifacts
+#
+# Usage:
+#   make -f bootloader/Makefile.arm64 static    # Static ARM64 build
+#   make -f bootloader/Makefile.arm64 x86_64    # x86_64 for testing
+#   make -f bootloader/Makefile.arm64 install   # Copy to staging/
+#
+# Prerequisites:
+#   - aarch64-linux-gnu-g++ (apt install g++-aarch64-linux-gnu)
+#   - OR clang with --target=aarch64-linux-gnu
+#   - For x86_64: standard g++ or clang++
+#
+# ============================================================
+
+# --- Configuration ---
+PROJECT_ROOT := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))/..
+BOOT_DIR     := $(PROJECT_ROOT)/bootloader
+STAGING_DIR  := $(BOOT_DIR)/staging
+BUILD_DIR    := $(BOOT_DIR)/build_arm64
+
+# --- Compiler Selection ---
+# Try aarch64-linux-gnu-g++ first, fall back to clang with target
+ARM64_GCC    := aarch64-linux-gnu-g++
+ARM64_CLANG  := clang++ --target=aarch64-linux-gnu
+
+# Detect available compiler
+ifeq ($(shell which $(ARM64_GCC) 2>/dev/null),)
+    ARM64_CXX := $(ARM64_CLANG)
+else
+    ARM64_CXX := $(ARM64_GCC)
+endif
+
+X86_CXX      := clang++
+
+# --- Flags ---
+CXXFLAGS     := -std=c++17 -O2 -Wall -Wextra -DLINUX -DARM64
+CXXFLAGS_X86 := -std=c++17 -O2 -Wall -Wextra -DLINUX -DX86_64
+LDFLAGS      := -lcurl -lsqlite3
+LDFLAGS_STATIC := -static -lcurl -lsqlite3 -lssl -lcrypto -lz -lpthread
+
+# --- Source Files ---
+ENTRY        := $(PROJECT_ROOT)/system/mk_entry.cpp
+
+SOURCES      := $(shell find $(PROJECT_ROOT) -name '*.cpp' \
+                  ! -path '*/tools/*' \
+                  ! -path '*/bootloader/*' \
+                  ! -path '*/system/main_system.cpp' \
+                  ! -path '*/ai_core/main.cpp' \
+                  ! -path '*/datasets/main_datasets.cpp' \
+                  ! -path '*/io_routing/main_io.cpp' \
+                  ! -path '*/memory_mgmt/main_memory.cpp' \
+                  ! -path '*/mk_brain/cashe/Main_cache.cpp' \
+                  ! -path '*/mk_brain/embeddings/main_embeddings.cpp' \
+                  ! -path '*/Kernel/kernel_main.cpp' \
+                  ! -path '*/ai_core/hre/hre_main.cpp' \
+                  ! -name 'main_*.cpp' \
+                  -type f)
+
+# Object files in build directory
+OBJECTS      := $(patsubst $(PROJECT_ROOT)/%.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
+OBJECTS_X86  := $(patsubst $(PROJECT_ROOT)/%.cpp,$(BUILD_DIR)/x86_64/%.o,$(SOURCES))
+
+# --- Output ---
+TARGET       := mk_os
+TARGET_ARM64 := $(BUILD_DIR)/$(TARGET)
+TARGET_X86   := $(BUILD_DIR)/x86_64/$(TARGET)
+
+# ============================================================
+# Targets
+# ============================================================
+
+.PHONY: build static x86_64 install clean help
+
+# Default: dynamic ARM64 build
+build: $(TARGET_ARM64)
+	@echo ""
+	@echo "  Built $(TARGET) for aarch64-linux (dynamic)"
+	@echo "  Binary: $(TARGET_ARM64)"
+	@echo ""
+
+# Static ARM64 build (no shared library dependencies on target)
+static: LDFLAGS := $(LDFLAGS_STATIC)
+static: $(TARGET_ARM64)
+	@echo ""
+	@echo "  Built $(TARGET) for aarch64-linux (STATIC)"
+	@echo "  Binary: $(TARGET_ARM64)"
+	@echo "  No shared library dependencies required on target."
+	@echo ""
+
+$(TARGET_ARM64): $(OBJECTS)
+	@mkdir -p $(dir $@)
+	$(ARM64_CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+$(BUILD_DIR)/%.o: $(PROJECT_ROOT)/%.cpp
+	@mkdir -p $(dir $@)
+	$(ARM64_CXX) $(CXXFLAGS) -c $< -o $@
+
+# x86_64 build for testing in QEMU on Mac
+x86_64: $(TARGET_X86)
+	@echo ""
+	@echo "  Built $(TARGET) for x86_64-linux (testing)"
+	@echo "  Binary: $(TARGET_X86)"
+	@echo "  Test with: qemu-x86_64 $(TARGET_X86)"
+	@echo ""
+
+$(TARGET_X86): $(OBJECTS_X86)
+	@mkdir -p $(dir $@)
+	$(X86_CXX) $(CXXFLAGS_X86) -o $@ $^ $(LDFLAGS)
+
+$(BUILD_DIR)/x86_64/%.o: $(PROJECT_ROOT)/%.cpp
+	@mkdir -p $(dir $@)
+	$(X86_CXX) $(CXXFLAGS_X86) -c $< -o $@
+
+# Install to staging directory (ready for image packaging)
+install: build
+	@echo "Installing to staging directory..."
+	@mkdir -p $(STAGING_DIR)
+	@cp $(TARGET_ARM64) $(STAGING_DIR)/$(TARGET)
+	@chmod +x $(STAGING_DIR)/$(TARGET)
+	@echo "  Installed: $(STAGING_DIR)/$(TARGET)"
+	@echo "  Ready for build_image.sh --skip-compile"
+
+# Clean all build artifacts
+clean:
+	@echo "Cleaning ARM64 build artifacts..."
+	@rm -rf $(BUILD_DIR)
+	@rm -rf $(STAGING_DIR)
+	@echo "  Clean complete."
+
+# Help
+help:
+	@echo ""
+	@echo "  MK OS Cross-Compilation (ARM64 / x86_64)"
+	@echo "  ========================================="
+	@echo ""
+	@echo "  Targets:"
+	@echo "    build    - Build for aarch64-linux (dynamic linking)"
+	@echo "    static   - Build for aarch64-linux (static, self-contained)"
+	@echo "    x86_64   - Build for x86_64-linux (testing in QEMU)"
+	@echo "    install  - Copy binary to staging/ for image builder"
+	@echo "    clean    - Remove all build artifacts"
+	@echo "    help     - Show this message"
+	@echo ""
+	@echo "  Examples:"
+	@echo "    make -f bootloader/Makefile.arm64 static"
+	@echo "    make -f bootloader/Makefile.arm64 install"
+	@echo "    make -f bootloader/Makefile.arm64 x86_64"
+	@echo ""

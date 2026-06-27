@@ -10,6 +10,10 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <cmath>
+
+#include "search_engine.cpp"
+#include "../ai_core/fact_verifier.cpp"
 
 // ===================================================================================
 // MK AUTONOMOUS INTERNET AGENT
@@ -278,6 +282,119 @@ public:
                   << " | Failed: " << failedCrawls
                   << " | Downloaded: " << (totalBytesDownloaded / 1024) << "KB"
                   << " | Queue: " << crawlQueue.size() << "\n";
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // INTEGRATION UPGRADES - Search Engine + Fact Verification
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Research a topic using MKSearchEngine to find relevant URLs before crawling.
+    // This is smarter than researchTopic() because it uses actual search results
+    // rather than hardcoded URL patterns.
+    void researchWithSearch(const std::string& topic) {
+        MKSearchEngine searchEngine;
+        auto results = searchEngine.search(topic);
+
+        std::cout << "[AGENT] Search-driven research for: \"" << topic
+                  << "\" found " << results.size() << " URLs to crawl.\n";
+
+        for (const auto& result : results) {
+            if (!result.url.empty()) {
+                queueCrawl(result.url, topic, MKCrawlPriority::HIGH);
+            }
+        }
+
+        if (results.empty()) {
+            // Fallback to standard research if search returns nothing
+            researchTopic(topic, MKCrawlPriority::NORMAL);
+        }
+    }
+
+    // Verify an extracted fact using MKFactVerifier cross-referencing.
+    // Returns true if the fact has confidence > 0.7 (high confidence).
+    bool verifyExtractedFact(const std::string& factText) {
+        MKFactVerifier verifier;
+        auto result = verifier.verify(factText);
+
+        std::cout << "[AGENT] Fact verification: \"" << factText.substr(0, 60)
+                  << "...\" -> confidence: " << (int)(result.confidence * 100) << "%\n";
+
+        return result.confidence > 0.7f;
+    }
+
+    // Get only verified facts from completed crawl tasks.
+    // Filters all extracted facts through the verifier and returns only those
+    // with confidence above the specified threshold.
+    std::vector<std::string> getVerifiedFacts(float minConfidence = 0.7f) {
+        std::vector<std::string> verifiedFacts;
+        MKFactVerifier verifier;
+
+        for (const auto& task : completedTasks) {
+            for (const auto& fact : task.extractedFacts) {
+                auto result = verifier.verify(fact);
+                if (result.confidence >= minConfidence) {
+                    verifiedFacts.push_back(fact);
+                }
+            }
+        }
+
+        std::cout << "[AGENT] Verified facts: " << verifiedFacts.size()
+                  << " passed threshold (" << (int)(minConfidence * 100) << "%)\n";
+        return verifiedFacts;
+    }
+
+    // Score content quality for a given URL and its body text.
+    // Returns 0.0-1.0 based on:
+    //   - Content length (longer = better, up to a point)
+    //   - Trusted domain match (wikipedia, arxiv, cppreference = bonus)
+    //   - Absence of navigation/boilerplate text (click, subscribe, cookie = penalty)
+    float scoreContent(const std::string& url, const std::string& content) {
+        float score = 0.0f;
+
+        // Content length scoring (ideal range: 500-5000 chars)
+        size_t len = content.size();
+        if (len > 5000) score += 0.35f;
+        else if (len > 2000) score += 0.30f;
+        else if (len > 500) score += 0.20f;
+        else if (len > 100) score += 0.10f;
+        else score += 0.05f;
+
+        // Trusted domain bonus
+        for (const auto& trusted : config.trustedDomains) {
+            if (url.find(trusted) != std::string::npos) {
+                score += 0.35f;
+                break;
+            }
+        }
+
+        // Penalize navigation/boilerplate content
+        std::string lower = content;
+        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+
+        int navCount = 0;
+        std::vector<std::string> navPatterns = {
+            "click here", "subscribe", "cookie", "sign up",
+            "advertisement", "popup", "newsletter", "terms of service"
+        };
+        for (const auto& pattern : navPatterns) {
+            if (lower.find(pattern) != std::string::npos) navCount++;
+        }
+        float navPenalty = std::min(0.3f, navCount * 0.05f);
+        score -= navPenalty;
+
+        // Bonus for factual indicators
+        std::vector<std::string> factualPatterns = {
+            "according to", "research shows", "studies indicate",
+            "published in", "discovered", "established"
+        };
+        int factualCount = 0;
+        for (const auto& pattern : factualPatterns) {
+            if (lower.find(pattern) != std::string::npos) factualCount++;
+        }
+        score += std::min(0.2f, factualCount * 0.05f);
+
+        // Clamp to 0.0 - 1.0
+        return std::max(0.0f, std::min(1.0f, score));
     }
 };
 

@@ -1,6 +1,16 @@
 # ==============================================================================
-# MK_OS ADVANCED KNOWLEDGE DATASET MATRIX (Linguistic & Core Context)
-# Format Schema: KEY | PART_OF_SPEECH | DOMAIN | CONTEXT_WEIGHT | DESCRIPTION/KNOWLEDGE_BLOCK
+# MK_OS LINGUISTIC & DEFINITION DATABASE
+# Format: KEY | PART_OF_SPEECH | DOMAIN | CONTEXT_WEIGHT | DESCRIPTION
+# ==============================================================================
+#
+# HOW THIS CONNECTS TO THE BRAIN:
+#   This file is the DICTIONARY layer — linguistic definitions & grammar info.
+#   knowledge_loader.cpp reads this, AND converts it into graph format for
+#   the reasoning engine (ai_core/hre/knowledge_files/).
+#
+#   So this data is NOT wasted — it feeds DIRECTLY into MK's brain via:
+#     knowledge_loader.convertToGraphFormat() → core_facts.mk
+#
 # ==============================================================================
 
 # --- LINGUISTIC / ENGLISH FOUNDATIONS ---
@@ -9,17 +19,94 @@ english|noun|linguistics|0.9|A West Germanic language acting as the global stand
 grammar|noun|linguistics|0.8|The structural rules governing the composition of clauses, phrases, and words in any natural language stream.
 noun|noun|linguistics|0.7|A linguistic token used as the name of a specific object, place, person, or abstract system concept.
 verb|noun|linguistics|0.7|A functional word class representing an action, state, or operational transition within a parsed sentence.
+adjective|noun|linguistics|0.7|A word that modifies a noun by describing a quality, quantity, or state of being.
+adverb|noun|linguistics|0.7|A word that modifies a verb, adjective, or other adverb indicating manner, degree, or frequency.
+pronoun|noun|linguistics|0.7|A word that substitutes for a noun to avoid repetition and enable referential communication.
+preposition|noun|linguistics|0.6|A word governing a noun or pronoun to express spatial, temporal, or logical relationships.
+conjunction|noun|linguistics|0.6|A word that connects clauses, sentences, or words within the same grammatical hierarchy.
+syntax|noun|linguistics|0.8|The arrangement of words and phrases to create well-formed sentences in a language.
+semantics|noun|linguistics|0.8|The branch of linguistics concerned with meaning and interpretation of words and sentences.
+morphology|noun|linguistics|0.7|The study of word formation including roots, prefixes, suffixes, and inflection patterns.
+phonetics|noun|linguistics|0.6|The study of speech sounds and their physical properties in human communication.
+pragmatics|noun|linguistics|0.6|The study of how context contributes to meaning beyond the literal definition of words.
 
 # --- HARDWARE & ARCHITECTURE ---
 computer|noun|hardware|1.0|A programmable electronic macro-matrix designed to execute complex mathematical computations and sequential binary instruction sets.
 processor|noun|hardware|0.9|The physical silicon execution engine (CPU) that cycles instructions, manipulates registers, and calculates logic gates.
 memory|noun|hardware|0.9|Volatile or non-volatile physical storage blocks mapped by the system MMU for holding transient instruction states.
+cache|noun|hardware|0.85|High-speed intermediate storage providing rapid access to frequently used data between CPU registers and main memory.
+transistor|noun|hardware|0.9|A semiconductor device used to amplify or switch electronic signals, the fundamental building block of all modern processors.
+motherboard|noun|hardware|0.8|The main printed circuit board containing the CPU socket, memory slots, and interconnect buses for all system components.
+gpu|noun|hardware|0.85|A specialized processor designed for parallel computation of graphics rendering and matrix operations.
+ssd|noun|hardware|0.85|Solid-state drive using NAND flash memory for persistent storage with no moving parts and microsecond access times.
+bus|noun|hardware|0.7|A communication system that transfers data between components inside a computer or between computers.
+register|noun|hardware|0.8|The fastest storage locations inside a CPU, holding data currently being processed by the arithmetic logic unit.
+alu|noun|hardware|0.8|Arithmetic Logic Unit — the combinational circuit inside a CPU that performs integer math and bitwise operations.
+fpga|noun|hardware|0.7|Field-Programmable Gate Array — a reconfigurable integrated circuit that can be programmed after manufacturing.
 
 # --- SYSTEM SOFTWARE ---
 operating system|noun|software|1.0|The master control software layer that abstracts physical hardware resources into protected execution rings and user-space boundaries.
 kernel|noun|software|0.9|The privileged core of the operating system that directly hooks hardware interrupts, memory spaces, and thread schedulers.
 c++|noun|software|0.8|A statically-typed, multi-paradigm compiled language optimized for low-level system mapping and high-performance bare-metal builds.
+compiler|noun|software|0.85|A program that translates source code from a high-level language into machine instructions executable by the target processor.
+linker|noun|software|0.75|A program that combines object files and libraries into a single executable binary resolving symbol references.
+debugger|noun|software|0.7|A tool that allows step-by-step execution and inspection of program state to identify and fix logical errors.
+shell|noun|software|0.8|A command-line interpreter that provides a user interface for accessing operating system services and running programs.
+driver|noun|software|0.8|A software module that provides a standardized interface between the operating system kernel and hardware devices.
+filesystem|noun|software|0.85|A method of organizing, storing, and retrieving files on a storage device with hierarchical directory structures.
+process|noun|software|0.85|An instance of a program in execution with its own address space, file descriptors, and execution context.
+thread|noun|software|0.8|A lightweight unit of execution within a process sharing the same address space but with independent stack and registers.
+scheduler|noun|software|0.8|The kernel component that decides which process or thread gets CPU time and for how long.
+syscall|noun|software|0.8|A programmatic interface by which user-space applications request services from the operating system kernel.
+virtual memory|noun|software|0.85|A memory management technique providing each process the illusion of a large contiguous address space mapped to physical RAM and disk.
+interrupt|noun|software|0.8|A signal to the processor indicating an event that needs immediate attention, triggering a context switch to a handler routine.
 
-# --- GENERAL COGNITION / CONCEPTS ---
-apple|noun|general|0.5|A crisp, round edible pomaceous fruit harvested from trees, or an alternative technology corporation utilizing UNIX-based operating kernels.
+# --- NETWORKING ---
+tcp|noun|networking|0.9|Transmission Control Protocol — a reliable, ordered, connection-oriented transport layer protocol ensuring data delivery.
+udp|noun|networking|0.8|User Datagram Protocol — a connectionless transport layer protocol offering low-latency communication without delivery guarantees.
+http|noun|networking|0.9|Hypertext Transfer Protocol — the application layer protocol for distributed hypermedia information systems on the web.
+dns|noun|networking|0.85|Domain Name System — the hierarchical naming system that translates human-readable domain names to IP addresses.
+ip|noun|networking|0.9|Internet Protocol — the network layer protocol responsible for addressing and routing packets between hosts.
+socket|noun|networking|0.8|A software endpoint for bidirectional inter-process communication across a computer network.
+firewall|noun|networking|0.8|A network security device that monitors and controls incoming and outgoing traffic based on predetermined rules.
+router|noun|networking|0.8|A networking device that forwards data packets between computer networks using routing table decisions.
+packet|noun|networking|0.8|A formatted unit of data carried by a network containing headers for routing and payload for application data.
+bandwidth|noun|networking|0.7|The maximum rate of data transfer across a network path, measured in bits per second.
+
+# --- AI & MACHINE LEARNING ---
+neural network|noun|ai|0.9|A computational model inspired by biological neurons, consisting of interconnected layers that learn patterns from data.
+machine learning|noun|ai|0.95|A field of artificial intelligence where systems improve their performance on tasks through experience without explicit programming.
+deep learning|noun|ai|0.9|A subset of machine learning using multi-layered neural networks to learn hierarchical representations of data.
+transformer|noun|ai|0.9|A neural architecture using self-attention mechanisms to process sequences in parallel, the basis of modern language models.
+attention|noun|ai|0.85|A mechanism allowing neural networks to focus on relevant parts of input when producing each element of output.
+tokenizer|noun|ai|0.8|A component that splits text into discrete units (tokens) that a model can process numerically.
+embedding|noun|ai|0.85|A dense vector representation of discrete data (words, items) in a continuous space preserving semantic relationships.
+inference|noun|ai|0.85|The process of using a trained model to make predictions or generate outputs on new unseen inputs.
+training|noun|ai|0.85|The process of optimizing model parameters by iteratively adjusting weights to minimize error on labeled data.
+overfitting|noun|ai|0.8|A modeling error where a function fits training data too closely and fails to generalize to unseen examples.
+quantization|noun|ai|0.8|The process of reducing model precision from float32 to int8 or int4 to decrease memory usage and increase speed.
+knowledge graph|noun|ai|0.85|A structured representation of real-world entities and their relationships stored as subject-predicate-object triples.
+
+# --- MATHEMATICS ---
+algorithm|noun|mathematics|0.9|A finite sequence of well-defined instructions for solving a class of problems or performing a computation.
+function|noun|mathematics|0.85|A relation mapping each element of a domain to exactly one element of a codomain.
+variable|noun|mathematics|0.8|A symbol representing an unknown or changeable value within a mathematical expression or program.
+equation|noun|mathematics|0.8|A mathematical statement asserting the equality of two expressions connected by an equals sign.
+matrix|noun|mathematics|0.85|A rectangular array of numbers arranged in rows and columns used for linear transformations and data representation.
+vector|noun|mathematics|0.85|An ordered collection of numbers representing magnitude and direction in n-dimensional space.
+probability|noun|mathematics|0.8|A measure of the likelihood of an event occurring, expressed as a number between 0 and 1.
+infinity|noun|mathematics|0.75|A concept representing an unbounded quantity that is greater than any assignable real number.
+logarithm|noun|mathematics|0.8|The inverse operation of exponentiation indicating the power to which a base must be raised to produce a given number.
+derivative|noun|mathematics|0.8|The instantaneous rate of change of a function with respect to its variable, fundamental to calculus.
+
+# --- GENERAL COGNITION ---
 knowledge|noun|cognition|1.0|The aggregated collection of processed data, context patterns, and relational rules held within an entity's storage matrix.
+intelligence|noun|cognition|0.95|The capacity to acquire, process, and apply knowledge to solve problems and adapt to new situations.
+reasoning|noun|cognition|0.9|The cognitive process of drawing conclusions from premises using logical rules and evidence.
+memory|noun|cognition|0.9|The faculty by which information is encoded, stored, and retrieved for later use.
+learning|noun|cognition|0.9|The acquisition of knowledge or skills through experience, study, or instruction.
+consciousness|noun|cognition|0.7|The state of being aware of and responsive to one's environment and internal mental states.
+logic|noun|cognition|0.9|The systematic study of valid inference and correct reasoning using formal symbolic systems.
+creativity|noun|cognition|0.75|The ability to produce novel and valuable ideas, solutions, or artifacts through imaginative thought.
+intuition|noun|cognition|0.7|The ability to understand something immediately without the need for conscious reasoning.
+abstraction|noun|cognition|0.85|The process of removing specific details to focus on essential characteristics shared by a class of things.

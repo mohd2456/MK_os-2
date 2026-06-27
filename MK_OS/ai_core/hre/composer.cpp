@@ -31,7 +31,7 @@
 // ===================================================================================
 
 // Personality modes for response style
-enum class MKPersonality {
+enum class MKComposerMode {
     CASUAL,         // Relaxed, short responses
     TECHNICAL,      // Precise, detailed responses
     FRIENDLY        // Warm, encouraging responses
@@ -51,7 +51,7 @@ struct MKResponseContext {
 
 class MKComposer {
 private:
-    MKPersonality personality;
+    MKComposerMode personality;
     int total_composed;
     std::string mk_name;
 
@@ -122,7 +122,7 @@ private:
     }
 
 public:
-    MKComposer(MKPersonality mode = MKPersonality::FRIENDLY) 
+    MKComposer(MKComposerMode mode = MKComposerMode::FRIENDLY) 
         : personality(mode), total_composed(0), mk_name("MK") {
         loadTemplates();
         std::cout << "[COMPOSER] Response composer initialized (mode: " 
@@ -388,16 +388,16 @@ public:
     }
 
     // Set personality mode
-    void setPersonality(MKPersonality mode) {
+    void setPersonality(MKComposerMode mode) {
         personality = mode;
         std::cout << "[COMPOSER] Personality set to: " << personalityName() << "\n";
     }
 
     std::string personalityName() const {
         switch (personality) {
-            case MKPersonality::CASUAL: return "casual";
-            case MKPersonality::TECHNICAL: return "technical";
-            case MKPersonality::FRIENDLY: return "friendly";
+            case MKComposerMode::CASUAL: return "casual";
+            case MKComposerMode::TECHNICAL: return "technical";
+            case MKComposerMode::FRIENDLY: return "friendly";
             default: return "unknown";
         }
     }

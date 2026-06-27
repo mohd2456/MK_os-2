@@ -144,3 +144,28 @@ static int __init mk_init(void)
         kfree(edev->buf);
         kfree(edev);
         pr_err("%s: misc_register failed: %d\n", DRIVER_NAME, ret);
+        return ret;
+    }
+
+    pr_info("%s: device registered (minor=%d)\n", DRIVER_NAME, mk_misc.minor);
+    return 0;
+}
+
+static void __exit mk_exit(void)
+{
+    misc_deregister(&mk_misc);
+    /* Serialize against any in-flight read/write that already acquired the
+     * mutex before misc_deregister removed the device.  Acquiring and
+     * releasing the lock here guarantees those operations have completed
+     * before we free the backing memory. */
+    mutex_lock(&edev->lock);
+    mutex_unlock(&edev->lock);
+    kfree(edev->buf);
+    kfree(edev);
+    pr_info("%s: driver unloaded\n", DRIVER_NAME);
+}
+
+module_init(mk_init);
+module_exit(mk_exit);
+
+#endif // MK_ECHO_C

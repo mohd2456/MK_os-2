@@ -8,7 +8,12 @@
 #include <cstring>
 #include <chrono>
 #include <functional>
+#include <fstream>
 #include <map>
+
+#if defined(__SSE2__)
+#include <immintrin.h>
+#endif
 
 // ===================================================================================
 // MK HARDWARE ABSTRACTION LAYER (HAL)
@@ -92,7 +97,6 @@ private:
     // ── SSE2 OPTIMIZED IMPLEMENTATIONS ──
     // These use 128-bit SIMD registers to process 4 floats per cycle
     #if defined(__SSE2__)
-    #include <immintrin.h>
     
     static void sse2VecAdd(const float* a, const float* b, float* c, int n) {
         int i = 0;

@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-008",
+  "type": "feat",
+  "description": "Create ai_core/self_improver.cpp - Self-improvement engine that logs gaps, plans research, tracks growth",
+  "status": "completed",
+  "steps": [
+    "Create ai_core/self_improver.cpp with MKSelfImprover class",
+    "Implement logging of unanswered/low-confidence queries",
+    "Implement knowledge gap categorization by topic",
+    "Implement nightly improvement plan generation",
+    "Implement accuracy tracking over time",
+    "Implement integration hooks with autonomous_agent for auto-research",
+    "Implement weekly growth report generation"
+  ],
+  "acceptance_criteria": [
+    "File compiles without errors as part of make all",
+    "Logs every failed/low-confidence query",
+    "Categorizes gaps by topic",
+    "Generates improvement plans",
+    "Tracks accuracy trends",
+    "Has printStats() method"
+  ],
+  "verification": ["Run make all and confirm zero compile errors"],
+  "blocked_reason": null,
+  "findings": "Created ai_core/self_improver.cpp with knowledge gap logging, topic categorization (13 categories), improvement plan generation, growth snapshots, weekly reports, and accuracy trend tracking. Integrates with autonomous_agent via gap research/resolve hooks. Compiles cleanly."
+}

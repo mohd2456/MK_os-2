@@ -10,10 +10,10 @@
 #include "core/syscalls.cpp"
 #include "core/panic.cpp"
 #include "mm/pager.cpp"
-#include "sched/sched.cpp"
-#include "driver/console.cpp"
-#include "driver/disk.cpp"
-#include "driver/timer.cpp"
+#include "sched/scheduler_core.cpp"
+#include "driver/console_driver.cpp"
+#include "driver/disk_driver.cpp"
+#include "driver/timer_driver.cpp"
 
 // ─────────────────────────────────────────────
 //  MK KERNEL COMMAND SHELL

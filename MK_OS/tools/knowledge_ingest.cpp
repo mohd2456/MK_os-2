@@ -22,6 +22,12 @@
 
 namespace fs = std::filesystem;
 
+// C++17-compatible ends_with helper (std::string::ends_with is C++20)
+static bool str_ends_with(const std::string& str, const std::string& suffix) {
+    if (suffix.size() > str.size()) return false;
+    return str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
 // ============================================================
 // Utility functions
 // ============================================================
@@ -149,11 +155,11 @@ std::vector<Fact> extract_from_code(const std::string& content, const std::strin
     std::vector<Fact> facts;
     std::string lang;
     
-    if (filename.ends_with(".cpp") || filename.ends_with(".h") || filename.ends_with(".hpp")) {
+    if (str_ends_with(filename, ".cpp") || str_ends_with(filename, ".h") || str_ends_with(filename, ".hpp")) {
         lang = "cpp";
-    } else if (filename.ends_with(".py")) {
+    } else if (str_ends_with(filename, ".py")) {
         lang = "python";
-    } else if (filename.ends_with(".js") || filename.ends_with(".ts")) {
+    } else if (str_ends_with(filename, ".js") || str_ends_with(filename, ".ts")) {
         lang = "javascript";
     } else {
         lang = "code";

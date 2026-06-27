@@ -37,7 +37,8 @@
 
 
 // Forward declarations — these are defined in other HRE layers
-class MKPatternGraph;
+// MKPatternGraph included from pattern_graph.cpp
+#include "pattern_graph.cpp"
 class MKReasoningChains;
 
 // ─────────────────────────────────────────────────────────────────────────────────
@@ -317,6 +318,7 @@ private:
     bool checkLogicalConsistency(const std::string& source, const std::string& relation,
                                   const std::string& target, MKPatternGraph& graph,
                                   MKReasoningChains& reasoning, std::string& reason) {
+        (void)reasoning; // Not yet used - reserved for future reasoning-chain validation
         
         // Check 1: Category coherence via is_a chains
         // If source is_a X, and target is_a Y, check if X and Y are compatible domains
@@ -390,6 +392,7 @@ private:
     float calculateConfidence(const std::string& source, const std::string& relation,
                               const std::string& target, const std::string& sourceName,
                               float sourceTrustLevel, MKPatternGraph& graph) {
+        (void)sourceName; // Reserved for future per-source weighting
         float confidence = 0.0f;
         std::string factKey = makeFactKey(source, relation, target);
         

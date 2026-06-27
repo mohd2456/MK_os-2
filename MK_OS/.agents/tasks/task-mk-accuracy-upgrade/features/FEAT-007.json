@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-007",
+  "type": "feat",
+  "description": "Create ai_core/hre/knowledge_files/world_knowledge.mk with 300+ facts across psychology, economics, music, food, space, medicine, philosophy",
+  "status": "completed",
+  "steps": [
+    "Create world_knowledge.mk with proper header and format",
+    "Add psychology facts (cognitive biases, memory, learning, emotions)",
+    "Add economics facts (supply/demand, inflation, GDP, markets, crypto)",
+    "Add music facts (theory, instruments, genres, composers)",
+    "Add food/nutrition facts (vitamins, calories, food science)",
+    "Add space exploration facts (missions, rockets, planets, discoveries)",
+    "Add medicine facts (organs, diseases, treatments, anatomy)",
+    "Add philosophy facts (logic, ethics, famous thinkers, thought experiments)"
+  ],
+  "acceptance_criteria": [
+    "File has 300+ fact lines (excluding comments)",
+    "All facts use source|relation|target|weight format",
+    "All weights between 0.0 and 1.0",
+    "Facts are real and accurate",
+    "Section headers use # comments",
+    "make all still compiles"
+  ],
+  "verification": ["Count fact lines > 300", "Run make all"],
+  "blocked_reason": null,
+  "findings": "Created world_knowledge.mk with 335 facts across 7 topics: psychology (cognitive biases, memory, emotions), economics (fundamentals, markets, crypto), music (theory, instruments, genres, composers), food/nutrition (vitamins, food science), space exploration (missions, rockets, planets), medicine (organs, diseases, body systems), philosophy (logic, ethics, thinkers, thought experiments). 379 total lines."
+}

@@ -373,8 +373,10 @@ public:
         loadFromFile("core_facts.mk");
         loadFromFile("personal_facts.mk");
         loadFromFile("learned_facts.mk");
-        loadFromFile("world_facts.mk");
+        loadFromFile("world_knowledge.mk");
         loadFromFile("rules.mk");
+        loadFromFile("coding_knowledge.mk");
+        loadFromFile("system_knowledge.mk");
     }
 
     // Append a single new fact to the learned_facts file (for runtime learning)

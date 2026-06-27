@@ -25,8 +25,8 @@
 // Rules load from files. You can add new rules without recompiling.
 // ===================================================================================
 
-// Forward declaration
-class MKPatternGraph;
+// Forward declaration (MKPatternGraph included from pattern_graph.cpp)
+#include "pattern_graph.cpp"
 
 // A reasoning rule template
 struct MKRule {

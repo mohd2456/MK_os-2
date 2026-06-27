@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Add internet search engine, fact verification, freshness management, cited responses, honesty engine, and LLM knowledge extraction modules to MK OS",
+  "status": "completed",
+  "steps": [
+    "Create network/search_engine.cpp - Multi-source internet search module using DuckDuckGo API (https://api.duckduckgo.com/?q=QUERY&format=json) and Wikipedia API (https://en.wikipedia.org/api/rest_v1/page/summary/QUERY). Uses the existing MKHTTP class from network/http.cpp for HTTP requests. Include a class MKSearchEngine with methods: search(query) returning ranked results with URLs, titles, snippets; searchMultiple(query) hitting multiple sources; parseJSON for lightweight JSON parsing of API responses. Follow the #ifndef guard pattern and iostream logging style.",
+    "Create ai_core/fact_verifier.cpp - Cross-reference engine that takes a claimed fact, queries multiple sources via MKSearchEngine, scores confidence based on source agreement, detects contradictions against existing knowledge graph facts. Class MKFactVerifier with methods: verify(claim) returning a VerificationResult struct with confidence score (0.0-1.0), agreeing_sources count, contradictions list, source URLs. Include logic to compare against known facts in the pattern graph.",
+    "Create ai_core/freshness_manager.cpp - Tracks when each fact was last verified (stored as timestamp), assigns expiry periods by category (science=365 days, technology=90 days, politics=7 days, sports=1 day, general=180 days). Class MKFreshnessManager with methods: isStale(fact_key), getExpiryCategory(topic), flagForReverification(fact_key), getStaleFactsList(). Stores metadata in an unordered_map with fact keys.",
+    "Create ai_core/cited_response.cpp - Builds responses that always include: the answer text, source URL(s), confidence percentage, number of agreeing sources, and last verification timestamp. Class MKCitedResponse with a struct CitedAnswer {text, sources[], confidence, agreeing_count, verified_at} and method buildResponse(answer, verification_result) that formats a complete cited response string.",
+    "Create ai_core/honesty_engine.cpp - Never-guess module. If confidence < threshold (configurable, default 0.6), it returns an honest uncertainty response like 'I'm not confident enough to answer this. Let me look it up.' or 'I found conflicting information - here's what different sources say.' Class MKHonestyEngine with methods: shouldAnswer(confidence_score), getHonestResponse(query, confidence, reason), admitUncertainty(query). Integrates with MKConfidenceScorer thresholds.",
+    "Create tools/llm_eater.cpp - Standalone tool (like knowledge_ingest.cpp) that connects to an LLM API endpoint (configurable URL), sends structured prompts to extract facts about a topic, parses the responses into source|relation|target|weight format, and outputs to a .mk file. Class MKLLMEater with methods: interrogate(topic, api_url), extractFacts(llm_response), saveMKFormat(facts, output_path). Uses MKHTTP for API calls. Compiles standalone with main()."
+  ],
+  "acceptance_criteria": [
+    "All 6 new .cpp files compile without errors as part of 'make all' (except tools/llm_eater.cpp which compiles standalone)",
+    "Each file follows the existing header guard pattern (#ifndef/#define/#endif)",
+    "Each class has constructor logging matching the [MODULE] style",
+    "MKSearchEngine uses MKHTTP class for HTTP operations",
+    "MKFactVerifier scores confidence based on multi-source agreement",
+    "MKFreshnessManager correctly categorizes expiry periods",
+    "MKCitedResponse includes all required fields (answer, sources, confidence, agreeing_count, verified_at)",
+    "MKHonestyEngine refuses to answer below confidence threshold",
+    "tools/llm_eater.cpp has a main() function and compiles standalone"
+  ],
+  "verification": [
+    "Run 'make all' from /projects/sandbox/MK_os-2/MK_OS/ and confirm zero compile errors",
+    "Run 'clang++ -std=c++17 -O2 -c network/search_engine.cpp -o /dev/null' to verify standalone compilation",
+    "Run 'clang++ -std=c++17 -O2 tools/llm_eater.cpp -lcurl -o /dev/null' to verify standalone tool compilation"
+  ],
+  "blocked_reason": null,
+  "findings": "The base codebase had numerous pre-existing build errors that needed fixing: (1) Missing includes (algorithm, cmath, fstream, chrono, map) across multiple files, (2) stray character in datasets/loader.cpp, (3) mismatched include paths in Kernel/kernel_main.cpp (sched/sched.cpp vs sched/scheduler_core.cpp, driver names), (4) immintrin.h placed inside a class body in ai_core/hal.cpp, (5) multiple main() functions conflicting at link time (kernel_main.cpp, hre_main.cpp, mk_entry.cpp), (6) forward declarations of MKPatternGraph used without including the actual definition in hre/ files. All were fixed to make the build pass. The Makefile now excludes Kernel/kernel_main.cpp and ai_core/hre/hre_main.cpp from the source list."
+}

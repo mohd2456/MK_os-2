@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Rewrite system/mk_entry.cpp to include and use all real module implementations instead of stubs, providing a working REPL with smart routing, knowledge integration, real-time APIs, persistent memory, diagnostics, and self-improvement.",
+  "status": "completed",
+  "steps": [
+    "Remove all stub class definitions from system/mk_entry.cpp (MKLogger, MKBoot, MKThermalGovernor, MKDaemon, MKRemoteAccess, MKPatternGraph, MKReasoningChains, MKComposer, MKDeepReasoner, MKMetaCognition, MKCodeIntelligence, MKDailyBriefing, HREBrain, MKShell - approximately lines 30-380).",
+    "Add #include directives at the top of mk_entry.cpp (after the standard library includes) for the real modules using relative paths from system/ directory: #include \"diagnostics.cpp\" (same dir), #include \"../ai_core/hre/pattern_graph.cpp\", #include \"../ai_core/hre/deep_reasoner.cpp\", #include \"../ai_core/hre/reasoning_chains.cpp\", #include \"../ai_core/hre/composer.cpp\", #include \"../ai_core/smart_router.cpp\", #include \"../network/realtime_apis.cpp\", #include \"../ai_core/persistent_memory.cpp\", #include \"../ai_core/knowledge_integrator.cpp\", #include \"../ai_core/self_improver.cpp\", #include \"../mk_brain/personality/response_style.cpp\". Note: knowledge_integrator.cpp transitively includes search_engine, fact_verifier, freshness_manager, cited_response, honesty_engine. realtime_apis.cpp and search_engine.cpp both include http.cpp. deep_reasoner.cpp includes pattern_graph.cpp. All have #ifndef guards so multiple inclusion is safe.",
+    "Implement a new MKSystem class (or equivalent orchestration struct) that holds instances of: MKPatternGraph (knowledge graph), MKSmartRouter (query routing), MKRealtimeAPIs (time/weather/news), MKPersistentMemory (session memory), MKKnowledgeIntegrator (search+verify+cite pipeline), MKSelfImprover (gap tracking), MKDiagnostics (system health), MKResponseStyle (personality formatting), MKDeepReasoner (multi-hop reasoning), MKComposer (response composition).",
+    "Implement boot sequence: print banner, detect platform, initialize all modules, load knowledge from ai_core/hre/knowledge_files/ directory using MKPatternGraph::loadAllKnowledge(), load persistent memory from disk, print status.",
+    "Implement the main REPL loop reading from stdin with prompt 'MK > '. Route natural language queries through MKSmartRouter::route() to determine the processing path (INSTANT/GRAPH/SEARCH/REASON/GENERATE). For INSTANT: use MKRealtimeAPIs. For GRAPH: use MKPatternGraph. For SEARCH: use MKKnowledgeIntegrator::buildCitedAnswer(). For REASON: use MKDeepReasoner. Format responses through MKResponseStyle::format_response(). Log outcomes to MKSelfImprover and MKPersistentMemory.",
+    "Implement command handlers for: /help (show all commands), /ask <query> (force knowledge graph lookup), /search <query> (force internet search via MKKnowledgeIntegrator), /status (run MKDiagnostics::run_full_diagnostics() + show module stats), /learn <fact> (add to knowledge graph and persist), /weather <city> (MKRealtimeAPIs::getWeather), /time <timezone> (MKRealtimeAPIs::getCurrentTime), /news (MKRealtimeAPIs::getTechNews), /think <topic> (MKDeepReasoner deep reasoning), /quit (save memory + shutdown).",
+    "Implement graceful shutdown: save persistent memory to disk, save self-improvement log, print shutdown message.",
+    "Ensure the file compiles cleanly with: clang++ -std=c++17 -fsyntax-only -Wall system/mk_entry.cpp (run from MK_OS/ directory). There must be zero errors and ideally zero warnings."
+  ],
+  "acceptance_criteria": [
+    "system/mk_entry.cpp no longer contains any stub class implementations - all classes come from real module includes",
+    "The file includes all specified real modules via #include directives",
+    "Running 'clang++ -std=c++17 -fsyntax-only -Wall system/mk_entry.cpp' from MK_OS/ produces zero errors",
+    "The main() function provides a boot sequence that initializes all real modules",
+    "The REPL handles all specified commands: /help, /ask, /search, /status, /learn, /weather, /time, /news, /think, /quit",
+    "Natural language queries (non-commands) are routed through MKSmartRouter to appropriate handlers",
+    "No new directories or .h files are created",
+    "Only system/mk_entry.cpp is modified"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && clang++ -std=c++17 -fsyntax-only -Wall system/mk_entry.cpp",
+    "cd /projects/sandbox/MK_os-2/MK_OS && clang++ -std=c++17 -O2 system/mk_entry.cpp -o mk_os -lcurl"
+  ],
+  "blocked_reason": null,
+  "findings": "All 5 review issues addressed: (1) bare commands now show usage instead of 'Unknown command', (2) INSTANT route city extraction strips trailing noise words, (3) MKReasoningChains.deriveAll() wired into REASON route before deep reasoning, (4) periodic auto-save every 50 interactions added, (5) timezone extraction from natural language for /time and INSTANT time route. Compilation passes with zero errors (two pre-existing warnings from pattern_graph.cpp and deep_reasoner.cpp remain). Full link with -lcurl also passes."
+}

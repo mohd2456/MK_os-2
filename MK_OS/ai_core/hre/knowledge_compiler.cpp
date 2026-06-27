@@ -13,6 +13,9 @@
 #include <cmath>
 #include <deque>
 #include <functional>
+#include <chrono>
+
+#include "pattern_graph.cpp"
 
 // ===================================================================================
 // MK KNOWLEDGE COMPILER — The Secret Weapon

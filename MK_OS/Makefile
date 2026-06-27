@@ -16,6 +16,7 @@ ENTRY     := system/mk_entry.cpp
 # Tool binaries
 INGEST    := mk_ingest
 TELEGRAM  := mk_telegram
+LLM_EATER := mk_llm_eater
 
 # Collect all source files (excluding tools and standalone mains that conflict)
 SOURCES   := $(shell find . -name '*.cpp' \
@@ -27,6 +28,8 @@ SOURCES   := $(shell find . -name '*.cpp' \
                ! -path './memory_mgmt/main_memory.cpp' \
                ! -path './mk_brain/cashe/Main_cache.cpp' \
                ! -path './mk_brain/embeddings/main_embeddings.cpp' \
+               ! -path './Kernel/kernel_main.cpp' \
+               ! -path './ai_core/hre/hre_main.cpp' \
                ! -name 'main_*.cpp' \
                -type f)
 
@@ -54,12 +57,19 @@ $(TARGET): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Build standalone tools
-tools: $(INGEST) $(TELEGRAM)
+SYNC      := mk_sync
+tools: $(INGEST) $(TELEGRAM) $(LLM_EATER) $(SYNC)
 
 $(INGEST): tools/knowledge_ingest.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
 $(TELEGRAM): tools/telegram_bridge.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS)
+
+$(LLM_EATER): tools/llm_eater.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS)
+
+$(SYNC): tools/knowledge_sync.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS)
 
 # Run MK OS
@@ -76,7 +86,7 @@ install: $(TARGET)
 clean:
 	@echo "Cleaning..."
 	@find . -name '*.o' -delete
-	@rm -f $(TARGET) $(INGEST) $(TELEGRAM)
+	@rm -f $(TARGET) $(INGEST) $(TELEGRAM) $(LLM_EATER)
 	@echo "  ✓ Clean"
 
 # Help target
@@ -93,7 +103,7 @@ help:
 	@echo "    clean     - Remove all build artifacts"
 	@echo "    run       - Build and run mk_os"
 	@echo "    install   - Install mk_os to $(PREFIX)"
-	@echo "    tools     - Build standalone tools (mk_ingest, mk_telegram)"
+	@echo "    tools     - Build standalone tools (mk_ingest, mk_telegram, mk_llm_eater)"
 	@echo "    help      - Show this help message"
 	@echo ""
 	@echo "  Dependencies:"
@@ -107,4 +117,7 @@ help:
 	@echo "  Knowledge ingestion:"
 	@echo "    make tools"
 	@echo "    ./mk_ingest <source_directory> <output.mk>"
+	@echo ""
+	@echo "  LLM knowledge extraction:"
+	@echo "    ./mk_llm_eater <topic> <api_url> [output.mk]"
 	@echo ""
