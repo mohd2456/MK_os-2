@@ -1,0 +1,31 @@
+#!/bin/sh
+# MK OS - iPhone Boot Init
+
+# Mount essentials
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+mkdir -p /dev/pts /tmp /var/log /var/run
+mount -t devpts devpts /dev/pts
+mount -t tmpfs tmpfs /tmp
+
+# Hostname
+hostname mk-os
+
+# Network
+ifconfig lo 127.0.0.1 up
+echo "[MK BOOT] Getting network from UTM SE..."
+udhcpc -i eth0 -s /usr/share/udhcpc/default.script -q -t 5 2>/dev/null &
+sleep 2
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+
+# Launch MK OS
+cd /opt/mk_os
+clear
+while true; do
+    ./mk_os
+    echo ""
+    echo "  [MK OS exited. Restarting in 3s... Ctrl+C for shell]"
+    sleep 3
+done

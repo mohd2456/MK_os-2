@@ -1,8 +1,5 @@
-# Build artifacts (generated, don't commit large binaries)
+# Only ignore raw .img (too large), keep qcow2 and initramfs
 build_work/mk_os_boot.img
-build_work/mk_os_boot.qcow2
 build_work/rootfs/
 build_work/alpine-rootfs.tar.gz
-staging/mk_os
-*.img
-*.qcow2
+build_work/mnt/
