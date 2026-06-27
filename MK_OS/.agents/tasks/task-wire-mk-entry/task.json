@@ -1,0 +1,7 @@
+{
+  "task_id": "task-wire-mk-entry",
+  "task_description": "Rewrite system/mk_entry.cpp to use real module implementations instead of stubs, creating a fully working REPL binary that routes queries through the smart router to knowledge graph, search engine, real-time APIs, and deep reasoner.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

@@ -3,6 +3,8 @@
 // The single boot sequence that brings the entire system online.
 // Replaces all scattered main() functions with one clean startup.
 // ============================================================
+#ifndef MK_ENTRY_CPP
+#define MK_ENTRY_CPP
 
 #include <iostream>
 #include <string>
@@ -14,689 +16,524 @@
 #include <vector>
 #include <functional>
 #include <memory>
-#include <mutex>
+#include <sstream>
+#include <algorithm>
 
-// Forward declarations - each module provides its own class
-class MKLogger;
-class MKBoot;
-class MKThermalGovernor;
-class MKDaemon;
-class MKRemoteAccess;
-class MKPatternGraph;
-class MKReasoningChains;
-class MKComposer;
-class MKDeepReasoner;
-class MKMetaCognition;
-class MKCodeIntelligence;
-class MKDailyBriefing;
-class MKShell;
-class MKError;
+// ============================================================
+// Include real module implementations
+// ============================================================
+#include "diagnostics.cpp"
+#include "../ai_core/hre/pattern_graph.cpp"
+#include "../ai_core/hre/deep_reasoner.cpp"
+#include "../ai_core/hre/reasoning_chains.cpp"
+#include "../ai_core/hre/composer.cpp"
+#include "../ai_core/smart_router.cpp"
+#include "../network/realtime_apis.cpp"
+#include "../ai_core/persistent_memory.cpp"
+#include "../ai_core/knowledge_integrator.cpp"
+#include "../ai_core/self_improver.cpp"
+#include "../mk_brain/personality/response_style.cpp"
 
 // ============================================================
 // Global state
 // ============================================================
 static std::atomic<bool> g_running{true};
-static std::atomic<bool> g_thermal_throttle{false};
-static std::mutex g_io_mutex;
 
 // Signal handler for graceful shutdown
-void mk_signal_handler(int sig) {
-    std::lock_guard<std::mutex> lock(g_io_mutex);
-    std::cout << "\n[MK] Signal " << sig << " received. Initiating shutdown...\n";
+static void mk_signal_handler(int sig) {
+    (void)sig;
     g_running = false;
 }
 
 // ============================================================
 // MK Banner
 // ============================================================
-void print_banner() {
+static void print_banner() {
     std::cout << R"(
-    ╔══════════════════════════════════════════════════════════╗
-    ║                                                          ║
-    ║   ███╗   ███╗██╗  ██╗     ██████╗ ███████╗              ║
-    ║   ████╗ ████║██║ ██╔╝    ██╔═══██╗██╔════╝              ║
-    ║   ██╔████╔██║█████╔╝     ██║   ██║███████╗              ║
-    ║   ██║╚██╔╝██║██╔═██╗     ██║   ██║╚════██║              ║
-    ║   ██║ ╚═╝ ██║██║  ██╗    ╚██████╔╝███████║              ║
-    ║   ╚═╝     ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚══════╝              ║
-    ║                                                          ║
-    ║   Hybrid Reasoning Engine v2.0                           ║
-    ║   Custom AI Operating System                             ║
-    ║   Built for low-end hardware. Thinks like a human.       ║
-    ║                                                          ║
-    ╚══════════════════════════════════════════════════════════╝
+    =====================================================
+    |   MK OS - Hybrid Reasoning Engine v2.0            |
+    |   Custom AI Operating System                      |
+    |   Built for low-end hardware. Thinks like a human.|
+    =====================================================
 )" << std::endl;
 }
 
 // ============================================================
-// Module Stubs (these call into the real implementations)
-// In a full build, these are linked from their respective .cpp files.
+// MKSystem - Orchestrates all real modules
+// ============================================================
+struct MKSystem {
+    MKPatternGraph graph;
+    MKSmartRouter router;
+    MKRealtimeAPIs realtimeApis;
+    MKPersistentMemory memory;
+    MKKnowledgeIntegrator integrator;
+    MKSelfImprover improver;
+    MKDiagnostics diagnostics;
+    MKResponseStyle style;
+    MKDeepReasoner reasoner;
+    MKReasoningChains chains;
+    MKComposer composer;
+
+    MKSystem()
+        : graph("ai_core/hre/knowledge_files"),
+          router(),
+          realtimeApis(),
+          memory("mk_memory.dat", 10000, 5000),
+          integrator(),
+          improver(0.6f, 10000, "mk_improvement.log"),
+          diagnostics(),
+          style(),
+          reasoner(10),
+          chains("ai_core/hre/knowledge_files"),
+          composer(MKComposerMode::FRIENDLY) {}
+};
+
+// ============================================================
+// Helper: trim whitespace
+// ============================================================
+static std::string trim(const std::string& s) {
+    size_t start = s.find_first_not_of(" \t\r\n");
+    if (start == std::string::npos) return "";
+    size_t end = s.find_last_not_of(" \t\r\n");
+    return s.substr(start, end - start + 1);
+}
+
+// ============================================================
+// Command Handlers
 // ============================================================
 
-// --- Logger ---
-class MKLogger {
-public:
-    enum Level { DEBUG, INFO, WARN, ERROR, FATAL };
-    
-    void init(const std::string& log_path = "mk_os.log") {
-        log_file_.open(log_path, std::ios::app);
-        log(INFO, "Logger initialized → " + log_path);
+static void cmd_help() {
+    std::cout << "\n  MK OS Commands:\n"
+              << "    /help             - Show this help\n"
+              << "    /ask <query>      - Knowledge graph lookup\n"
+              << "    /search <query>   - Internet search (cited answer)\n"
+              << "    /status           - System diagnostics and module stats\n"
+              << "    /learn <s|r|t>    - Add fact (source|relation|target)\n"
+              << "    /weather <city>   - Get weather for a city\n"
+              << "    /time [timezone]  - Get current time\n"
+              << "    /news             - Latest tech news headlines\n"
+              << "    /think <topic>    - Deep multi-hop reasoning\n"
+              << "    /quit             - Save and exit\n"
+              << "\n  Or just type naturally and MK will route your query.\n\n";
+}
+
+static void cmd_ask(MKSystem& sys, const std::string& query) {
+    if (query.empty()) {
+        std::cout << "\n  Usage: /ask <query>\n";
+        return;
     }
-    
-    void log(Level level, const std::string& msg) {
-        const char* labels[] = {"DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
-        auto now = std::chrono::system_clock::now();
-        auto time = std::chrono::system_clock::to_time_t(now);
-        
-        std::lock_guard<std::mutex> lock(g_io_mutex);
-        std::string entry = "[" + std::string(labels[level]) + "] " + msg;
-        std::cout << "  " << entry << std::endl;
-        if (log_file_.is_open()) {
-            log_file_ << std::ctime(&time) << "  " << entry << std::endl;
+    // Try to find info in the knowledge graph
+    auto results = sys.graph.getAll(query);
+    if (results.empty()) {
+        // Try a path query
+        auto pathResult = sys.graph.pathQuery(query, "is_a", 5);
+        if (pathResult.found) {
+            std::string raw = query + " is " + pathResult.answer;
+            std::string formatted = sys.style.format_response(raw, query, pathResult.confidence);
+            std::cout << "\n  " << formatted << "\n";
+        } else {
+            std::cout << "\n  No knowledge found for: " << query
+                      << "\n  Try teaching me with /learn or use /search for internet.\n";
+        }
+    } else {
+        std::string raw;
+        for (const auto& edge : results) {
+            raw += edge.source + " " + edge.relation + " " + edge.target + ". ";
+        }
+        std::string formatted = sys.style.format_response(raw, query, 0.8f);
+        std::cout << "\n  " << formatted << "\n";
+    }
+}
+
+static void cmd_search(MKSystem& sys, const std::string& query) {
+    if (query.empty()) {
+        std::cout << "\n  Usage: /search <query>\n";
+        return;
+    }
+    auto answer = sys.integrator.buildCitedAnswer(query);
+    if (!answer.formattedResponse.empty()) {
+        std::cout << "\n  " << answer.formattedResponse << "\n";
+    } else if (!answer.text.empty()) {
+        std::cout << "\n  " << answer.text << "\n";
+    } else {
+        std::cout << "\n  No results found for: " << query << "\n";
+    }
+}
+
+static void cmd_status(MKSystem& sys) {
+    std::cout << "\n";
+    std::string report = sys.diagnostics.run_full_diagnostics();
+    std::cout << "  " << report << "\n";
+    sys.router.printStats();
+    sys.integrator.printStats();
+    sys.memory.printStats();
+    sys.improver.printStats();
+    sys.graph.printStats();
+    std::cout << "\n";
+}
+
+static void cmd_learn(MKSystem& sys, const std::string& fact) {
+    if (fact.empty()) {
+        std::cout << "\n  Usage: /learn source|relation|target\n";
+        return;
+    }
+    // Parse: source|relation|target
+    std::stringstream ss(fact);
+    std::string source, relation, target;
+    if (std::getline(ss, source, '|') && std::getline(ss, relation, '|') && std::getline(ss, target, '|')) {
+        source = trim(source);
+        relation = trim(relation);
+        target = trim(target);
+        if (source.empty() || relation.empty() || target.empty()) {
+            std::cout << "\n  Invalid fact format. Use: source|relation|target\n";
+            return;
+        }
+        sys.graph.persistNewFact(source, relation, target, 1.0f);
+        std::cout << "\n  Learned: " << source << " " << relation << " " << target << "\n";
+    } else {
+        // Try getting just the remaining part as target
+        source = trim(source);
+        relation = trim(relation);
+        if (!source.empty() && !relation.empty()) {
+            // Two fields parsed before getline failed, use remaining
+            std::cout << "\n  Invalid fact format. Use: source|relation|target\n";
+        } else {
+            std::cout << "\n  Invalid fact format. Use: source|relation|target\n";
         }
     }
-    
-    void shutdown() {
-        log(INFO, "Logger shutting down.");
-        if (log_file_.is_open()) log_file_.close();
+}
+
+static void cmd_weather(MKSystem& sys, const std::string& city) {
+    if (city.empty()) {
+        std::cout << "\n  Usage: /weather <city>\n";
+        return;
     }
-
-private:
-    std::ofstream log_file_;
-};
-
-// --- Boot ---
-class MKBoot {
-public:
-    bool init(MKLogger& logger) {
-        logger.log(MKLogger::INFO, "Boot: Detecting hardware...");
-        // Detect platform
-        #ifdef __APPLE__
-        platform_ = "macOS (Darwin)";
-        #elif __linux__
-        platform_ = "Linux";
-        #else
-        platform_ = "Unknown";
-        #endif
-        logger.log(MKLogger::INFO, "Boot: Platform → " + platform_);
-        logger.log(MKLogger::INFO, "Boot: Hardware check complete.");
-        return true;
+    auto data = sys.realtimeApis.getWeather(city);
+    if (data.valid) {
+        std::cout << "\n  Weather for " << data.city << ":\n"
+                  << "    Temperature: " << data.temperature << " C\n"
+                  << "    Conditions: " << data.description << "\n"
+                  << "    Wind: " << data.windSpeed << " km/h\n"
+                  << "    Humidity: " << data.humidity << "%\n\n";
+    } else {
+        std::cout << "\n  Could not fetch weather for: " << city << "\n";
     }
-    
-    std::string platform() const { return platform_; }
+}
 
-private:
-    std::string platform_;
-};
-
-// --- Thermal Governor ---
-class MKThermalGovernor {
-public:
-    void init(MKLogger& logger) {
-        logger.log(MKLogger::INFO, "Thermal: Governor started.");
-        temp_celsius_ = read_temperature();
-        logger.log(MKLogger::INFO, "Thermal: Current temp → " + std::to_string(temp_celsius_) + "°C");
+static void cmd_time(MKSystem& sys, const std::string& timezone) {
+    std::string tz = timezone.empty() ? "America/New_York" : timezone;
+    auto data = sys.realtimeApis.getCurrentTime(tz);
+    if (data.valid) {
+        std::cout << "\n  Time (" << data.timezone << "): " << data.datetime << "\n";
+    } else {
+        std::cout << "\n  Could not fetch time for timezone: " << tz << "\n";
     }
-    
-    void check() {
-        temp_celsius_ = read_temperature();
-        g_thermal_throttle = (temp_celsius_ > 85);
-    }
-    
-    bool is_throttled() const { return g_thermal_throttle.load(); }
-    int temperature() const { return temp_celsius_; }
+}
 
-private:
-    int temp_celsius_ = 0;
-    
-    int read_temperature() {
-        // macOS: read from SMC or IOKit (simplified)
-        // In production, this reads from thermal sensors via IOKit
-        #ifdef __APPLE__
-        // Simulated read - real implementation uses IOKit SMC
-        FILE* pipe = popen("sysctl -n machdep.xcpm.cpu_thermal_level 2>/dev/null", "r");
-        if (pipe) {
-            char buf[32];
-            if (fgets(buf, sizeof(buf), pipe)) {
-                pclose(pipe);
-                int level = std::atoi(buf);
-                return 40 + (level * 15); // Approximate mapping
-            }
-            pclose(pipe);
+static void cmd_news(MKSystem& sys) {
+    auto data = sys.realtimeApis.getTechNews(5);
+    if (data.valid && !data.headlines.empty()) {
+        std::cout << "\n  Latest Tech News:\n";
+        int i = 1;
+        for (const auto& item : data.headlines) {
+            std::cout << "    " << i++ << ". " << item.title;
+            if (item.score > 0) std::cout << " (score: " << item.score << ")";
+            std::cout << "\n";
         }
-        #endif
-        return 55; // Default safe temperature
+        std::cout << "\n";
+    } else {
+        std::cout << "\n  Could not fetch news headlines.\n";
     }
-};
+}
 
-// --- Daemon ---
-class MKDaemon {
-public:
-    struct Job {
-        std::string name;
-        std::function<void()> task;
-        std::chrono::seconds interval;
-        std::chrono::steady_clock::time_point last_run;
-    };
-    
-    void init(MKLogger& logger) {
-        logger_ = &logger;
-        logger.log(MKLogger::INFO, "Daemon: 24/7 service loop ready.");
+static void cmd_think(MKSystem& sys, const std::string& topic) {
+    if (topic.empty()) {
+        std::cout << "\n  Usage: /think <topic>\n";
+        return;
     }
-    
-    void register_job(const std::string& name, std::function<void()> task, int interval_seconds) {
-        jobs_.push_back({
-            name, task,
-            std::chrono::seconds(interval_seconds),
-            std::chrono::steady_clock::now()
-        });
-        logger_->log(MKLogger::INFO, "Daemon: Registered job '" + name + "' every " + std::to_string(interval_seconds) + "s");
+    auto chain = sys.reasoner.think(topic, sys.graph);
+    if (!chain.finalAnswer.empty()) {
+        std::string formatted = sys.style.format_response(chain.finalAnswer, topic, chain.overallConfidence);
+        std::cout << "\n  Deep Reasoning Result (" << chain.steps.size() << " steps, "
+                  << chain.totalHops << " hops):\n"
+                  << "  " << formatted << "\n";
+    } else {
+        std::cout << "\n  Could not find a reasoning path for: " << topic
+                  << "\n  Try teaching me related facts with /learn.\n";
     }
-    
-    void tick() {
-        auto now = std::chrono::steady_clock::now();
-        for (auto& job : jobs_) {
-            if (now - job.last_run >= job.interval) {
-                job.task();
-                job.last_run = now;
-            }
-        }
-    }
+}
 
-private:
-    std::vector<Job> jobs_;
-    MKLogger* logger_ = nullptr;
-};
+// ============================================================
+// Natural Language Routing
+// ============================================================
+static void handle_natural_query(MKSystem& sys, const std::string& input) {
+    // Route through MKSmartRouter
+    auto decision = sys.router.route(input);
+    std::string response;
+    float confidence = 0.0f;
+    bool answered = false;
 
-// --- Remote Access ---
-class MKRemoteAccess {
-public:
-    void init(MKLogger& logger, int port = 7700) {
-        port_ = port;
-        logger.log(MKLogger::INFO, "Remote: Socket listener on port " + std::to_string(port_));
-        // In production, opens a TCP socket for PC connections
-        active_ = true;
-    }
-    
-    bool has_input() {
-        // Check if remote client sent data (non-blocking)
-        return false; // Placeholder - real impl uses select()/poll()
-    }
-    
-    std::string read_input() { return ""; }
-    void send_output(const std::string& msg) { (void)msg; }
-    
-    bool active() const { return active_; }
+    switch (decision.primaryRoute) {
+        case MKRouteType::INSTANT: {
+            // Detect what kind of instant data is needed
+            std::string lower = input;
+            std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
 
-private:
-    int port_ = 7700;
-    bool active_ = false;
-};
-
-// --- Pattern Graph (Knowledge) ---
-class MKPatternGraph {
-public:
-    struct Triple {
-        std::string source;
-        std::string relation;
-        std::string target;
-        float weight;
-    };
-    
-    bool load(const std::string& directory, MKLogger& logger) {
-        logger.log(MKLogger::INFO, "Knowledge: Loading from " + directory);
-        int total = 0;
-        
-        // Load all .mk files in the knowledge directory
-        std::vector<std::string> files = {
-            "core_facts.mk", "lexicon.mk", "phrases.mk",
-            "rules.mk", "learned_facts.mk", "personal_facts.mk",
-            "code_templates.mk", "coding_knowledge.mk", "system_knowledge.mk"
-        };
-        
-        for (const auto& file : files) {
-            std::string path = directory + "/" + file;
-            std::ifstream f(path);
-            if (!f.is_open()) continue;
-            
-            std::string line;
-            int count = 0;
-            while (std::getline(f, line)) {
-                if (line.empty() || line[0] == '#') continue;
-                // Parse: source|relation|target|weight
-                auto t = parse_triple(line);
-                if (!t.source.empty()) {
-                    triples_.push_back(t);
-                    count++;
+            if (lower.find("weather") != std::string::npos) {
+                // Try to extract city from query
+                std::string city = "New York"; // default
+                // Simple extraction: last word(s) after "weather" or "in"
+                size_t inPos = lower.find(" in ");
+                if (inPos != std::string::npos) {
+                    city = input.substr(inPos + 4);
+                }
+                auto data = sys.realtimeApis.getWeather(trim(city));
+                if (data.valid) {
+                    response = "Weather in " + data.city + ": " +
+                               std::to_string((int)data.temperature) + " C, " + data.description;
+                    confidence = 0.9f;
+                    answered = true;
+                }
+            } else if (lower.find("time") != std::string::npos || lower.find("clock") != std::string::npos) {
+                auto data = sys.realtimeApis.getCurrentTime("America/New_York");
+                if (data.valid) {
+                    response = "Current time (" + data.timezone + "): " + data.datetime;
+                    confidence = 0.95f;
+                    answered = true;
+                }
+            } else if (lower.find("news") != std::string::npos) {
+                auto data = sys.realtimeApis.getTechNews(3);
+                if (data.valid && !data.headlines.empty()) {
+                    response = "Top headlines: ";
+                    for (size_t i = 0; i < data.headlines.size(); i++) {
+                        response += std::to_string(i + 1) + ") " + data.headlines[i].title;
+                        if (i < data.headlines.size() - 1) response += " | ";
+                    }
+                    confidence = 0.9f;
+                    answered = true;
                 }
             }
-            total += count;
-            logger.log(MKLogger::DEBUG, "  Loaded " + file + " → " + std::to_string(count) + " facts");
+
+            if (!answered) {
+                // Fallback to graph if instant route cannot handle it
+                auto results = sys.graph.getAll(input);
+                if (!results.empty()) {
+                    for (const auto& e : results) {
+                        response += e.source + " " + e.relation + " " + e.target + ". ";
+                    }
+                    confidence = 0.7f;
+                    answered = true;
+                }
+            }
+            break;
         }
-        
-        logger.log(MKLogger::INFO, "Knowledge: " + std::to_string(total) + " total facts loaded.");
-        return total > 0;
+        case MKRouteType::GRAPH: {
+            // Knowledge graph lookup
+            auto results = sys.graph.getAll(input);
+            if (!results.empty()) {
+                for (const auto& e : results) {
+                    response += e.source + " " + e.relation + " " + e.target + ". ";
+                }
+                confidence = 0.8f;
+                answered = true;
+            } else {
+                // Try path query
+                auto pathResult = sys.graph.pathQuery(input, "is_a", 5);
+                if (pathResult.found) {
+                    response = input + " is " + pathResult.answer;
+                    confidence = pathResult.confidence;
+                    answered = true;
+                }
+            }
+            break;
+        }
+        case MKRouteType::SEARCH: {
+            auto answer = sys.integrator.buildCitedAnswer(input);
+            if (!answer.formattedResponse.empty()) {
+                response = answer.formattedResponse;
+                confidence = answer.confidence;
+                answered = true;
+            } else if (!answer.text.empty()) {
+                response = answer.text;
+                confidence = answer.confidence;
+                answered = true;
+            }
+            break;
+        }
+        case MKRouteType::REASON: {
+            auto chain = sys.reasoner.think(input, sys.graph);
+            if (!chain.finalAnswer.empty()) {
+                response = chain.finalAnswer;
+                confidence = chain.overallConfidence;
+                answered = true;
+            }
+            break;
+        }
+        case MKRouteType::GENERATE: {
+            // Use composer for creative/generative tasks, fallback to graph
+            MKResponseContext ctx;
+            ctx.subject = input;
+            ctx.is_partial = false;
+            ctx.confidence = 0.5f;
+
+            auto results = sys.graph.getAll(input);
+            if (!results.empty()) {
+                for (const auto& e : results) {
+                    ctx.facts_found.push_back(e.source + " " + e.relation + " " + e.target);
+                }
+                response = sys.composer.composeAnswer(ctx);
+                confidence = 0.6f;
+                answered = true;
+            } else {
+                response = sys.composer.composeAnswer(ctx);
+                confidence = 0.3f;
+                answered = !response.empty();
+            }
+            break;
+        }
     }
-    
-    std::vector<Triple> query(const std::string& subject) const {
-        std::vector<Triple> results;
-        for (const auto& t : triples_) {
-            if (t.source == subject || t.target == subject) {
-                results.push_back(t);
+
+    // If no answer found through primary route, try fallback
+    if (!answered && decision.confidence < 0.7f) {
+        auto fallbackChain = sys.router.getFallbackChain(decision.primaryRoute, decision.confidence);
+        for (size_t i = 1; i < fallbackChain.size() && !answered; i++) {
+            if (fallbackChain[i] == MKRouteType::GRAPH) {
+                auto results = sys.graph.getAll(input);
+                if (!results.empty()) {
+                    for (const auto& e : results) {
+                        response += e.source + " " + e.relation + " " + e.target + ". ";
+                    }
+                    confidence = 0.6f;
+                    answered = true;
+                }
+            } else if (fallbackChain[i] == MKRouteType::SEARCH) {
+                auto answer = sys.integrator.buildCitedAnswer(input);
+                if (!answer.text.empty()) {
+                    response = answer.formattedResponse.empty() ? answer.text : answer.formattedResponse;
+                    confidence = answer.confidence;
+                    answered = true;
+                }
             }
         }
-        return results;
-    }
-    
-    size_t size() const { return triples_.size(); }
-
-private:
-    std::vector<Triple> triples_;
-    
-    Triple parse_triple(const std::string& line) {
-        Triple t{};
-        size_t p1 = line.find('|');
-        if (p1 == std::string::npos) return t;
-        size_t p2 = line.find('|', p1 + 1);
-        if (p2 == std::string::npos) return t;
-        size_t p3 = line.find('|', p2 + 1);
-        
-        t.source = line.substr(0, p1);
-        t.relation = line.substr(p1 + 1, p2 - p1 - 1);
-        t.target = line.substr(p2 + 1, (p3 != std::string::npos) ? p3 - p2 - 1 : std::string::npos);
-        t.weight = (p3 != std::string::npos) ? std::stof(line.substr(p3 + 1)) : 1.0f;
-        return t;
-    }
-};
-
-// --- Reasoning Chains ---
-class MKReasoningChains {
-public:
-    void init(MKPatternGraph* graph, MKLogger& logger) {
-        graph_ = graph;
-        logger.log(MKLogger::INFO, "Reasoning: Chain engine ready.");
-    }
-    
-    std::string reason(const std::string& query) {
-        // Multi-hop reasoning through the knowledge graph
-        auto results = graph_->query(query);
-        if (results.empty()) return "";
-        
-        std::string chain;
-        for (const auto& r : results) {
-            chain += r.source + " " + r.relation + " " + r.target + ". ";
-        }
-        return chain;
     }
 
-private:
-    MKPatternGraph* graph_ = nullptr;
-};
-
-// --- Composer ---
-class MKComposer {
-public:
-    void init(MKLogger& logger) {
-        logger.log(MKLogger::INFO, "Composer: Response generation ready.");
-    }
-    
-    std::string compose(const std::string& reasoning_output, const std::string& /*context*/) {
-        if (reasoning_output.empty()) {
-            return "I don't have enough knowledge to answer that yet. Try teaching me with /learn.";
-        }
-        return "Based on what I know: " + reasoning_output;
-    }
-};
-
-// --- Deep Reasoner ---
-class MKDeepReasoner {
-public:
-    void init(MKPatternGraph* graph, MKLogger& logger) {
-        graph_ = graph;
-        logger.log(MKLogger::INFO, "DeepReasoner: Multi-step inference ready.");
-    }
-    
-    std::string deep_think(const std::string& query, int max_depth = 5) {
-        // Performs multi-hop reasoning with backtracking
-        std::string result;
-        std::string current = query;
-        
-        for (int depth = 0; depth < max_depth; depth++) {
-            auto facts = graph_->query(current);
-            if (facts.empty()) break;
-            
-            auto& best = facts[0];
-            result += "[hop " + std::to_string(depth + 1) + "] "
-                   + best.source + " → " + best.relation + " → " + best.target + "\n";
-            current = best.target;
-        }
-        return result.empty() ? "No deep reasoning path found." : result;
+    // Format response through style engine
+    if (answered && !response.empty()) {
+        std::string formatted = sys.style.format_response(response, input, confidence);
+        std::cout << "\n  " << formatted << "\n";
+    } else {
+        std::cout << "\n  I don't have enough knowledge to answer that yet.\n"
+                  << "  Try: /learn to teach me, /search for internet lookup, or /think for reasoning.\n";
     }
 
-private:
-    MKPatternGraph* graph_ = nullptr;
-};
-
-// --- Meta Cognition ---
-class MKMetaCognition {
-public:
-    void init(MKLogger& logger) {
-        logger.log(MKLogger::INFO, "MetaCognition: Self-awareness module ready.");
+    // Record outcome
+    sys.router.reportOutcome(decision.primaryRoute, answered);
+    sys.improver.logQueryOutcome(input, confidence, answered);
+    sys.memory.recordInteraction("query", input);
+    if (answered) {
+        sys.memory.recordQA(input, response, confidence);
     }
-    
-    float confidence(const std::string& response) {
-        // Estimate confidence based on response length and specificity
-        if (response.empty()) return 0.0f;
-        if (response.find("don't know") != std::string::npos) return 0.2f;
-        if (response.find("Based on") != std::string::npos) return 0.7f;
-        return 0.5f;
-    }
-    
-    std::string reflect(const std::string& query, const std::string& response) {
-        float conf = confidence(response);
-        if (conf < 0.3f) return "[MK needs more knowledge about: " + query + "]";
-        return "";
-    }
-};
-
-// --- Code Intelligence ---
-class MKCodeIntelligence {
-public:
-    void init(MKPatternGraph* graph, MKLogger& logger) {
-        graph_ = graph;
-        logger.log(MKLogger::INFO, "CodeIntel: Programming assistant ready.");
-    }
-    
-    std::string generate(const std::string& request) {
-        // Look up code patterns from knowledge
-        auto patterns = graph_->query("code_pattern");
-        std::string result = "// Generated by MK Code Intelligence\n";
-        result += "// Request: " + request + "\n\n";
-        
-        // Retrieve relevant templates from coding_knowledge
-        auto templates = graph_->query(request);
-        for (const auto& t : templates) {
-            result += "// " + t.source + " " + t.relation + " " + t.target + "\n";
-        }
-        
-        return result;
-    }
-
-private:
-    MKPatternGraph* graph_ = nullptr;
-};
-
-// --- Daily Briefing ---
-class MKDailyBriefing {
-public:
-    void init(MKLogger& logger) {
-        logger.log(MKLogger::INFO, "Briefing: Daily summary system ready.");
-    }
-    
-    void generate_briefing() {
-        // Compile daily summary (facts learned, interactions, system health)
-    }
-};
-
-// ============================================================
-// HRE Brain - Unified Intelligence
-// ============================================================
-class HREBrain {
-public:
-    void init(MKLogger& logger) {
-        // Load knowledge
-        knowledge_.load("ai_core/hre/knowledge_files", logger);
-        
-        // Initialize all reasoning modules
-        reasoning_.init(&knowledge_, logger);
-        composer_.init(logger);
-        deep_reasoner_.init(&knowledge_, logger);
-        meta_cognition_.init(logger);
-        code_intel_.init(&knowledge_, logger);
-        
-        logger.log(MKLogger::INFO, "HRE Brain: All modules initialized. " 
-                   + std::to_string(knowledge_.size()) + " facts in memory.");
-    }
-    
-    std::string process(const std::string& input) {
-        // Route input through reasoning pipeline
-        // 1. Basic reasoning chain
-        std::string reasoning = reasoning_.reason(input);
-        
-        // 2. If insufficient, try deep reasoning
-        if (reasoning.empty()) {
-            reasoning = deep_reasoner_.deep_think(input);
-        }
-        
-        // 3. Compose natural response
-        std::string response = composer_.compose(reasoning, input);
-        
-        // 4. Meta-cognitive reflection
-        std::string reflection = meta_cognition_.reflect(input, response);
-        if (!reflection.empty()) {
-            response += "\n" + reflection;
-        }
-        
-        return response;
-    }
-    
-    std::string generate_code(const std::string& request) {
-        return code_intel_.generate(request);
-    }
-    
-    MKPatternGraph& knowledge() { return knowledge_; }
-
-private:
-    MKPatternGraph knowledge_;
-    MKReasoningChains reasoning_;
-    MKComposer composer_;
-    MKDeepReasoner deep_reasoner_;
-    MKMetaCognition meta_cognition_;
-    MKCodeIntelligence code_intel_;
-};
-
-// ============================================================
-// Shell Interface
-// ============================================================
-class MKShell {
-public:
-    void init(MKLogger& logger) {
-        logger.log(MKLogger::INFO, "Shell: Interactive terminal ready.");
-    }
-    
-    std::string read_input() {
-        std::string input;
-        std::cout << "\n  MK > ";
-        std::cout.flush();
-        std::getline(std::cin, input);
-        return input;
-    }
-    
-    void print_response(const std::string& response) {
-        std::cout << "\n  " << response << std::endl;
-    }
-    
-    bool is_command(const std::string& input) {
-        return !input.empty() && input[0] == '/';
-    }
-};
+}
 
 // ============================================================
 // MAIN - Boot Sequence
 // ============================================================
 int main(int argc, char* argv[]) {
     (void)argc; (void)argv;
-    
+
     // Register signal handlers
     std::signal(SIGINT, mk_signal_handler);
     std::signal(SIGTERM, mk_signal_handler);
-    
-    // ── Step 1: Banner ──
+
+    // Step 1: Banner
     print_banner();
-    
-    // ── Step 2: Logger ──
-    MKLogger logger;
-    logger.init("mk_os.log");
-    logger.log(MKLogger::INFO, "═══ MK OS Boot Sequence Started ═══");
-    
-    // ── Step 3: Hardware Detection ──
-    MKBoot boot;
-    if (!boot.init(logger)) {
-        logger.log(MKLogger::FATAL, "Boot failed! Hardware incompatible.");
-        return 1;
-    }
-    
-    // ── Step 4: Thermal Governor ──
-    MKThermalGovernor thermal;
-    thermal.init(logger);
-    
-    // ── Step 5: Daemon ──
-    MKDaemon daemon;
-    daemon.init(logger);
-    
-    // ── Step 6: Remote Access ──
-    MKRemoteAccess remote;
-    remote.init(logger, 7700);
-    
-    // ── Step 7 & 8: Load Knowledge + Initialize HRE Brain ──
-    HREBrain brain;
-    brain.init(logger);
-    
-    // ── Step 9: Daily Briefing ──
-    MKDailyBriefing briefing;
-    briefing.init(logger);
-    
-    // ── Register Daemon Jobs ──
-    // Thermal check every 2 seconds
-    daemon.register_job("thermal_monitor", [&thermal]() {
-        thermal.check();
-    }, 2);
-    
-    // Daily briefing every 24 hours
-    daemon.register_job("daily_briefing", [&briefing]() {
-        briefing.generate_briefing();
-    }, 86400);
-    
-    // Knowledge backup every hour
-    daemon.register_job("knowledge_backup", [&logger]() {
-        logger.log(MKLogger::INFO, "Daemon: Knowledge backup triggered.");
-        // In production: serialize pattern graph to disk
-    }, 3600);
-    
-    // ── Step 10: Shell ──
-    MKShell shell;
-    shell.init(logger);
-    
-    logger.log(MKLogger::INFO, "═══ MK OS Ready ═══");
-    std::cout << "\n  System ready. Type your message or /help for commands.\n";
-    std::cout << "  Thermal: " << thermal.temperature() << "°C | Knowledge: " 
-              << brain.knowledge().size() << " facts\n";
-    
-    // ══════════════════════════════════════════
-    // Main Loop
-    // ══════════════════════════════════════════
+
+    // Step 2: Detect platform
+    std::string platform;
+    #ifdef __APPLE__
+    platform = "macOS (Darwin)";
+    #elif __linux__
+    platform = "Linux";
+    #else
+    platform = "Unknown";
+    #endif
+    std::cout << "  Platform: " << platform << "\n";
+
+    // Step 3: Initialize all modules
+    std::cout << "  Initializing modules...\n\n";
+    MKSystem sys;
+
+    // Step 4: Load knowledge
+    sys.graph.loadAllKnowledge();
+
+    // Step 5: Load persistent memory
+    sys.memory.loadFromDisk();
+
+    // Step 6: Print status
+    std::cout << "\n  System ready. Knowledge: " << sys.graph.edgeCount() << " facts | Nodes: "
+              << sys.graph.nodeCount() << "\n";
+    std::cout << "  Type your message or /help for commands.\n";
+
+    // ============================================================
+    // Main REPL Loop
+    // ============================================================
     while (g_running) {
-        // Run daemon background jobs
-        daemon.tick();
-        
-        // Check thermal state before heavy work
-        if (thermal.is_throttled()) {
-            std::cout << "\n  ⚠ Thermal throttle active (" << thermal.temperature() 
-                      << "°C). Waiting for cooldown...\n";
-            std::this_thread::sleep_for(std::chrono::seconds(5));
-            continue;
-        }
-        
-        // Read input (from shell or remote)
+        std::cout << "\n  MK > ";
+        std::cout.flush();
+
         std::string input;
-        if (remote.has_input()) {
-            input = remote.read_input();
-        } else {
-            input = shell.read_input();
+        if (!std::getline(std::cin, input)) {
+            // EOF
+            break;
         }
-        
-        // Empty input or EOF
-        if (input.empty()) {
-            if (std::cin.eof()) break;
-            continue;
-        }
-        
+
+        input = trim(input);
+        if (input.empty()) continue;
+
         // Handle commands
-        if (shell.is_command(input)) {
+        if (!input.empty() && input[0] == '/') {
             if (input == "/quit" || input == "/exit" || input == "/shutdown") {
                 g_running = false;
             } else if (input == "/help") {
-                std::cout << "\n  Commands:\n"
-                          << "    /help      - Show this help\n"
-                          << "    /status    - System status\n"
-                          << "    /think X   - Deep reasoning on topic X\n"
-                          << "    /code X    - Generate code for request X\n"
-                          << "    /learn S|R|T - Learn a new fact (source|relation|target)\n"
-                          << "    /temp      - Show thermal status\n"
-                          << "    /facts     - Show knowledge count\n"
-                          << "    /quit      - Shutdown MK OS\n";
+                cmd_help();
             } else if (input == "/status") {
-                std::cout << "\n  Platform: " << boot.platform()
-                          << "\n  Temperature: " << thermal.temperature() << "°C"
-                          << "\n  Throttled: " << (thermal.is_throttled() ? "YES" : "no")
-                          << "\n  Knowledge: " << brain.knowledge().size() << " facts"
-                          << "\n  Remote: " << (remote.active() ? "listening" : "inactive")
-                          << "\n";
-            } else if (input == "/temp") {
-                std::cout << "\n  Temperature: " << thermal.temperature() << "°C"
-                          << (thermal.is_throttled() ? " [THROTTLED]" : " [OK]") << "\n";
-            } else if (input == "/facts") {
-                std::cout << "\n  Knowledge base: " << brain.knowledge().size() << " facts loaded.\n";
-            } else if (input.substr(0, 6) == "/think") {
-                std::string topic = (input.size() > 7) ? input.substr(7) : "";
-                if (topic.empty()) {
-                    std::cout << "\n  Usage: /think <topic>\n";
-                } else {
-                    std::string result = brain.process(topic);
-                    shell.print_response(result);
-                }
-            } else if (input.substr(0, 5) == "/code") {
-                std::string request = (input.size() > 6) ? input.substr(6) : "";
-                if (request.empty()) {
-                    std::cout << "\n  Usage: /code <description>\n";
-                } else {
-                    std::string code = brain.generate_code(request);
-                    shell.print_response(code);
-                }
-            } else if (input.substr(0, 6) == "/learn") {
-                std::string fact = (input.size() > 7) ? input.substr(7) : "";
-                if (fact.empty()) {
-                    std::cout << "\n  Usage: /learn source|relation|target\n";
-                } else {
-                    // Append to learned_facts.mk
-                    std::ofstream f("ai_core/hre/knowledge_files/learned_facts.mk", std::ios::app);
-                    f << fact << "|1.0\n";
-                    f.close();
-                    std::cout << "\n  ✓ Learned: " << fact << "\n";
-                    logger.log(MKLogger::INFO, "Learned new fact: " + fact);
-                }
+                cmd_status(sys);
+            } else if (input == "/news") {
+                cmd_news(sys);
+            } else if (input.size() > 5 && input.substr(0, 5) == "/ask ") {
+                cmd_ask(sys, trim(input.substr(5)));
+            } else if (input.size() > 8 && input.substr(0, 8) == "/search ") {
+                cmd_search(sys, trim(input.substr(8)));
+            } else if (input.size() > 7 && input.substr(0, 7) == "/learn ") {
+                cmd_learn(sys, trim(input.substr(7)));
+            } else if (input.size() > 9 && input.substr(0, 9) == "/weather ") {
+                cmd_weather(sys, trim(input.substr(9)));
+            } else if (input.size() > 6 && input.substr(0, 6) == "/time ") {
+                cmd_time(sys, trim(input.substr(6)));
+            } else if (input == "/time") {
+                cmd_time(sys, "");
+            } else if (input.size() > 7 && input.substr(0, 7) == "/think ") {
+                cmd_think(sys, trim(input.substr(7)));
             } else {
                 std::cout << "\n  Unknown command. Type /help for options.\n";
             }
             continue;
         }
-        
-        // Route to HRE Brain for natural language processing
-        std::string response = brain.process(input);
-        shell.print_response(response);
+
+        // Natural language routing
+        handle_natural_query(sys, input);
     }
-    
-    // ══════════════════════════════════════════
-    // Shutdown
-    // ══════════════════════════════════════════
-    std::cout << "\n";
-    logger.log(MKLogger::INFO, "═══ MK OS Shutdown Sequence ═══");
-    logger.log(MKLogger::INFO, "Saving knowledge state...");
-    logger.log(MKLogger::INFO, "Closing remote connections...");
-    logger.log(MKLogger::INFO, "Stopping daemon...");
-    logger.log(MKLogger::INFO, "═══ MK OS Offline ═══");
-    logger.shutdown();
-    
-    std::cout << "\n  MK OS shut down cleanly. Goodbye.\n\n";
+
+    // ============================================================
+    // Graceful Shutdown
+    // ============================================================
+    std::cout << "\n  Shutting down...\n";
+    sys.memory.saveToDisk();
+    sys.improver.saveLog();
+    std::cout << "  Memory saved. Improvement log saved.\n";
+    std::cout << "  MK OS shut down cleanly. Goodbye.\n\n";
+
     return 0;
 }
+
+#endif // MK_ENTRY_CPP
