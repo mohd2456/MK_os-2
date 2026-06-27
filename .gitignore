@@ -1,2 +1,15 @@
+# Build artifacts
 *.o
+*.img
+*.qcow2
+bootloader/build_work/rootfs/
+bootloader/build_work/iso/
+bootloader/build_work/alpine-rootfs.tar.gz
+bootloader/staging/
 mk_os
+mk_sync
+mk_ingest
+mk_telegram
+mk_llm_eater
+mk_memory.dat
+mk_improvement.log
