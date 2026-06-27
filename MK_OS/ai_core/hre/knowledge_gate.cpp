@@ -318,6 +318,7 @@ private:
     bool checkLogicalConsistency(const std::string& source, const std::string& relation,
                                   const std::string& target, MKPatternGraph& graph,
                                   MKReasoningChains& reasoning, std::string& reason) {
+        (void)reasoning; // Not yet used - reserved for future reasoning-chain validation
         
         // Check 1: Category coherence via is_a chains
         // If source is_a X, and target is_a Y, check if X and Y are compatible domains

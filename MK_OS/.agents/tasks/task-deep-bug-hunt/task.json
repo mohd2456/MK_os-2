@@ -1,0 +1,7 @@
+{
+  "task_id": "task-deep-bug-hunt",
+  "task_description": "Comprehensive deep bug hunt across the entire MK OS codebase. Fix all real bugs including: truncated files, duplicate symbol definitions, memory safety issues, ODR violations, uninitialized data, and logic errors.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

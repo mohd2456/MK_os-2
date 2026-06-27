@@ -1,12 +1,7 @@
 #include <iostream>
 #include <vector>
 
-// Define the Block structure to ensure the file compiles flawlessly independently
-struct Block {
-    int id;
-    size_t size;
-    bool free;
-};
+#include "mk_memory.cpp"
 
 class MKGarbage {
 public:

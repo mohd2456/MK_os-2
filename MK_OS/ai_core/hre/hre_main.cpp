@@ -46,7 +46,7 @@ private:
 public:
     MKBrain(const std::string& knowledgeDir = "knowledge_files")
         : graph(knowledgeDir), reasoner(knowledgeDir), 
-          composer(MKPersonality::FRIENDLY),
+          composer(MKComposerMode::FRIENDLY),
           running(true), interactions(0), knowledge_path(knowledgeDir) {
         
         std::cout << "\n";

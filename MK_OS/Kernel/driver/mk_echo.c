@@ -144,3 +144,22 @@ static int __init mk_init(void)
         kfree(edev->buf);
         kfree(edev);
         pr_err("%s: misc_register failed: %d\n", DRIVER_NAME, ret);
+        return ret;
+    }
+
+    pr_info("%s: device registered (minor=%d)\n", DRIVER_NAME, mk_misc.minor);
+    return 0;
+}
+
+static void __exit mk_exit(void)
+{
+    misc_deregister(&mk_misc);
+    kfree(edev->buf);
+    kfree(edev);
+    pr_info("%s: driver unloaded\n", DRIVER_NAME);
+}
+
+module_init(mk_init);
+module_exit(mk_exit);
+
+#endif // MK_ECHO_C

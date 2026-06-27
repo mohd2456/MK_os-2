@@ -208,6 +208,7 @@ public:
         if (!out.is_open()) return;
         
         MKShardHeader header;
+        std::memset(&header, 0, sizeof(header));
         std::memcpy(header.magic, "MKSH", 4);
         header.version = 1;
         header.shardId = shard.shardId;

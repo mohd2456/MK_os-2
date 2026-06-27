@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 #include <cstring>
 #include <ctime>
 #include <algorithm>
@@ -99,11 +100,20 @@ public:
     }
     
     ~MKCoWSnapshots() {
-        // Clean up all live pages
-        for (auto& kv : livePages) releasePage(kv.second);
-        // Clean up snapshot pages
+        // Collect all unique page pointers to avoid double-free when pages
+        // are shared between livePages and snapshots (the normal case after
+        // takeSnapshot). Each page is freed exactly once.
+        std::set<MKMemoryPage*> allPages;
+        for (auto& kv : livePages) allPages.insert(kv.second);
         for (auto& snap : snapshots) {
-            for (auto& kv : snap.pageTable) releasePage(kv.second);
+            for (auto& kv : snap.pageTable) allPages.insert(kv.second);
+        }
+        for (auto* page : allPages) {
+            if (page) {
+                usedMemory -= page->size;
+                delete[] page->data;
+                delete page;
+            }
         }
     }
     
