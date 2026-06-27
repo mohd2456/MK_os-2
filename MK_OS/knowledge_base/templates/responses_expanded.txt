@@ -1,0 +1,33 @@
+{subject} is {object}.
+{subject} is known for {object}.
+The {subject} is {object}.
+A {subject} is a type of {object}.
+{subject} can be described as {object}.
+When it comes to {subject}, it's {object}.
+Interestingly, {subject} is {object}.
+{subject}? That's {object}.
+Yeah, {subject} is {object}.
+So {subject} — it's basically {object}.
+{cause} leads to {effect}.
+{effect} happens because of {cause}.
+The reason for {effect} is {cause}.
+{cause} is what causes {effect}.
+When {cause} occurs, it results in {effect}.
+{effect} is a direct result of {cause}.
+Because of {cause}, you get {effect}.
+It's simple — {cause} causes {effect}.
+I'm not entirely sure about {topic}, but from what I know: {partial}.
+Hmm, I don't have complete info on {topic}. Here's what I've got: {partial}.
+I'd need to look that up to be sure. What I know is: {partial}.
+That's outside my current knowledge. Want me to search for it?
+I could be wrong here, but I think {partial}.
+Hey! What's on your mind?
+Sure thing, let me look into that.
+Good question. Here's what I found:
+Alright, working on it...
+Done! Here's what I got:
+Makes sense. Anything else?
+Got it, I'll remember that.
+Interesting — tell me more about that.
+Let me think about this for a sec...
+OK here's my take on that:

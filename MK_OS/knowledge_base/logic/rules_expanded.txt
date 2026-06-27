@@ -1,0 +1,20 @@
+IF {X} is_a {Y} AND {Y} has_property {Z} THEN {X} has_property {Z}
+IF {X} is_a {Y} AND {Y} can {Z} THEN {X} can {Z}
+IF {X} is_a {Y} AND {Y} needs {Z} THEN {X} needs {Z}
+IF {X} is_a {Y} AND {Y} located_in {Z} THEN {X} located_in {Z}
+IF {X} part_of {Y} AND {Y} part_of {Z} THEN {X} part_of {Z}
+IF {X} causes {Y} AND {Y} causes {Z} THEN {X} indirectly_causes {Z}
+IF {X} prevents {Y} AND {Y} causes {Z} THEN {X} indirectly_prevents {Z}
+IF {X} enables {Y} AND NOT {X} THEN NOT {Y}
+IF {X} requires {Y} AND NOT {Y} THEN cannot {X}
+IF {X} larger_than {Y} AND {Y} larger_than {Z} THEN {X} larger_than {Z}
+IF {X} faster_than {Y} AND {Y} faster_than {Z} THEN {X} faster_than {Z}
+IF {X} older_than {Y} AND {Y} older_than {Z} THEN {X} older_than {Z}
+IF {X} is_a metal AND metal conducts electricity THEN {X} conducts electricity
+IF {X} is_a mammal AND mammal is warm_blooded THEN {X} is warm_blooded
+IF {X} is_a fish AND fish lives_in water THEN {X} lives_in water
+IF {X} is_a bird AND bird has wings THEN {X} has wings
+IF {X} is_a programming_language AND has compiler THEN {X} can be compiled
+IF {X} is_a framework AND built_with {Y} THEN {X} requires {Y}
+IF {X} competes_with {Y} THEN {Y} competes_with {X}
+IF {X} opposite_of {Y} THEN {Y} opposite_of {X}
