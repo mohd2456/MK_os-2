@@ -1,14 +1,14 @@
 {
   "task_id": "task-mk-accuracy-upgrade",
-  "task_description": "Massively upgrade MK OS with accuracy-first AI capabilities: internet search, fact verification, freshness tracking, cited responses, honesty engine, LLM knowledge extraction tool, knowledge integrator, and 700+ new knowledge base facts",
+  "task_description": "Massively upgrade MK OS with accuracy-first AI capabilities: internet search, fact verification, freshness tracking, cited responses, honesty engine, LLM knowledge extraction tool, knowledge integrator, 700+ new knowledge base facts, realtime APIs, persistent memory, smart router, world knowledge, and self-improvement engine",
   "status": "completed",
   "verification": {
     "build": "pass",
     "tests": "pass",
     "test_quality": "pass",
     "docker_build": "skipped",
-    "summary": "make all builds mk_os binary with zero errors (only pre-existing warnings in system/shell.cpp). make tools builds all 3 tools (mk_ingest, mk_telegram, mk_llm_eater) successfully. Knowledge files expanded from 650 to 1749 lines with 1636 real facts."
+    "summary": "make all builds mk_os binary with zero errors. make tools builds all 3 tools successfully. Added 5 new modules (realtime_apis, persistent_memory, smart_router, self_improver, world_knowledge.mk with 335 facts). All auto-discovered by Makefile find command."
   },
-  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005", "FEAT-006", "FEAT-007", "FEAT-008", "FEAT-009"],
   "blocked_reason": null
 }

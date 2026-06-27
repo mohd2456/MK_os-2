@@ -1,0 +1,24 @@
+{
+  "id": "FEAT-005",
+  "type": "feat",
+  "description": "Create ai_core/persistent_memory.cpp - Session-persistent memory using flat file storage",
+  "status": "completed",
+  "steps": [
+    "Create ai_core/persistent_memory.cpp with MKPersistentMemory class",
+    "Implement user interaction storage with timestamps",
+    "Implement user preference tracking",
+    "Implement previous Q&A recall",
+    "Implement load on boot and save on shutdown",
+    "Implement configurable memory limits with pruning"
+  ],
+  "acceptance_criteria": [
+    "File compiles without errors as part of make all",
+    "Uses flat file format (not SQLite)",
+    "Has configurable max entries with oldest-first pruning",
+    "Uses #ifndef header guard pattern",
+    "Has printStats() method"
+  ],
+  "verification": ["Run make all and confirm zero compile errors"],
+  "blocked_reason": null,
+  "findings": "Created ai_core/persistent_memory.cpp with flat-file based session persistence. Supports timestamped interactions, preference tracking with confidence, Q&A history recall, configurable memory limits with oldest-first pruning. Compiles cleanly."
+}
