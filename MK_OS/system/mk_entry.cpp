@@ -75,6 +75,11 @@ namespace Color {
 #include "../mk_brain/daily_briefing.cpp"
 #include "../mk_brain/fact_extractor/biographical.cpp"
 #include "../mk_brain/reasoning/reasoning_engine.cpp"
+#include "daemon.cpp"
+#include "shell.cpp"
+#include "service_manager.cpp"
+#include "../plugins/telegram.cpp"
+#include "../ai_core/neural_net.cpp"
 
 // ============================================================
 // Global state
@@ -129,6 +134,11 @@ struct MKSystem {
     MKDailyBriefing dailyBriefing;
     MKBiographicalExtractor factExtractor;
     MKReasoningEngine reasoningEngine;
+    MKDaemon daemon;
+    MK_Shell::MKShell shell;
+    MK_Services::ServiceManager serviceManager;
+    MKTelegram* telegram;
+    MKNeuralNet neuralNet;
 
     MKSystem()
         : graph("ai_core/hre/knowledge_files"),
@@ -149,7 +159,35 @@ struct MKSystem {
           cacheManager(8),
           dailyBriefing(),
           factExtractor(),
-          reasoningEngine() {}
+          reasoningEngine(),
+          daemon(),
+          shell(),
+          serviceManager(),
+          telegram(nullptr),
+          neuralNet()
+    {
+        // Initialize Telegram bot if token is available
+        const char* tgToken = std::getenv("MK_TELEGRAM_TOKEN");
+        if (tgToken && tgToken[0] != '\0') {
+            telegram = new MKTelegram();
+            std::cout << "  " << Color::BGREEN << "✓" << Color::RESET
+                      << " Telegram bot integration enabled.\n";
+        } else {
+            std::cout << "  " << Color::DIM << "Note: MK_TELEGRAM_TOKEN not set. "
+                      << "Telegram integration disabled." << Color::RESET << "\n";
+        }
+
+        // Initialize neural net with a tiny config (untrained, not used in hot path)
+        // The GENERATE route gracefully falls back to MKComposer instead.
+        neuralNet.init(256, 32, 1, 64);
+    }
+
+    ~MKSystem() {
+        if (telegram) {
+            delete telegram;
+            telegram = nullptr;
+        }
+    }
 };
 
 // ============================================================
@@ -185,6 +223,8 @@ static void cmd_help() {
         << Color::BOLD << Color::YELLOW << "  🖥️  SYSTEM" << Color::RESET << "\n"
         << "    " << Color::GREEN << "/status" << Color::RESET << "            Full system diagnostics\n"
         << "    " << Color::GREEN << "/briefing" << Color::RESET << "          Daily system briefing report\n"
+        << "    " << Color::GREEN << "/shell" << Color::RESET << " <cmd>       Run a command in the MK shell\n"
+        << "    " << Color::GREEN << "/services" << Color::RESET << "          List registered services & status\n"
         << "    " << Color::GREEN << "/sync" << Color::RESET << "              Sync knowledge with GitHub\n"
         << "    " << Color::GREEN << "/quit" << Color::RESET << "              Save and exit\n"
         << "\n"
@@ -199,18 +239,20 @@ static void show_slash_suggestions(const std::string& partial) {
         const char* desc;
     };
     static const CmdInfo all_commands[] = {
-        {"/ask",     "Knowledge graph lookup"},
-        {"/search",  "Internet search (cited)"},
-        {"/think",   "Deep reasoning"},
-        {"/learn",   "Teach MK a fact"},
-        {"/weather", "Live weather"},
-        {"/time",    "Current time"},
-        {"/news",    "Tech headlines"},
-        {"/status",  "System diagnostics"},
-        {"/briefing","Daily briefing report"},
-        {"/sync",    "Sync knowledge with GitHub"},
-        {"/help",    "Show all commands"},
-        {"/quit",    "Save and exit"},
+        {"/ask",      "Knowledge graph lookup"},
+        {"/search",   "Internet search (cited)"},
+        {"/think",    "Deep reasoning"},
+        {"/learn",    "Teach MK a fact"},
+        {"/weather",  "Live weather"},
+        {"/time",     "Current time"},
+        {"/news",     "Tech headlines"},
+        {"/status",   "System diagnostics"},
+        {"/briefing", "Daily briefing report"},
+        {"/shell",    "Run MK shell command"},
+        {"/services", "Show service status"},
+        {"/sync",     "Sync knowledge with GitHub"},
+        {"/help",     "Show all commands"},
+        {"/quit",     "Save and exit"},
     };
 
     std::vector<const CmdInfo*> matches;
@@ -635,7 +677,11 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             break;
         }
         case MKRouteType::GENERATE: {
-            // Use composer for creative/generative tasks, fallback to graph
+            // NOTE: neural_net.cpp is wired and initialized with a tiny config
+            // (vocab=256, dim=32, layers=1, ff=64) but has NO trained weights.
+            // The GENERATE route gracefully falls back to MKComposer which provides
+            // template-based responses. The neural net exists for future training
+            // but is NOT called in the hot path to avoid nonsense output.
             MKResponseContext ctx;
             ctx.subject = input;
             ctx.is_partial = false;
@@ -708,6 +754,99 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
 }
 
 // ============================================================
+// Telegram Background Polling Loop
+// ============================================================
+static void telegram_poll_loop(MKSystem& sys) {
+    long lastUpdateId = 0;
+
+    while (g_running.load()) {
+        if (!sys.telegram) break;
+
+        std::string response = sys.telegram->getUpdates(lastUpdateId);
+
+        // Basic JSON parsing for Telegram Bot API response
+        // Format: {"ok":true,"result":[{"update_id":123,"message":{"chat":{"id":456},"text":"hello"}}]}
+        // We parse multiple updates by searching for "update_id" occurrences
+        size_t searchPos = 0;
+        while (true) {
+            // Find next update_id
+            size_t uidPos = response.find("\"update_id\":", searchPos);
+            if (uidPos == std::string::npos) break;
+
+            // Extract update_id number
+            size_t numStart = uidPos + 12; // length of "\"update_id\":"
+            while (numStart < response.size() && (response[numStart] == ' ' || response[numStart] == ':'))
+                numStart++;
+            size_t numEnd = numStart;
+            while (numEnd < response.size() && std::isdigit(response[numEnd]))
+                numEnd++;
+            if (numEnd == numStart) { searchPos = numEnd + 1; continue; }
+
+            long updateId = std::stol(response.substr(numStart, numEnd - numStart));
+
+            // Skip if we already processed this update
+            if (updateId < lastUpdateId) {
+                searchPos = numEnd;
+                continue;
+            }
+            lastUpdateId = updateId + 1;
+
+            // Extract chat id: look for "chat":{"id": after this update_id
+            std::string chatId;
+            size_t chatPos = response.find("\"chat\"", numEnd);
+            if (chatPos != std::string::npos) {
+                size_t cidPos = response.find("\"id\":", chatPos);
+                if (cidPos != std::string::npos && cidPos < chatPos + 100) {
+                    size_t cidStart = cidPos + 5;
+                    while (cidStart < response.size() && (response[cidStart] == ' '))
+                        cidStart++;
+                    size_t cidEnd = cidStart;
+                    // Handle negative chat IDs (groups)
+                    if (cidEnd < response.size() && response[cidEnd] == '-') cidEnd++;
+                    while (cidEnd < response.size() && std::isdigit(response[cidEnd]))
+                        cidEnd++;
+                    if (cidEnd > cidStart)
+                        chatId = response.substr(cidStart, cidEnd - cidStart);
+                }
+            }
+
+            // Extract message text: look for "text":" after chat
+            std::string msgText;
+            size_t textPos = response.find("\"text\":\"", numEnd);
+            if (textPos != std::string::npos) {
+                size_t txtStart = textPos + 8;
+                size_t txtEnd = txtStart;
+                while (txtEnd < response.size() && response[txtEnd] != '"') {
+                    if (response[txtEnd] == '\\') txtEnd++; // skip escaped chars
+                    txtEnd++;
+                }
+                if (txtEnd > txtStart)
+                    msgText = response.substr(txtStart, txtEnd - txtStart);
+            }
+
+            // Process the message if we have chat_id and text
+            if (!chatId.empty() && !msgText.empty()) {
+                // Use autoReply for command-based messages, or echo for natural language
+                if (msgText[0] == '/') {
+                    sys.telegram->autoReply(chatId, msgText);
+                } else {
+                    // Simple response - acknowledge the message
+                    std::string reply = "MK received: " + msgText;
+                    sys.telegram->sendMessage(chatId, reply);
+                }
+            }
+
+            searchPos = numEnd;
+        }
+
+        // Sleep between polls (2 seconds)
+        for (int i = 0; i < 20 && g_running.load(); i++) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
+}
+
+// ============================================================
 // MAIN - Boot Sequence
 // ============================================================
 int main(int argc, char* argv[]) {
@@ -758,6 +897,46 @@ int main(int argc, char* argv[]) {
               << Color::RESET << "\n";
     std::cout << "  " << Color::DIM << "Type your message or " << Color::GREEN << "/help" 
               << Color::RESET << Color::DIM << " for commands." << Color::RESET << "\n";
+
+    // Step 7: Register services
+    sys.serviceManager.register_service("knowledge_graph", "mk_graph",
+        {}, "Pattern graph and knowledge store");
+    sys.serviceManager.register_service("reasoning_engine", "mk_reason",
+        {"knowledge_graph"}, "Deep multi-hop reasoning");
+    sys.serviceManager.register_service("learning_engine", "mk_learn",
+        {"knowledge_graph"}, "Fact learning and persistence");
+    sys.serviceManager.register_service("vector_search", "mk_vector",
+        {"knowledge_graph"}, "Approximate nearest neighbor search");
+    sys.serviceManager.register_service("realtime_apis", "mk_apis",
+        {}, "Weather, time, news API access");
+    if (sys.telegram) {
+        sys.serviceManager.register_service("telegram_bot", "mk_telegram",
+            {"realtime_apis"}, "Telegram bot polling and replies");
+    }
+    sys.serviceManager.start_all();
+    std::cout << "  " << Color::BGREEN << "✓" << Color::RESET << " Services: "
+              << Color::BOLD << sys.serviceManager.running_count() << Color::RESET
+              << "/" << sys.serviceManager.total_count() << " running\n";
+
+    // Step 8: Start Telegram polling thread if token is available
+    std::thread telegramThread;
+    bool telegramThreadRunning = false;
+    if (sys.telegram) {
+        telegramThread = std::thread(telegram_poll_loop, std::ref(sys));
+        telegramThreadRunning = true;
+        std::cout << "  " << Color::BGREEN << "✓" << Color::RESET
+                  << " Telegram polling thread started.\n";
+    }
+
+    // Register telegram polling as a daemon job for monitoring
+    sys.daemon.addJob("health_check", 30, [&sys]() {
+        sys.serviceManager.run_health_checks();
+    });
+    if (sys.telegram) {
+        sys.daemon.addJob("telegram_poll_monitor", 60, []() {
+            // Monitoring placeholder - the actual polling runs in its own thread
+        });
+    }
 
     // ============================================================
     // Main REPL Loop
@@ -856,6 +1035,71 @@ int main(int argc, char* argv[]) {
                 cmd_think(sys, ""); commandFound = true;
             } else if (input == "/briefing") {
                 cmd_briefing(sys); commandFound = true;
+            } else if (input.size() > 7 && input.substr(0, 7) == "/shell ") {
+                std::string shellCmd = trim(input.substr(7));
+                if (shellCmd.empty()) {
+                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                              << " /shell <command>\n";
+                } else {
+                    std::string result = sys.shell.execute(shellCmd);
+                    if (!result.empty()) {
+                        std::cout << "\n" << result;
+                        if (result.back() != '\n') std::cout << "\n";
+                    }
+                }
+                commandFound = true;
+            } else if (input == "/shell") {
+                std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                          << " /shell <command>\n"
+                          << "  " << Color::DIM << "Example: /shell echo hello world"
+                          << Color::RESET << "\n";
+                commandFound = true;
+            } else if (input == "/services") {
+                auto statuses = sys.serviceManager.get_all_status();
+                if (statuses.empty()) {
+                    std::cout << "\n  " << Color::YELLOW << "○" << Color::RESET
+                              << " No services registered.\n";
+                } else {
+                    std::cout << "\n  " << Color::BOLD << Color::BCYAN
+                              << "  ╭─────────────────────────────────────╮\n"
+                              << "  │         REGISTERED SERVICES         │\n"
+                              << "  ╰─────────────────────────────────────╯\n"
+                              << Color::RESET;
+                    for (const auto& [name, status] : statuses) {
+                        const char* statusIcon = "?";
+                        const char* statusColor = Color::WHITE;
+                        std::string statusLabel;
+                        switch (status) {
+                            case MK_Services::ServiceStatus::RUNNING:
+                                statusIcon = "●"; statusColor = Color::BGREEN;
+                                statusLabel = "RUNNING"; break;
+                            case MK_Services::ServiceStatus::STOPPED:
+                                statusIcon = "○"; statusColor = Color::RED;
+                                statusLabel = "STOPPED"; break;
+                            case MK_Services::ServiceStatus::STARTING:
+                                statusIcon = "◐"; statusColor = Color::YELLOW;
+                                statusLabel = "STARTING"; break;
+                            case MK_Services::ServiceStatus::CRASHED:
+                                statusIcon = "✗"; statusColor = Color::BRED;
+                                statusLabel = "CRASHED"; break;
+                            case MK_Services::ServiceStatus::DISABLED:
+                                statusIcon = "⊘"; statusColor = Color::DIM;
+                                statusLabel = "DISABLED"; break;
+                            default:
+                                statusIcon = "?"; statusColor = Color::DIM;
+                                statusLabel = "UNKNOWN"; break;
+                        }
+                        std::cout << "    " << statusColor << statusIcon << Color::RESET
+                                  << " " << Color::BOLD << name << Color::RESET
+                                  << " " << Color::DIM << "[" << statusLabel << "]"
+                                  << Color::RESET << "\n";
+                    }
+                    std::cout << "\n  " << Color::DIM << "Total: "
+                              << sys.serviceManager.running_count() << "/"
+                              << sys.serviceManager.total_count() << " running"
+                              << Color::RESET << "\n";
+                }
+                commandFound = true;
             }
 
             if (!commandFound) {
@@ -885,6 +1129,18 @@ int main(int argc, char* argv[]) {
     // Graceful Shutdown
     // ============================================================
     std::cout << "\n  " << Color::YELLOW << "⏻" << Color::RESET << " Shutting down...\n";
+
+    // Signal and join the telegram polling thread
+    if (telegramThreadRunning && telegramThread.joinable()) {
+        std::cout << "  " << Color::DIM << "Stopping Telegram polling..." << Color::RESET << "\n";
+        telegramThread.join();
+        std::cout << "  " << Color::GREEN << "✓" << Color::RESET << " Telegram thread stopped.\n";
+    }
+
+    // Shut down daemon and services
+    sys.daemon.shutdown();
+    sys.serviceManager.shutdown_all();
+
     sys.memory.saveToDisk();
     sys.improver.saveLog();
     sys.learningEngine.persist();
