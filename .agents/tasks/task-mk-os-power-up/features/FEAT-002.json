@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Wire all orphaned mk_brain modules into the unified mk_entry.cpp system. Connect learning_engine, brain_memory, embeddings_eng, ann_search, cache_mgr, daily_briefing, fact_extractor/biographical, and reasoning_engine into the MKSystem struct so they are initialized at boot and available to the REPL.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Add #include directives in mk_entry.cpp for all the unwired mk_brain modules: ../mk_brain/learning/learning_engine.cpp, ../mk_brain/memory/brain_memory.cpp, ../mk_brain/embeddings/embeddings_eng.cpp, ../mk_brain/vector_search/ann_search.cpp, ../mk_brain/cashe/cache_mgr.cpp, ../mk_brain/daily_briefing.cpp, ../mk_brain/fact_extractor/biographical.cpp, ../mk_brain/reasoning/reasoning_engine.cpp. Place them after the existing mk_brain/personality/response_style.cpp include.",
     "Add corresponding member instances to the MKSystem struct: MKLearningEngine learningEngine; MKBrainMemory brainMemory; MKANNSearch vectorSearch; MKCacheManager cacheManager; MKDailyBriefing dailyBriefing; MKBiographicalExtractor factExtractor; MKEmbeddingsEngine embeddings; MKReasoningEngine reasoningEngine;",
@@ -30,5 +30,5 @@
     "Run: cd /projects/sandbox/MK_os-2/MK_OS && clang++ -std=c++17 -O2 -Wall -Wextra -DDARWIN -o mk_os system/mk_entry.cpp -lcurl -lsqlite3"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Build succeeds with 4 warnings (all pre-existing: unused-parameter in reasoning_chains.cpp and reasoning_engine.cpp, unused-private-field in pattern_graph.cpp and deep_reasoner.cpp). Had to rename MKFactCategory to MKBioFactCategory in biographical.cpp to avoid conflict with freshness_manager.cpp (included via knowledge_integrator.cpp). Also renamed MKSearchResult to MKVectorSearchResult in ann_search.cpp to avoid conflict with network/search_engine.cpp. The daily briefing uses mock system data since real diagnostics would require macOS-specific APIs not available on Linux sandbox."
 }
