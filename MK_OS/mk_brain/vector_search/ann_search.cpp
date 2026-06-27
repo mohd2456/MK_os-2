@@ -29,7 +29,7 @@ struct MKVectorEntry {
     std::vector<float> embedding;
 };
 
-struct MKSearchResult {
+struct MKVectorSearchResult {
     int id;
     std::string label;
     std::string sourceText;
@@ -37,8 +37,8 @@ struct MKSearchResult {
 };
 
 // Comparison for priority queue (min-heap by score)
-struct MKResultCompare {
-    bool operator()(const MKSearchResult& a, const MKSearchResult& b) {
+struct MKVectorResultCompare {
+    bool operator()(const MKVectorSearchResult& a, const MKVectorSearchResult& b) {
         return a.score > b.score;  // Min-heap: lowest score at top
     }
 };
@@ -191,12 +191,12 @@ public:
 
 
     // Exact brute-force search (for small indexes or verification)
-    std::vector<MKSearchResult> searchExact(const std::vector<float>& query, int topK = 5) {
-        std::priority_queue<MKSearchResult, std::vector<MKSearchResult>, MKResultCompare> heap;
+    std::vector<MKVectorSearchResult> searchExact(const std::vector<float>& query, int topK = 5) {
+        std::priority_queue<MKVectorSearchResult, std::vector<MKVectorSearchResult>, MKVectorResultCompare> heap;
         
         for (const auto& entry : index) {
             float score = cosineSimilarity(query, entry.embedding);
-            MKSearchResult result = {entry.id, entry.label, entry.sourceText, score};
+            MKVectorSearchResult result = {entry.id, entry.label, entry.sourceText, score};
             
             if ((int)heap.size() < topK) {
                 heap.push(result);
@@ -206,7 +206,7 @@ public:
             }
         }
         
-        std::vector<MKSearchResult> results;
+        std::vector<MKVectorSearchResult> results;
         while (!heap.empty()) {
             results.push_back(heap.top());
             heap.pop();
@@ -216,7 +216,7 @@ public:
     }
     
     // Approximate search using IVF (fast — only searches nearby clusters)
-    std::vector<MKSearchResult> searchApproximate(const std::vector<float>& query, 
+    std::vector<MKVectorSearchResult> searchApproximate(const std::vector<float>& query, 
                                                    int topK = 5, int nProbe = 3) {
         if (!ivfBuilt) buildIndex();
         
@@ -229,14 +229,14 @@ public:
         std::sort(clusterDists.begin(), clusterDists.end());
         
         // Search only within the closest clusters
-        std::priority_queue<MKSearchResult, std::vector<MKSearchResult>, MKResultCompare> heap;
+        std::priority_queue<MKVectorSearchResult, std::vector<MKVectorSearchResult>, MKVectorResultCompare> heap;
         
         int probeCount = std::min(nProbe, numClusters);
         for (int p = 0; p < probeCount; p++) {
             int cluster = clusterDists[p].second;
             for (int idx : clusterMembers[cluster]) {
                 float score = cosineSimilarity(query, index[idx].embedding);
-                MKSearchResult result = {index[idx].id, index[idx].label, 
+                MKVectorSearchResult result = {index[idx].id, index[idx].label, 
                                          index[idx].sourceText, score};
                 
                 if ((int)heap.size() < topK) {
@@ -248,7 +248,7 @@ public:
             }
         }
         
-        std::vector<MKSearchResult> results;
+        std::vector<MKVectorSearchResult> results;
         while (!heap.empty()) {
             results.push_back(heap.top());
             heap.pop();
@@ -258,7 +258,7 @@ public:
     }
     
     // High-level text search: converts query to embedding, then searches
-    std::vector<MKSearchResult> search(const std::string& queryText, int topK = 5) {
+    std::vector<MKVectorSearchResult> search(const std::string& queryText, int topK = 5) {
         std::vector<float> queryEmb = textToEmbedding(queryText);
         
         // Use approximate search for large indexes, exact for small
