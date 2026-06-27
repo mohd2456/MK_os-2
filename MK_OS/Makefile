@@ -28,7 +28,7 @@ PREFIX    := /usr/local/bin
 # Targets
 # ============================================================
 
-.PHONY: all clean run install tools help
+.PHONY: all clean run install tools test help
 
 all: $(TARGET)
 	@echo ""
@@ -55,6 +55,16 @@ $(LLM_EATER): tools/llm_eater.cpp
 $(SYNC): tools/knowledge_sync.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS)
 
+# Run tests
+TEST_TARGET := mk_os_test
+TEST_ENTRY  := tests/test_main.cpp
+
+test: $(TEST_TARGET)
+	@./$(TEST_TARGET)
+
+$(TEST_TARGET): $(TEST_ENTRY)
+	$(CXX) $(CXXFLAGS) -o $@ $(TEST_ENTRY) $(LDFLAGS)
+
 # Run MK OS
 run: $(TARGET)
 	@./$(TARGET)
@@ -69,7 +79,7 @@ install: $(TARGET)
 clean:
 	@echo "Cleaning..."
 	@find . -name '*.o' -delete
-	@rm -f $(TARGET) $(INGEST) $(TELEGRAM) $(LLM_EATER)
+	@rm -f $(TARGET) $(TEST_TARGET) $(INGEST) $(TELEGRAM) $(LLM_EATER)
 	@echo "  ✓ Clean"
 
 # Help target

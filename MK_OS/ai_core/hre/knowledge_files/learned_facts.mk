@@ -120,6 +120,3 @@ venus_day|is_longer|than its year and it rotates backwards|0.94
 typewriter|was_patented|52 years before the ballpoint pen in 1868|0.90
 fingernails_grow|about_four_times|faster than toenails|0.89
 human_sneeze|travels_at|about 100 mph expelling 100000 germs|0.90
-
-python|created_by|guido_van_rossum|1
-mars|has|two_moons|1
