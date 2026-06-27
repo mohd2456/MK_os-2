@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <cstdlib>
 #include <map>
 #include <sstream>
 #include <fstream>
@@ -82,6 +83,19 @@ private:
 public:
     MKTelegram(const std::string& botToken) : token(botToken) {
         std::cout << "[PLUGIN - TELEGRAM] Upgraded Telegram Bot telemetry layer initialized.\n";
+    }
+
+    // Default constructor: reads token from MK_TELEGRAM_TOKEN environment variable
+    MKTelegram() {
+        const char* envToken = std::getenv("MK_TELEGRAM_TOKEN");
+        if (envToken && envToken[0] != '\0') {
+            token = std::string(envToken);
+            std::cout << "[PLUGIN - TELEGRAM] Token loaded from MK_TELEGRAM_TOKEN env var.\n";
+        } else {
+            std::cerr << "[PLUGIN - TELEGRAM] WARNING: MK_TELEGRAM_TOKEN not set. "
+                      << "Bot will not be able to authenticate.\n";
+            token = "";
+        }
     }
 
     std::string sendMessage(const std::string& chatId, const std::string& message) {

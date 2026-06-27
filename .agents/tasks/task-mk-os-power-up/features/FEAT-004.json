@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Bulk up the knowledge base by adding new .mk knowledge files covering science, technology, geography, and history. Also improve the ingestion pipeline by making the pattern graph automatically index new knowledge into the vector search at load time.",
+  "status": "pending",
+  "steps": [
+    "Create MK_OS/ai_core/hre/knowledge_files/science_facts.mk with at least 40 high-quality facts in the existing .mk format (examine core_facts.mk and world_knowledge.mk to understand the format). Cover physics, chemistry, biology, astronomy.",
+    "Create MK_OS/ai_core/hre/knowledge_files/technology_facts.mk with at least 40 facts about programming languages, operating systems, hardware, networking, AI concepts.",
+    "Create MK_OS/ai_core/hre/knowledge_files/geography_history.mk with at least 30 facts about major countries, capitals, historical events, famous people.",
+    "In mk_entry.cpp, after sys.graph.loadAllKnowledge(), add a loop that iterates over all edges in the graph and indexes them into sys.vectorSearch using vectorSearch.addVector(label, sourceText, vectorSearch.textToEmbedding(sourceText)). Then call vectorSearch.buildIndex(). This connects the knowledge graph to semantic search.",
+    "Verify the build still compiles and the new .mk files follow the established format."
+  ],
+  "acceptance_criteria": [
+    "science_facts.mk exists with 40+ facts in correct .mk format",
+    "technology_facts.mk exists with 40+ facts in correct .mk format",
+    "geography_history.mk exists with 30+ facts in correct .mk format",
+    "After loading knowledge, all facts are indexed into the ANN vector search",
+    "The project builds successfully"
+  ],
+  "verification": [
+    "Run: cd /projects/sandbox/MK_os-2/MK_OS && clang++ -std=c++17 -O2 -Wall -Wextra -DDARWIN -o mk_os system/mk_entry.cpp -lcurl -lsqlite3",
+    "Run: wc -l /projects/sandbox/MK_os-2/MK_OS/ai_core/hre/knowledge_files/science_facts.mk (should be substantial)",
+    "Run: wc -l /projects/sandbox/MK_os-2/MK_OS/ai_core/hre/knowledge_files/technology_facts.mk",
+    "Run: wc -l /projects/sandbox/MK_os-2/MK_OS/ai_core/hre/knowledge_files/geography_history.mk"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

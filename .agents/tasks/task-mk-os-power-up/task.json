@@ -1,0 +1,7 @@
+{
+  "task_id": "task-mk-os-power-up",
+  "task_description": "Power up MK OS by wiring orphaned modules, killing dead main() functions, securing the Telegram token, adding a persistent Telegram daemon loop, bulking up knowledge, adding tests, and handling the GENERATE route gracefully.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005"],
+  "blocked_reason": null
+}

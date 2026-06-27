@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-005",
+  "type": "feat",
+  "description": "Add a test framework with tests for graph queries, reasoning chains, and router accuracy. Create a test binary that exercises the core AI pipeline without needing user interaction.",
+  "status": "pending",
+  "steps": [
+    "Create directory MK_OS/tests/",
+    "Create MK_OS/tests/test_main.cpp - a test harness that #includes the needed modules (pattern_graph.cpp, reasoning_chains.cpp, smart_router.cpp, composer.cpp, deep_reasoner.cpp) and runs test functions. Use a simple assert-based framework (no external dependencies). Define a TEST macro that prints pass/fail and tracks counts.",
+    "Add test_pattern_graph() function: create a MKPatternGraph instance, load knowledge from the knowledge_files directory (use relative path), verify edgeCount() > 0, verify getAll('python') returns results, verify pathQuery('python', 'is_a', 3) works, verify persistNewFact works and increases edge count.",
+    "Add test_reasoning_chains() function: create MKReasoningChains and MKPatternGraph instances, load knowledge, call deriveAll, verify it completes without crash. Create a chain with known facts and verify inference works.",
+    "Add test_smart_router() function: create MKSmartRouter, test that routing 'what is python' returns GRAPH route, 'weather in london' returns INSTANT route, 'explain quantum computing step by step' returns REASON route, 'write me a poem' returns GENERATE route, 'search for latest news' returns SEARCH route. Verify router.route() returns reasonable confidence > 0.3 for each.",
+    "Add test_deep_reasoner() function: create MKDeepReasoner and MKPatternGraph with loaded knowledge, call think() on a known topic, verify the result has a non-empty finalAnswer or at least does not crash.",
+    "Add test_composer() function: create MKComposer, build a MKResponseContext with some facts, call composeAnswer(), verify the result is non-empty.",
+    "Add test_vector_search() function: create MKANNSearch(128), add some vectors via textToEmbedding, build index, search for a similar query, verify results are returned with score > 0.",
+    "The main() in test_main.cpp should run all test functions, print a summary (X passed, Y failed), and return 0 if all pass, 1 if any fail.",
+    "Add a 'test' target to the Makefile that compiles and runs the test binary.",
+    "Verify all tests pass by running the test binary."
+  ],
+  "acceptance_criteria": [
+    "MK_OS/tests/test_main.cpp exists and compiles",
+    "Tests cover: pattern graph queries, reasoning chains, smart router accuracy, deep reasoner, composer, vector search",
+    "All tests pass when run",
+    "The Makefile has a 'test' target",
+    "Test output clearly shows which tests pass/fail with a summary count"
+  ],
+  "verification": [
+    "Run: cd /projects/sandbox/MK_os-2/MK_OS && clang++ -std=c++17 -O2 -Wall -Wextra -DDARWIN -o mk_os system/mk_entry.cpp -lcurl -lsqlite3",
+    "Run: cd /projects/sandbox/MK_os-2/MK_OS && clang++ -std=c++17 -O2 -DDARWIN -o mk_os_test tests/test_main.cpp -lcurl -lsqlite3 && ./mk_os_test"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
