@@ -18,22 +18,8 @@ INGEST    := mk_ingest
 TELEGRAM  := mk_telegram
 LLM_EATER := mk_llm_eater
 
-# Collect all source files (excluding tools and standalone mains that conflict)
-SOURCES   := $(shell find . -name '*.cpp' \
-               ! -path './tools/*' \
-               ! -path './system/main_system.cpp' \
-               ! -path './ai_core/main.cpp' \
-               ! -path './datasets/main_datasets.cpp' \
-               ! -path './io_routing/main_io.cpp' \
-               ! -path './memory_mgmt/main_memory.cpp' \
-               ! -path './mk_brain/cashe/Main_cache.cpp' \
-               ! -path './mk_brain/embeddings/main_embeddings.cpp' \
-               ! -path './Kernel/kernel_main.cpp' \
-               ! -path './ai_core/hre/hre_main.cpp' \
-               ! -name 'main_*.cpp' \
-               -type f)
-
-OBJECTS   := $(SOURCES:.cpp=.o)
+# Single compilation unit: mk_entry.cpp #includes all other modules
+# No need for separate .o files - this avoids multiple-definition linker errors
 
 # Install location
 PREFIX    := /usr/local/bin
@@ -50,11 +36,8 @@ all: $(TARGET)
 	@echo "  Run with: ./$(TARGET)"
 	@echo ""
 
-$(TARGET): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
-
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+$(TARGET): $(ENTRY)
+	$(CXX) $(CXXFLAGS) -o $@ $(ENTRY) $(LDFLAGS)
 
 # Build standalone tools
 SYNC      := mk_sync

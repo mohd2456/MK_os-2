@@ -377,6 +377,10 @@ public:
         loadFromFile("rules.mk");
         loadFromFile("coding_knowledge.mk");
         loadFromFile("system_knowledge.mk");
+        // Extended knowledge bases
+        loadFromFile("science_facts.mk");
+        loadFromFile("technology_facts.mk");
+        loadFromFile("geography_history.mk");
     }
 
     // Append a single new fact to the learned_facts file (for runtime learning)
@@ -400,6 +404,9 @@ public:
     int nodeCount() const { return nodes.size(); }
     int edgeCount() const { return edges.size(); }
     int queryCount() const { return total_queries; }
+
+    // Return a const reference to ALL edges in the graph (for bulk indexing)
+    const std::vector<MKEdge>& getAllEdges() const { return edges; }
 
     void printStats() const {
         std::cout << "\n--- [PATTERN GRAPH] ---\n";
