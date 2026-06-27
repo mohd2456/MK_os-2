@@ -1,5 +1,11 @@
-# Only ignore raw .img (too large), keep qcow2 and initramfs
-build_work/mk_os_boot.img
+# Ignore large raw image (512MB) - use QCOW2 instead
+build_work/mk_os.img
+build_work/partition.ext4
+
+# Ignore extracted rootfs and downloads (rebuilt from script)
 build_work/rootfs/
-build_work/alpine-rootfs.tar.gz
+build_work/alpine-*.tar.gz
 build_work/mnt/
+
+# Keep the QCOW2 (small, compressed, this is what UTM SE uses)
+!build_work/mk_os.qcow2
