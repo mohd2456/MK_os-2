@@ -160,6 +160,7 @@ static void cmd_help() {
         << "\n"
         << Color::BOLD << Color::YELLOW << "  🖥️  SYSTEM" << Color::RESET << "\n"
         << "    " << Color::GREEN << "/status" << Color::RESET << "            Full system diagnostics\n"
+        << "    " << Color::GREEN << "/sync" << Color::RESET << "              Sync knowledge with GitHub\n"
         << "    " << Color::GREEN << "/quit" << Color::RESET << "              Save and exit\n"
         << "\n"
         << Color::DIM << "  Or just type naturally — MK will figure out what you mean.\n"
@@ -181,6 +182,7 @@ static void show_slash_suggestions(const std::string& partial) {
         {"/time",    "Current time"},
         {"/news",    "Tech headlines"},
         {"/status",  "System diagnostics"},
+        {"/sync",    "Sync knowledge with GitHub"},
         {"/help",    "Show all commands"},
         {"/quit",    "Save and exit"},
     };
@@ -713,6 +715,39 @@ int main(int argc, char* argv[]) {
                 cmd_help(); commandFound = true;
             } else if (input == "/status") {
                 cmd_status(sys); commandFound = true;
+            } else if (input == "/sync" || input.substr(0, 6) == "/sync ") {
+                // Sync knowledge with GitHub via system command
+                std::string syncArg = "pull";
+                if (input.size() > 6) syncArg = trim(input.substr(6));
+                std::cout << "\n  " << Color::BCYAN << "⟳" << Color::RESET 
+                          << " Syncing knowledge with GitHub (" << syncArg << ")...\n";
+                std::string cmd = "cd " + std::string("ai_core/hre/knowledge_files") + " && ";
+                if (syncArg == "push") {
+                    // Use git to push learned facts
+                    int result = std::system("git add ai_core/hre/knowledge_files/learned_facts.mk ai_core/hre/knowledge_files/personal_facts.mk 2>/dev/null && git commit -m 'sync: MK auto-push knowledge' 2>/dev/null && git push 2>/dev/null");
+                    if (result == 0) {
+                        std::cout << "  " << Color::GREEN << "✓" << Color::RESET 
+                                  << " Knowledge pushed to GitHub successfully.\n";
+                    } else {
+                        std::cout << "  " << Color::YELLOW << "⚠" << Color::RESET 
+                                  << " Push failed (no changes or no git access). Use mk_sync tool for full sync.\n";
+                    }
+                } else {
+                    // Pull latest knowledge
+                    int result = std::system("git pull --rebase 2>/dev/null");
+                    if (result == 0) {
+                        // Reload knowledge
+                        std::cout << "  " << Color::GREEN << "✓" << Color::RESET 
+                                  << " Pulled latest from GitHub. Reloading knowledge...\n";
+                        sys.graph.loadAllKnowledge();
+                        std::cout << "  " << Color::GREEN << "✓" << Color::RESET
+                                  << " Knowledge reloaded: " << sys.graph.edgeCount() << " facts.\n";
+                    } else {
+                        std::cout << "  " << Color::YELLOW << "⚠" << Color::RESET 
+                                  << " Pull failed. Use mk_sync tool for full GitHub API sync.\n";
+                    }
+                }
+                commandFound = true;
             } else if (input == "/news") {
                 cmd_news(sys); commandFound = true;
             } else if (input.size() > 5 && input.substr(0, 5) == "/ask ") {

@@ -57,7 +57,8 @@ $(TARGET): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Build standalone tools
-tools: $(INGEST) $(TELEGRAM) $(LLM_EATER)
+SYNC      := mk_sync
+tools: $(INGEST) $(TELEGRAM) $(LLM_EATER) $(SYNC)
 
 $(INGEST): tools/knowledge_ingest.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
@@ -66,6 +67,9 @@ $(TELEGRAM): tools/telegram_bridge.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS)
 
 $(LLM_EATER): tools/llm_eater.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS)
+
+$(SYNC): tools/knowledge_sync.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS)
 
 # Run MK OS
