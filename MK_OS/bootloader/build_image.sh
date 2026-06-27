@@ -1,7 +1,13 @@
 #!/bin/bash
 # =============================================================================
-# MK OS - Bootable Disk Image Builder for iPhone UTM SE
+# MK OS - Bootable Disk Image Builder for UTM SE (iPhone) / QEMU
 # =============================================================================
+#
+# FIXED VERSION: Creates a PROPER bootable disk image with:
+#   - MBR partition table (required by QEMU/UTM SE)
+#   - Syslinux/extlinux bootloader
+#   - Alpine Linux kernel + initramfs (so the VM can actually boot)
+#   - MK OS binary installed as a service
 #
 # USAGE:
 #   ./build_image.sh [OPTIONS]
@@ -9,25 +15,20 @@
 # OPTIONS:
 #   --arch aarch64    Target architecture (default: aarch64 for iPhone)
 #   --arch x86_64     Build x86_64 image for testing in QEMU on Mac
-#   --size 256        Image size in MB (default: 256, small for iPhone storage)
-#   --output NAME     Output filename base (default: mk_os_boot)
+#   --size 512        Image size in MB (default: 512)
+#   --output NAME     Output filename base (default: mk_os)
 #   --skip-compile    Skip compilation, use pre-built binary from staging/
 #   --help            Show this help message
 #
-# PREREQUISITES:
-#   - Alpine Linux mini rootfs will be downloaded automatically
-#   - qemu-img (for qcow2 conversion): brew install qemu
-#   - For cross-compilation: aarch64-linux-gnu-g++ or clang with ARM target
+# PREREQUISITES (Linux host or Docker required for loop mount):
+#   - Must run as root (or with sudo) for loop device + chroot
+#   - qemu-img: apt install qemu-utils / brew install qemu
+#   - syslinux: apt install syslinux syslinux-common
+#   - For cross-compile: aarch64-linux-gnu-g++
 #
 # OUTPUT:
-#   - mk_os_boot.img     Raw disk image (works with UTM SE)
-#   - mk_os_boot.qcow2   QCOW2 image (preferred by UTM SE, smaller file)
-#
-# EXAMPLES:
-#   ./build_image.sh                         # Build aarch64 image for iPhone
-#   ./build_image.sh --arch x86_64           # Build x86_64 for testing
-#   ./build_image.sh --size 512              # Larger image (512MB)
-#   ./build_image.sh --skip-compile          # Use pre-built binary
+#   - build_work/mk_os.qcow2   QCOW2 image (use this in UTM SE)
+#   - build_work/mk_os.img     Raw disk image (alternative)
 #
 # =============================================================================
 
@@ -35,374 +36,411 @@ set -euo pipefail
 
 # --- Configuration ---
 ARCH="aarch64"
-IMAGE_SIZE_MB=256
-OUTPUT_BASE="mk_os_boot"
+IMAGE_SIZE_MB=512
+OUTPUT_BASE="mk_os"
 SKIP_COMPILE=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 WORK_DIR="${SCRIPT_DIR}/build_work"
 STAGING_DIR="${SCRIPT_DIR}/staging"
 ROOTFS_DIR="${WORK_DIR}/rootfs"
+MOUNT_DIR="${WORK_DIR}/mnt"
 
-# Alpine Linux mini rootfs URLs
-ALPINE_VERSION="3.19"
-ALPINE_MIRROR="https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VERSION}/releases"
-ALPINE_ROOTFS_AARCH64="${ALPINE_MIRROR}/aarch64/alpine-minirootfs-${ALPINE_VERSION}.0-aarch64.tar.gz"
-ALPINE_ROOTFS_X86_64="${ALPINE_MIRROR}/x86_64/alpine-minirootfs-${ALPINE_VERSION}.0-x86_64.tar.gz"
+# Alpine Linux version (use virtual ISO which is small and includes kernel)
+ALPINE_VERSION="3.20"
+ALPINE_BRANCH="v3.20"
+ALPINE_MIRROR="https://dl-cdn.alpinelinux.org/alpine"
 
 # --- Parse Arguments ---
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --arch)
-            ARCH="$2"
-            shift 2
-            ;;
-        --size)
-            IMAGE_SIZE_MB="$2"
-            shift 2
-            ;;
-        --output)
-            OUTPUT_BASE="$2"
-            shift 2
-            ;;
-        --skip-compile)
-            SKIP_COMPILE=1
-            shift
-            ;;
+        --arch)    ARCH="$2"; shift 2 ;;
+        --size)    IMAGE_SIZE_MB="$2"; shift 2 ;;
+        --output)  OUTPUT_BASE="$2"; shift 2 ;;
+        --skip-compile) SKIP_COMPILE=1; shift ;;
         --help)
-            head -35 "$0" | tail -30
+            head -30 "$0" | tail -25
             exit 0
             ;;
-        *)
-            echo "ERROR: Unknown option: $1"
-            exit 1
-            ;;
+        *) echo "ERROR: Unknown option: $1"; exit 1 ;;
     esac
 done
 
 # --- Helper Functions ---
-log() {
-    echo "[MK BUILD] $(date '+%H:%M:%S') $*"
-}
-
-error() {
-    echo "[MK ERROR] $*" >&2
-    exit 1
-}
+log() { echo "[MK BUILD] $(date '+%H:%M:%S') $*"; }
+error() { echo "[MK ERROR] $*" >&2; exit 1; }
 
 cleanup() {
-    log "Cleaning up mounts..."
-    if mountpoint -q "${ROOTFS_DIR}/proc" 2>/dev/null; then
-        umount "${ROOTFS_DIR}/proc" || true
-    fi
-    if mountpoint -q "${ROOTFS_DIR}/sys" 2>/dev/null; then
-        umount "${ROOTFS_DIR}/sys" || true
-    fi
-    if mountpoint -q "${ROOTFS_DIR}/dev" 2>/dev/null; then
-        umount "${ROOTFS_DIR}/dev" || true
-    fi
-    if [ -n "${LOOP_DEV:-}" ]; then
-        losetup -d "${LOOP_DEV}" 2>/dev/null || true
-    fi
+    log "Cleaning up..."
+    sync 2>/dev/null || true
+    umount "${MOUNT_DIR}/proc" 2>/dev/null || true
+    umount "${MOUNT_DIR}/sys" 2>/dev/null || true
+    umount "${MOUNT_DIR}/dev" 2>/dev/null || true
+    umount "${MOUNT_DIR}" 2>/dev/null || true
+    [ -n "${LOOP_DEV:-}" ] && losetup -d "${LOOP_DEV}" 2>/dev/null || true
 }
-
 trap cleanup EXIT
 
-# --- Validate Environment ---
-log "Validating build environment..."
-
-check_tool() {
-    if ! command -v "$1" &>/dev/null; then
-        error "Required tool not found: $1. Install it first."
-    fi
-}
-
-check_tool dd
-check_tool mkfs.ext4 || check_tool mke2fs
-
-# qemu-img is optional but needed for qcow2
-HAVE_QEMU_IMG=0
-if command -v qemu-img &>/dev/null; then
-    HAVE_QEMU_IMG=1
+# --- Validate ---
+if [ "$(id -u)" -ne 0 ]; then
+    error "This script must be run as root (needed for loop mount + chroot).
+       Run: sudo ./build_image.sh $*"
 fi
 
-log "Target architecture: ${ARCH}"
+if [ "$(uname)" != "Linux" ]; then
+    error "This script requires Linux (for loop devices and chroot).
+       Use a Linux VM, Docker, or GitHub Actions to build the image.
+       On Mac: docker run --privileged -v \$(pwd):/work alpine sh /work/build_image.sh"
+fi
+
+log "Architecture: ${ARCH}"
 log "Image size: ${IMAGE_SIZE_MB}MB"
-log "Output: ${OUTPUT_BASE}.img / ${OUTPUT_BASE}.qcow2"
+log "Output: ${WORK_DIR}/${OUTPUT_BASE}.qcow2"
 
-# --- Step 1: Download Alpine Linux mini rootfs ---
+# --- Step 1: Download Alpine mini rootfs ---
 log "=== Step 1: Downloading Alpine Linux rootfs ==="
-
 mkdir -p "${WORK_DIR}"
 
-if [ "${ARCH}" = "aarch64" ]; then
-    ROOTFS_URL="${ALPINE_ROOTFS_AARCH64}"
-elif [ "${ARCH}" = "x86_64" ]; then
-    ROOTFS_URL="${ALPINE_ROOTFS_X86_64}"
-else
-    error "Unsupported architecture: ${ARCH}. Use aarch64 or x86_64."
-fi
-
+ROOTFS_URL="${ALPINE_MIRROR}/${ALPINE_BRANCH}/releases/${ARCH}/alpine-minirootfs-${ALPINE_VERSION}.0-${ARCH}.tar.gz"
 ROOTFS_TARBALL="${WORK_DIR}/alpine-minirootfs-${ARCH}.tar.gz"
 
 if [ ! -f "${ROOTFS_TARBALL}" ]; then
-    log "Downloading Alpine ${ALPINE_VERSION} mini rootfs for ${ARCH}..."
-    curl -L -o "${ROOTFS_TARBALL}" "${ROOTFS_URL}" || \
-        error "Failed to download Alpine rootfs. Check network connection."
-    log "Download complete."
+    log "Downloading Alpine ${ALPINE_VERSION} rootfs for ${ARCH}..."
+    wget -q --show-progress -O "${ROOTFS_TARBALL}" "${ROOTFS_URL}" || \
+        error "Failed to download Alpine rootfs from ${ROOTFS_URL}"
 else
     log "Using cached rootfs tarball."
 fi
 
-# --- Step 2: Create raw disk image ---
-log "=== Step 2: Creating ${IMAGE_SIZE_MB}MB raw disk image ==="
+# --- Step 2: Create disk image with MBR partition table ---
+log "=== Step 2: Creating ${IMAGE_SIZE_MB}MB disk image with MBR partition ==="
 
-IMAGE_FILE="${SCRIPT_DIR}/${OUTPUT_BASE}.img"
+IMAGE_FILE="${WORK_DIR}/${OUTPUT_BASE}.img"
+rm -f "${IMAGE_FILE}"
 
-dd if=/dev/zero of="${IMAGE_FILE}" bs=1M count="${IMAGE_SIZE_MB}" status=progress 2>&1
-log "Raw image created: ${IMAGE_FILE}"
+# Create the raw image
+dd if=/dev/zero of="${IMAGE_FILE}" bs=1M count="${IMAGE_SIZE_MB}" status=progress
 
-# --- Step 3: Format and mount the image ---
-log "=== Step 3: Formatting image as ext4 ==="
+# Create MBR partition table with one bootable Linux partition
+# Partition starts at sector 2048 (1MB offset for alignment)
+parted -s "${IMAGE_FILE}" -- \
+    mklabel msdos \
+    mkpart primary ext4 1MiB 100% \
+    set 1 boot on
 
-# Create ext4 filesystem on the image
-mkfs.ext4 -F -L "MK_OS" "${IMAGE_FILE}"
+log "Partition table created (MBR, 1 bootable ext4 partition)."
 
-# Mount the image
-mkdir -p "${ROOTFS_DIR}"
+# --- Step 3: Set up loop device and format partition ---
+log "=== Step 3: Formatting partition ==="
 
-if [ "$(uname)" = "Linux" ]; then
-    LOOP_DEV=$(losetup --find --show "${IMAGE_FILE}")
-    mount "${LOOP_DEV}" "${ROOTFS_DIR}"
-elif [ "$(uname)" = "Darwin" ]; then
-    # macOS: use hdiutil or fuse-ext2
-    if command -v fuse-ext2 &>/dev/null; then
-        fuse-ext2 "${IMAGE_FILE}" "${ROOTFS_DIR}" -o rw+
-    else
-        log "WARNING: On macOS, install fuse-ext2 for direct mount."
-        log "Falling back to tar-based assembly (no chroot)."
-        # We will assemble the rootfs in a directory and use genext2fs later
-        FALLBACK_MODE=1
-    fi
+LOOP_DEV=$(losetup --find --show --partscan "${IMAGE_FILE}")
+log "Loop device: ${LOOP_DEV}"
+
+# Wait for partition device to appear
+sleep 1
+PART_DEV="${LOOP_DEV}p1"
+if [ ! -b "${PART_DEV}" ]; then
+    # Try alternative naming
+    PART_DEV="${LOOP_DEV}p1"
+    partprobe "${LOOP_DEV}" 2>/dev/null || true
+    sleep 1
 fi
 
-# --- Step 4: Extract Alpine rootfs ---
-log "=== Step 4: Extracting Alpine rootfs ==="
-
-if [ "${FALLBACK_MODE:-0}" = "1" ]; then
-    mkdir -p "${ROOTFS_DIR}"
+if [ ! -b "${PART_DEV}" ]; then
+    # Fallback: use offset-based access
+    log "Partition device not found, using offset mount..."
+    PART_OFFSET=$(parted -s "${IMAGE_FILE}" unit B print | grep "^ 1" | awk '{print $2}' | tr -d 'B')
+    losetup -d "${LOOP_DEV}"
+    LOOP_DEV=$(losetup --find --show --offset "${PART_OFFSET}" "${IMAGE_FILE}")
+    PART_DEV="${LOOP_DEV}"
 fi
 
-tar -xzf "${ROOTFS_TARBALL}" -C "${ROOTFS_DIR}"
+mkfs.ext4 -F -L "MK_OS" "${PART_DEV}"
+log "Formatted partition as ext4."
+
+# --- Step 4: Mount and extract rootfs ---
+log "=== Step 4: Mounting and extracting Alpine rootfs ==="
+
+mkdir -p "${MOUNT_DIR}"
+mount "${PART_DEV}" "${MOUNT_DIR}"
+
+tar -xzf "${ROOTFS_TARBALL}" -C "${MOUNT_DIR}"
 log "Alpine rootfs extracted."
 
-# --- Step 5: Install packages (Alpine base + deps) ---
-log "=== Step 5: Installing Alpine packages ==="
+# --- Step 5: Chroot and install kernel + bootloader + packages ---
+log "=== Step 5: Installing kernel, bootloader, and packages via chroot ==="
 
-PACKAGES_FILE="${SCRIPT_DIR}/alpine_packages.txt"
+# Set up for chroot
+cp /etc/resolv.conf "${MOUNT_DIR}/etc/resolv.conf"
+mount -t proc proc "${MOUNT_DIR}/proc"
+mount -t sysfs sysfs "${MOUNT_DIR}/sys"
+mount --bind /dev "${MOUNT_DIR}/dev"
 
-if [ "${FALLBACK_MODE:-0}" != "1" ] && [ "$(uname)" = "Linux" ]; then
-    # Set up DNS in chroot
-    cp /etc/resolv.conf "${ROOTFS_DIR}/etc/resolv.conf" 2>/dev/null || true
-
-    # Mount necessary filesystems for chroot
-    mount -t proc proc "${ROOTFS_DIR}/proc"
-    mount -t sysfs sys "${ROOTFS_DIR}/sys"
-    mount --bind /dev "${ROOTFS_DIR}/dev"
-
-    # Install packages via chroot
-    if [ -f "${PACKAGES_FILE}" ]; then
-        PACKAGES=$(grep -v '^#' "${PACKAGES_FILE}" | grep -v '^$' | tr '\n' ' ')
-        chroot "${ROOTFS_DIR}" /sbin/apk add --no-cache ${PACKAGES}
-    fi
-else
-    log "Skipping package installation (no chroot available)."
-    log "Packages will need to be installed on first boot."
-    # Copy package list for first-boot installation
-    cp "${PACKAGES_FILE}" "${ROOTFS_DIR}/root/alpine_packages.txt" 2>/dev/null || true
-fi
-
-# --- Step 6: Compile MK OS or copy pre-built binary ---
-log "=== Step 6: Installing MK OS binary ==="
-
-mkdir -p "${ROOTFS_DIR}/opt/mk_os"
-mkdir -p "${ROOTFS_DIR}/opt/mk_os/knowledge"
-mkdir -p "${ROOTFS_DIR}/var/log"
-mkdir -p "${ROOTFS_DIR}/var/run"
-
-if [ "${SKIP_COMPILE}" = "1" ]; then
-    # Use pre-built binary from staging directory
-    if [ -f "${STAGING_DIR}/mk_os" ]; then
-        cp "${STAGING_DIR}/mk_os" "${ROOTFS_DIR}/opt/mk_os/mk_os"
-        log "Copied pre-built binary from staging."
-    else
-        error "No pre-built binary found at ${STAGING_DIR}/mk_os. Build it first with Makefile.arm64."
-    fi
-else
-    # Attempt native compilation inside chroot (only works on matching arch)
-    if [ "${FALLBACK_MODE:-0}" != "1" ] && [ "$(uname)" = "Linux" ]; then
-        log "Compiling MK OS inside chroot..."
-        # Copy source into chroot
-        mkdir -p "${ROOTFS_DIR}/tmp/mk_build"
-        cp -r "${PROJECT_ROOT}"/*.cpp "${ROOTFS_DIR}/tmp/mk_build/" 2>/dev/null || true
-        cp -r "${PROJECT_ROOT}/system" "${ROOTFS_DIR}/tmp/mk_build/" 2>/dev/null || true
-        cp -r "${PROJECT_ROOT}/ai_core" "${ROOTFS_DIR}/tmp/mk_build/" 2>/dev/null || true
-        cp -r "${PROJECT_ROOT}/network" "${ROOTFS_DIR}/tmp/mk_build/" 2>/dev/null || true
-        cp -r "${PROJECT_ROOT}/mk_brain" "${ROOTFS_DIR}/tmp/mk_build/" 2>/dev/null || true
-        cp -r "${PROJECT_ROOT}/Makefile" "${ROOTFS_DIR}/tmp/mk_build/" 2>/dev/null || true
-
-        chroot "${ROOTFS_DIR}" sh -c "cd /tmp/mk_build && make all" || \
-            log "WARNING: Chroot compilation failed. Use --skip-compile with a pre-built binary."
-
-        if [ -f "${ROOTFS_DIR}/tmp/mk_build/mk_os" ]; then
-            cp "${ROOTFS_DIR}/tmp/mk_build/mk_os" "${ROOTFS_DIR}/opt/mk_os/mk_os"
-            log "MK OS compiled and installed."
-        fi
-        rm -rf "${ROOTFS_DIR}/tmp/mk_build"
-    else
-        log "Cannot compile in this mode. Use --skip-compile with pre-built binary."
-        log "Build with: make -f bootloader/Makefile.arm64 static"
-    fi
-fi
-
-chmod +x "${ROOTFS_DIR}/opt/mk_os/mk_os" 2>/dev/null || true
-
-# --- Step 7: Set up MK OS as auto-start service ---
-log "=== Step 7: Configuring auto-start service ==="
-
-# Copy init script
-cp "${SCRIPT_DIR}/mk_init.sh" "${ROOTFS_DIR}/opt/mk_os/mk_init.sh"
-chmod +x "${ROOTFS_DIR}/opt/mk_os/mk_init.sh"
-
-# Copy network setup script
-cp "${SCRIPT_DIR}/network_setup.sh" "${ROOTFS_DIR}/opt/mk_os/network_setup.sh"
-chmod +x "${ROOTFS_DIR}/opt/mk_os/network_setup.sh"
-
-# Install OpenRC service
-mkdir -p "${ROOTFS_DIR}/etc/init.d"
-cp "${SCRIPT_DIR}/mk_service" "${ROOTFS_DIR}/etc/init.d/mk_os"
-chmod +x "${ROOTFS_DIR}/etc/init.d/mk_os"
-
-# Enable service on boot (OpenRC)
-mkdir -p "${ROOTFS_DIR}/etc/runlevels/default"
-ln -sf /etc/init.d/mk_os "${ROOTFS_DIR}/etc/runlevels/default/mk_os" 2>/dev/null || true
-
-# Set up inittab for auto-login and service start
-cat > "${ROOTFS_DIR}/etc/inittab" << 'EOF'
-::sysinit:/sbin/openrc sysinit
-::sysinit:/sbin/openrc boot
-::wait:/sbin/openrc default
-tty1::respawn:/sbin/getty 38400 tty1
-::shutdown:/sbin/openrc shutdown
-::ctrlaltdel:/sbin/reboot
+# Configure APK repositories
+cat > "${MOUNT_DIR}/etc/apk/repositories" << EOF
+${ALPINE_MIRROR}/${ALPINE_BRANCH}/main
+${ALPINE_MIRROR}/${ALPINE_BRANCH}/community
 EOF
 
-# --- Step 8: Set up networking ---
-log "=== Step 8: Configuring networking ==="
+# Install kernel, bootloader, and required packages inside chroot
+# THIS IS THE KEY FIX: We install linux-virt (kernel) + syslinux (bootloader)
+chroot "${MOUNT_DIR}" /bin/sh -e << 'CHROOTEOF'
+# Update package index
+apk update
 
-# Network interfaces
-mkdir -p "${ROOTFS_DIR}/etc/network"
-cat > "${ROOTFS_DIR}/etc/network/interfaces" << 'EOF'
+# Install the Linux kernel (linux-virt is optimized for VMs, much smaller)
+apk add linux-virt
+
+# Install syslinux/extlinux bootloader (works with MBR/BIOS boot in QEMU)
+apk add syslinux
+
+# Install essential system packages
+apk add openrc busybox-initscripts alpine-base
+
+# Install MK OS dependencies
+apk add curl libcurl sqlite-libs zlib openssl openssh git busybox-extras \
+    dhcpcd iptables procps util-linux grep sed tzdata
+
+# Install extlinux bootloader to /boot
+extlinux --install /boot
+
+# Enable essential OpenRC services
+rc-update add devfs sysinit
+rc-update add dmesg sysinit
+rc-update add mdev sysinit
+rc-update add hwdrivers sysinit
+
+rc-update add hwclock boot
+rc-update add modules boot
+rc-update add sysctl boot
+rc-update add hostname boot
+rc-update add bootmisc boot
+rc-update add syslog boot
+rc-update add networking boot
+
+rc-update add mount-ro shutdown
+rc-update add killprocs shutdown
+rc-update add savecache shutdown
+
+# Enable SSH for remote access
+rc-update add sshd default
+echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+
+# Set root password to "mk" (user can change later)
+echo "root:mk" | chpasswd
+
+# Enable serial console for UTM SE (CRITICAL for headless VMs)
+sed -i 's/^#ttyS0/ttyS0/' /etc/inittab 2>/dev/null || true
+# Add serial console if not present
+grep -q "ttyS0" /etc/inittab || \
+    echo "ttyS0::respawn:/sbin/getty -L ttyS0 115200 vt100" >> /etc/inittab
+
+# Enable login on the main console
+grep -q "tty1" /etc/inittab || \
+    echo "tty1::respawn:/sbin/getty 38400 tty1" >> /etc/inittab
+
+# Configure fstab
+cat > /etc/fstab << 'FSTAB'
+/dev/vda1   /       ext4    defaults,noatime    0 1
+proc        /proc   proc    defaults            0 0
+sysfs       /sys    sysfs   defaults            0 0
+devpts      /dev/pts devpts defaults            0 0
+tmpfs       /tmp    tmpfs   defaults,nosuid     0 0
+FSTAB
+
+# Set hostname
+echo "mk-os" > /etc/hostname
+echo "127.0.0.1 mk-os localhost" > /etc/hosts
+
+# Configure networking (DHCP on eth0)
+cat > /etc/network/interfaces << 'NETCFG'
 auto lo
 iface lo inet loopback
 
 auto eth0
 iface eth0 inet dhcp
-EOF
+NETCFG
 
-# DNS configuration
-cat > "${ROOTFS_DIR}/etc/resolv.conf" << 'EOF'
+# DNS
+cat > /etc/resolv.conf << 'DNS'
 nameserver 8.8.8.8
 nameserver 1.1.1.1
+DNS
+
+CHROOTEOF
+
+log "Packages and kernel installed successfully."
+
+# --- Step 6: Configure extlinux/syslinux bootloader ---
+log "=== Step 6: Configuring bootloader (extlinux) ==="
+
+# Find the installed kernel and initramfs
+KERNEL_FILE=$(ls "${MOUNT_DIR}/boot/vmlinuz-"* 2>/dev/null | head -1)
+INITRD_FILE=$(ls "${MOUNT_DIR}/boot/initramfs-"* 2>/dev/null | head -1)
+
+if [ -z "${KERNEL_FILE}" ] || [ -z "${INITRD_FILE}" ]; then
+    error "Kernel or initramfs not found in /boot after package install!"
+fi
+
+KERNEL_BASENAME=$(basename "${KERNEL_FILE}")
+INITRD_BASENAME=$(basename "${INITRD_FILE}")
+
+log "Kernel: ${KERNEL_BASENAME}"
+log "Initrd: ${INITRD_BASENAME}"
+
+# Create extlinux configuration
+# The serial console line is CRITICAL for UTM SE (Console Only mode)
+mkdir -p "${MOUNT_DIR}/boot"
+cat > "${MOUNT_DIR}/boot/extlinux.conf" << EOF
+DEFAULT mk_os
+PROMPT 0
+TIMEOUT 30
+
+LABEL mk_os
+    LINUX /boot/${KERNEL_BASENAME}
+    INITRD /boot/${INITRD_BASENAME}
+    APPEND root=/dev/vda1 rootfstype=ext4 console=ttyS0,115200 console=tty0 modules=virtio_blk,virtio_net,ext4 quiet
 EOF
 
-# Hostname
-echo "mk-os" > "${ROOTFS_DIR}/etc/hostname"
-echo "127.0.0.1 mk-os localhost" > "${ROOTFS_DIR}/etc/hosts"
+log "Bootloader configuration written."
 
-# --- Step 9: Copy knowledge files ---
-log "=== Step 9: Copying knowledge files ==="
+# Install MBR boot code (syslinux MBR -> extlinux on partition)
+if [ -f /usr/lib/syslinux/mbr/mbr.bin ]; then
+    dd if=/usr/lib/syslinux/mbr/mbr.bin of="${IMAGE_FILE}" bs=440 count=1 conv=notrunc
+elif [ -f /usr/share/syslinux/mbr.bin ]; then
+    dd if=/usr/share/syslinux/mbr.bin of="${IMAGE_FILE}" bs=440 count=1 conv=notrunc
+elif [ -f "${MOUNT_DIR}/usr/share/syslinux/mbr.bin" ]; then
+    dd if="${MOUNT_DIR}/usr/share/syslinux/mbr.bin" of="${IMAGE_FILE}" bs=440 count=1 conv=notrunc
+else
+    log "WARNING: mbr.bin not found on host. Copying from chroot..."
+    chroot "${MOUNT_DIR}" dd if=/usr/share/syslinux/mbr.bin of=/dev/null bs=440 count=1 2>/dev/null
+    # Copy mbr.bin out of chroot
+    cp "${MOUNT_DIR}/usr/share/syslinux/mbr.bin" "${WORK_DIR}/mbr.bin" 2>/dev/null || true
+    if [ -f "${WORK_DIR}/mbr.bin" ]; then
+        dd if="${WORK_DIR}/mbr.bin" of="${IMAGE_FILE}" bs=440 count=1 conv=notrunc
+    else
+        log "WARNING: Could not install MBR boot code. Image may not boot with BIOS."
+        log "For UTM SE aarch64, this may still work with direct kernel boot."
+    fi
+fi
 
+log "MBR boot code installed."
+
+# --- Step 7: Install MK OS binary and service ---
+log "=== Step 7: Installing MK OS binary and service ==="
+
+mkdir -p "${MOUNT_DIR}/opt/mk_os"
+mkdir -p "${MOUNT_DIR}/opt/mk_os/knowledge"
+mkdir -p "${MOUNT_DIR}/var/log"
+
+# Copy init and service scripts
+cp "${SCRIPT_DIR}/mk_init.sh" "${MOUNT_DIR}/opt/mk_os/mk_init.sh"
+chmod +x "${MOUNT_DIR}/opt/mk_os/mk_init.sh"
+
+cp "${SCRIPT_DIR}/network_setup.sh" "${MOUNT_DIR}/opt/mk_os/network_setup.sh"
+chmod +x "${MOUNT_DIR}/opt/mk_os/network_setup.sh"
+
+# Install OpenRC service
+cp "${SCRIPT_DIR}/mk_service" "${MOUNT_DIR}/etc/init.d/mk_os"
+chmod +x "${MOUNT_DIR}/etc/init.d/mk_os"
+
+# Enable MK OS service on boot
+chroot "${MOUNT_DIR}" rc-update add mk_os default 2>/dev/null || \
+    ln -sf /etc/init.d/mk_os "${MOUNT_DIR}/etc/runlevels/default/mk_os"
+
+# Install MK OS binary (if available)
+if [ "${SKIP_COMPILE}" = "1" ] && [ -f "${STAGING_DIR}/mk_os" ]; then
+    cp "${STAGING_DIR}/mk_os" "${MOUNT_DIR}/opt/mk_os/mk_os"
+    chmod +x "${MOUNT_DIR}/opt/mk_os/mk_os"
+    log "Installed pre-built MK OS binary."
+elif [ -f "${STAGING_DIR}/mk_os" ]; then
+    cp "${STAGING_DIR}/mk_os" "${MOUNT_DIR}/opt/mk_os/mk_os"
+    chmod +x "${MOUNT_DIR}/opt/mk_os/mk_os"
+    log "Installed MK OS binary from staging."
+else
+    log "WARNING: No MK OS binary found in ${STAGING_DIR}/"
+    log "Build it first: make -f bootloader/Makefile.arm64 static && make -f bootloader/Makefile.arm64 install"
+    log "The VM will boot Alpine Linux but MK OS service won't start until binary is installed."
+    # Create placeholder script so the service doesn't crash
+    cat > "${MOUNT_DIR}/opt/mk_os/mk_os" << 'PLACEHOLDER'
+#!/bin/sh
+echo "MK OS binary not yet installed. Build and copy it to /opt/mk_os/mk_os"
+echo "Sleeping to prevent service restart loop..."
+sleep 86400
+PLACEHOLDER
+    chmod +x "${MOUNT_DIR}/opt/mk_os/mk_os"
+fi
+
+# Copy knowledge files if available
 KNOWLEDGE_SRC="${PROJECT_ROOT}/ai_core/hre/knowledge_files"
 if [ -d "${KNOWLEDGE_SRC}" ]; then
-    cp "${KNOWLEDGE_SRC}"/*.mk "${ROOTFS_DIR}/opt/mk_os/knowledge/" 2>/dev/null || true
-    KNOWLEDGE_COUNT=$(ls "${ROOTFS_DIR}/opt/mk_os/knowledge/"*.mk 2>/dev/null | wc -l)
-    log "Copied ${KNOWLEDGE_COUNT} knowledge files."
-else
-    log "WARNING: Knowledge files directory not found at ${KNOWLEDGE_SRC}"
+    cp "${KNOWLEDGE_SRC}"/*.mk "${MOUNT_DIR}/opt/mk_os/knowledge/" 2>/dev/null || true
+    log "Knowledge files copied."
 fi
 
-# Also copy any other .mk files from the project
-find "${PROJECT_ROOT}" -name "*.mk" -not -path "*/build_work/*" -not -path "*/bootloader/*" \
-    -exec cp {} "${ROOTFS_DIR}/opt/mk_os/knowledge/" \; 2>/dev/null || true
+# --- Step 8: Create MOTD (login banner) ---
+cat > "${MOUNT_DIR}/etc/motd" << 'MOTD'
 
-# --- Step 10: Finalize image ---
-log "=== Step 10: Finalizing disk image ==="
+  ==================================
+     MK OS - Hybrid AI System
+     Running on Alpine Linux
+  ==================================
+  
+  MK OS Status: rc-service mk_os status
+  MK OS Logs:   cat /var/log/mk_os.log
+  
+MOTD
 
-# Unmount if mounted
-if [ "${FALLBACK_MODE:-0}" != "1" ]; then
-    sync
-    if [ "$(uname)" = "Linux" ]; then
-        umount "${ROOTFS_DIR}/proc" 2>/dev/null || true
-        umount "${ROOTFS_DIR}/sys" 2>/dev/null || true
-        umount "${ROOTFS_DIR}/dev" 2>/dev/null || true
-        umount "${ROOTFS_DIR}" 2>/dev/null || true
-        if [ -n "${LOOP_DEV:-}" ]; then
-            losetup -d "${LOOP_DEV}" 2>/dev/null || true
-            LOOP_DEV=""
-        fi
-    elif [ "$(uname)" = "Darwin" ]; then
-        umount "${ROOTFS_DIR}" 2>/dev/null || true
-    fi
-else
-    # Fallback: repack the directory into the ext4 image
-    if command -v genext2fs &>/dev/null; then
-        genext2fs -b $((IMAGE_SIZE_MB * 1024)) -d "${ROOTFS_DIR}" "${IMAGE_FILE}"
-        log "Image repacked with genext2fs."
-    elif command -v mke2fs &>/dev/null; then
-        # Use mke2fs with directory (-d) option
-        rm -f "${IMAGE_FILE}"
-        mke2fs -t ext4 -d "${ROOTFS_DIR}" -L "MK_OS" "${IMAGE_FILE}" "${IMAGE_SIZE_MB}M" 2>/dev/null || \
-            log "WARNING: mke2fs -d not supported on this version. Image may be incomplete."
-    fi
-fi
+# --- Step 9: Unmount and create QCOW2 ---
+log "=== Step 9: Finalizing image ==="
 
-log "Raw image ready: ${IMAGE_FILE}"
-log "Image size: $(du -h "${IMAGE_FILE}" | cut -f1)"
+sync
+umount "${MOUNT_DIR}/proc" 2>/dev/null || true
+umount "${MOUNT_DIR}/sys" 2>/dev/null || true
+umount "${MOUNT_DIR}/dev" 2>/dev/null || true
+umount "${MOUNT_DIR}"
+losetup -d "${LOOP_DEV}" 2>/dev/null || true
+LOOP_DEV=""
 
-# --- Step 11: Create QCOW2 variant ---
-log "=== Step 11: Creating QCOW2 image (UTM SE preferred) ==="
+log "Filesystem unmounted."
 
-QCOW2_FILE="${SCRIPT_DIR}/${OUTPUT_BASE}.qcow2"
-
-if [ "${HAVE_QEMU_IMG}" = "1" ]; then
-    qemu-img convert -f raw -O qcow2 "${IMAGE_FILE}" "${QCOW2_FILE}"
+# Create QCOW2 (compressed, preferred by UTM SE)
+QCOW2_FILE="${WORK_DIR}/${OUTPUT_BASE}.qcow2"
+if command -v qemu-img &>/dev/null; then
+    qemu-img convert -f raw -O qcow2 -c "${IMAGE_FILE}" "${QCOW2_FILE}"
     log "QCOW2 image created: ${QCOW2_FILE}"
     log "QCOW2 size: $(du -h "${QCOW2_FILE}" | cut -f1)"
 else
-    log "WARNING: qemu-img not found. Skipping QCOW2 conversion."
-    log "Install with: brew install qemu (macOS) or apt install qemu-utils (Linux)"
-    log "Then convert manually: qemu-img convert -f raw -O qcow2 ${IMAGE_FILE} ${QCOW2_FILE}"
+    log "WARNING: qemu-img not found. Only raw image available."
+    log "Install: apt install qemu-utils"
 fi
 
 # --- Done ---
 echo ""
 echo "============================================================"
-echo "  MK OS Boot Image Build Complete"
+echo "  MK OS Bootable Image - Build Complete"
 echo "============================================================"
 echo ""
-echo "  Architecture:  ${ARCH}"
-echo "  Raw image:     ${IMAGE_FILE}"
-if [ "${HAVE_QEMU_IMG}" = "1" ]; then
-echo "  QCOW2 image:   ${QCOW2_FILE}"
-fi
+echo "  Architecture:   ${ARCH}"
+echo "  Raw image:      ${IMAGE_FILE} ($(du -h "${IMAGE_FILE}" | cut -f1))"
+[ -f "${QCOW2_FILE}" ] && \
+echo "  QCOW2 image:    ${QCOW2_FILE} ($(du -h "${QCOW2_FILE}" | cut -f1))"
 echo ""
-echo "  Next steps:"
-echo "    1. Transfer ${OUTPUT_BASE}.qcow2 to your iPhone"
-echo "    2. Open UTM SE and create a new VM"
-echo "    3. Select the QCOW2 file as the drive"
-echo "    4. Set RAM to 512MB-1GB, CPU to 2 cores"
-echo "    5. Boot and enjoy MK OS!"
+echo "  Root password:  mk"
 echo ""
-echo "  For detailed instructions, see: bootloader/utm_guide.md"
+echo "  UTM SE Setup:"
+echo "    1. Transfer ${OUTPUT_BASE}.qcow2 to iPhone"
+echo "    2. Create new VM: Emulate > Linux > ARM64 (aarch64)"
+echo "    3. RAM: 512MB, CPU: 2 cores"
+echo "    4. Import the QCOW2 as VirtIO drive"
+echo "    5. Display: Console Only (serial)"
+echo "    6. Network: Shared Network (NAT)"
+echo "    7. Boot!"
+echo ""
+echo "  Test locally with QEMU:"
+echo "    qemu-system-${ARCH} -M virt -cpu cortex-a72 -m 512 \\"
+echo "      -drive file=${QCOW2_FILE},format=qcow2,if=virtio \\"
+echo "      -netdev user,id=net0 -device virtio-net-pci,netdev=net0 \\"
+echo "      -nographic"
+echo ""
 echo "============================================================"
