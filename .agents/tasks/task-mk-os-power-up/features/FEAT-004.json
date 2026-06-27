@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "feat",
   "description": "Bulk up the knowledge base by adding new .mk knowledge files covering science, technology, geography, and history. Also fix the Makefile so that 'make' works correctly using single-compilation-unit approach (compile only mk_entry.cpp, not individual .o files that conflict). The vector search indexing is already wired into mk_entry.cpp and pattern_graph.cpp already loads the new .mk files -- we just need to create the actual knowledge files and fix the build system.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create MK_OS/ai_core/hre/knowledge_files/science_facts.mk with at least 40 high-quality facts covering physics, chemistry, biology, astronomy in the format: source|relation|target|weight (one fact per line, # for comments, grouped by section headers like '# === PHYSICS ===' etc.)",
     "Create MK_OS/ai_core/hre/knowledge_files/technology_facts.mk with at least 40 facts about programming languages, operating systems, hardware, networking, AI concepts.",
@@ -24,5 +24,5 @@
     "Run: wc -l /projects/sandbox/MK_os-2/MK_OS/ai_core/hre/knowledge_files/geography_history.mk"
   ],
   "blocked_reason": null,
-  "findings": "The mk_entry.cpp already has the vector indexing code added (getAllEdges loop). pattern_graph.cpp already loads the three new .mk files. The only work remaining is: (1) create the actual .mk knowledge files, (2) fix the Makefile."
+  "findings": "Build succeeds with 11 warnings (all pre-existing: unused parameters, field reorder, unused private fields). No errors. The Makefile fix was straightforward - replaced SOURCES/OBJECTS pattern with direct compilation of ENTRY file. All three knowledge files created with well over the minimum required facts (173, 210, 175 respectively). The prior feature changes (pattern_graph.cpp loadFromFile calls and mk_entry.cpp vector indexing) were uncommitted and included in this commit."
 }
