@@ -424,7 +424,7 @@ private:
     // Build a human-readable explanation of why a side won
     std::string buildWinReason(const DebateScoreBreakdown& winner,
                                const DebateScoreBreakdown& loser,
-                               const std::string& winnerLabel) const {
+                               const std::string& /*winnerLabel*/) const {
         std::string reason = "Key factors: ";
         std::vector<std::string> factors;
 

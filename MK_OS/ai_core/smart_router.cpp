@@ -51,6 +51,9 @@ private:
     std::vector<MKRoutingDecision> history;
     std::unordered_map<std::string, int> routeCounters;  // route -> usage count
 
+    // Configuration
+    int maxHistorySize;
+
     // Per-route accuracy tracking
     int instantTotal, instantSuccess;
     int graphTotal, graphSuccess;
@@ -64,8 +67,6 @@ private:
     std::vector<std::string> searchKeywords;
     std::vector<std::string> reasonKeywords;
     std::vector<std::string> generateKeywords;
-
-    int maxHistorySize;
 
     // Convert string to lowercase
     std::string toLower(const std::string& s) {
