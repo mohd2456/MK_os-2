@@ -280,11 +280,39 @@ If `mk_sync` is compiled and available:
 
 ## Troubleshooting
 
-### VM won't boot / Kernel panic
+### VM won't boot / Kernel panic / ISO not loading
 
-- **Cause:** Wrong architecture selected in UTM SE
-- **Fix:** Ensure architecture matches your image (aarch64 for ARM build)
-- **Try:** Recreate VM with "virt" machine type
+**Common causes and fixes:**
+
+1. **No bootloader in image (most common!):**
+   - The image MUST contain a Linux kernel + initramfs + syslinux bootloader
+   - A raw ext4 dump without partition table will NOT boot
+   - Fix: Use the updated `build_image.sh` which installs `linux-virt` + `extlinux`
+
+2. **Wrong architecture selected in UTM SE:**
+   - Ensure architecture matches your image (aarch64 for ARM build)
+   - In UTM SE: Emulate > Linux > ARM64
+
+3. **Missing partition table:**
+   - QEMU/UTM needs MBR or GPT partition table to find the bootloader
+   - The image must have `parted mklabel msdos` + bootable flag set
+
+4. **No serial console configured:**
+   - UTM SE "Console Only" mode uses serial (ttyS0)
+   - The kernel must boot with `console=ttyS0,115200` parameter
+   - The image must have getty on ttyS0 in `/etc/inittab`
+
+5. **Drive interface mismatch:**
+   - Use VirtIO drive interface in UTM SE settings
+   - The kernel boot param must reference `/dev/vda1` (not /dev/sda1)
+   - If VirtIO doesn't work, try IDE (will use /dev/sda1)
+
+6. **Image is an ISO (not a disk image):**
+   - UTM SE cannot directly boot from a bare `.iso` file as the main drive
+   - You need a proper disk image (.qcow2 or .img) with installed OS
+   - The ISO is only for installation, not for running
+
+- **Quick test:** `qemu-system-aarch64 -M virt -cpu cortex-a72 -m 512 -drive file=mk_os.qcow2,if=virtio -nographic`
 
 ### No network connectivity
 
