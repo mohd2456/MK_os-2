@@ -1,15 +1,2 @@
-# Temp build files (large, recreated from script)
-build_work/rootfs/
-build_work/rootfs_stage/
-build_work/alpine_mount/
-build_work/iso_root/
-build_work/boot_files/
-build_work/alpine-*.tar.gz
-build_work/alpine-*.iso
-build_work/partition.ext4
-build_work/mk_os.img
-build_work/mk_os_disk.qcow2
-
-# Keep the final outputs
-!build_work/mk_os.iso
-!build_work/mk_os.qcow2
+build_work/*
+!build_work/mk_os_utm4.zip
