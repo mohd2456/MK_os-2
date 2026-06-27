@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Add internet search engine, fact verification, freshness management, cited responses, honesty engine, and LLM knowledge extraction modules to MK OS",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create network/search_engine.cpp - Multi-source internet search module using DuckDuckGo API (https://api.duckduckgo.com/?q=QUERY&format=json) and Wikipedia API (https://en.wikipedia.org/api/rest_v1/page/summary/QUERY). Uses the existing MKHTTP class from network/http.cpp for HTTP requests. Include a class MKSearchEngine with methods: search(query) returning ranked results with URLs, titles, snippets; searchMultiple(query) hitting multiple sources; parseJSON for lightweight JSON parsing of API responses. Follow the #ifndef guard pattern and iostream logging style.",
     "Create ai_core/fact_verifier.cpp - Cross-reference engine that takes a claimed fact, queries multiple sources via MKSearchEngine, scores confidence based on source agreement, detects contradictions against existing knowledge graph facts. Class MKFactVerifier with methods: verify(claim) returning a VerificationResult struct with confidence score (0.0-1.0), agreeing_sources count, contradictions list, source URLs. Include logic to compare against known facts in the pattern graph.",
@@ -28,5 +28,5 @@
     "Run 'clang++ -std=c++17 -O2 tools/llm_eater.cpp -lcurl -o /dev/null' to verify standalone tool compilation"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "The base codebase had numerous pre-existing build errors that needed fixing: (1) Missing includes (algorithm, cmath, fstream, chrono, map) across multiple files, (2) stray character in datasets/loader.cpp, (3) mismatched include paths in Kernel/kernel_main.cpp (sched/sched.cpp vs sched/scheduler_core.cpp, driver names), (4) immintrin.h placed inside a class body in ai_core/hal.cpp, (5) multiple main() functions conflicting at link time (kernel_main.cpp, hre_main.cpp, mk_entry.cpp), (6) forward declarations of MKPatternGraph used without including the actual definition in hre/ files. All were fixed to make the build pass. The Makefile now excludes Kernel/kernel_main.cpp and ai_core/hre/hre_main.cpp from the source list."
 }
