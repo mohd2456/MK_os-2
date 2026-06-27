@@ -107,10 +107,15 @@ public:
         return request(url);
     }
 
-    std::string getUpdates() {
+    std::string getUpdates(long offset = 0) {
         std::string url = "https://api.telegram.org/bot" + token + "/getUpdates";
+        if (offset > 0) {
+            url += "?offset=" + std::to_string(offset) + "&timeout=5";
+        }
         return request(url);
     }
+
+    bool hasToken() const { return !token.empty(); }
 
     void autoReply(const std::string& chatId, const std::string& updates) {
         std::cout << "[TELEGRAM] Evaluating incoming updates payload...\n";
