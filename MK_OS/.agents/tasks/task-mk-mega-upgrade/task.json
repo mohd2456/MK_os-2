@@ -1,0 +1,7 @@
+{
+  "task_id": "task-mk-mega-upgrade",
+  "task_description": "Massive upgrade of MK OS: Build NGF engine, LLM integration, full coding engine, conversation engine, web scraping, task automation, 6GB+ knowledge base, and update README. Target folder size: 10GB.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005"],
+  "blocked_reason": null
+}

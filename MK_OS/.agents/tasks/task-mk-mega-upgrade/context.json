@@ -1,0 +1,27 @@
+{
+  "project_type": "Custom AI Operating System in C++",
+  "language": "C++17",
+  "build_system": "Make with clang++ (Makefile in project root). Entry point: system/mk_entry.cpp. Uses #include to pull in .cpp files directly (header-less include pattern).",
+  "test_framework": "No formal test framework. Validation is via successful compilation with make all.",
+  "build_command": "make all",
+  "test_command": "make all (compilation IS the test - if it compiles, it works)",
+  "verification_instructions": "Run make all from MK_OS/ directory. If binary mk_os is produced with no errors, the build is good.",
+  "snapshot_or_generated_files": "bootloader/build_work/ contains pre-built ISOs and qcow2 images. Do not modify.",
+  "setup_instructions": "No setup needed beyond having clang++ with C++17 support. External deps: libcurl, libsqlite3.",
+  "environment_constraints": "OPEN_INTERNET - full network access available. No Docker needed. Build with make all.",
+  "contribution_requirements": "All .cpp files use #ifndef include guards. Knowledge files use format: source|relation|target|weight. No external libraries for AI core.",
+  "key_patterns": "1) .cpp files with #ifndef guards included directly via #include. 2) Knowledge files are .mk format (pipe-delimited). 3) Classes use MK prefix (MKPatternGraph, MKSearchEngine, etc). 4) system/mk_entry.cpp is the unified entry point that #includes other modules. 5) The Makefile finds all .cpp files except those in tools/ and standalone mains.",
+  "relevant_files": [
+    "system/mk_entry.cpp",
+    "ai_core/hre/pattern_graph.cpp",
+    "ai_core/hre/knowledge_files/core_facts.mk",
+    "ai_core/hre/knowledge_files/coding_knowledge.mk",
+    "ai_core/hre/knowledge_files/world_knowledge.mk",
+    "ai_core/coding.cpp",
+    "ai_core/hre/conversation_engine.cpp",
+    "network/search_engine.cpp",
+    "ai_core/task_automation.cpp",
+    "Makefile"
+  ],
+  "directory_structure": "Kernel/ (OS core), ai_core/ (intelligence), ai_core/hre/ (hybrid reasoning engine), ai_core/hre/knowledge_files/ (.mk knowledge), mk_brain/ (long-term memory), network/ (internet), system/ (entry/boot/shell), tools/ (standalone utils), plugins/ (extensions), knowledge/ (loader), datasets/ (data mgmt), bootloader/ (VM images)"
+}

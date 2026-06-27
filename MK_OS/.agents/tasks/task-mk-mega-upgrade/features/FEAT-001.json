@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Build the Neural Graph Fusion (NGF) engine - activation spreading, path tracing, and verbalizer. This is the core AI engine that spreads activation through the knowledge graph, traces multi-hop paths between concepts, and verbalizes results into natural language. Also add Pythia 1.4B LLM integration module (llama.cpp-style interface as the 'voice' module).",
+  "status": "in_progress",
+  "steps": [
+    "Create ai_core/ngf/ directory for the Neural Graph Fusion engine",
+    "Create ai_core/ngf/activation_spreading.cpp - Implements spreading activation through the knowledge graph. When a concept is activated, it spreads energy to connected nodes with decay. Uses MKPatternGraph as the underlying store. Include: ActivationState struct, spread() method with configurable decay/threshold, multi-source activation, convergence detection.",
+    "Create ai_core/ngf/path_tracer.cpp - Traces optimal paths between concepts in the graph. Implements breadth-first, depth-first, and weighted shortest path algorithms. Returns MKGraphResult with the full path and confidence. Include: PathTrace struct, traceAll() returning ranked paths, cycle detection, max-hop limiting.",
+    "Create ai_core/ngf/verbalizer.cpp - Converts graph paths and activation patterns into natural language. Takes a set of activated nodes and edges, produces coherent English sentences. Include: template library, conjunction handling, confidence-based hedging (definitely/probably/possibly), multi-fact paragraph assembly.",
+    "Create ai_core/ngf/ngf_engine.cpp - The orchestrator that combines activation spreading + path tracing + verbalization. Accepts a query, activates source nodes, spreads, traces paths to target, and verbalizes the result. Include: NGFQuery struct, NGFResult struct, and the main think() pipeline.",
+    "Create ai_core/ngf/llm_voice.cpp - Pythia 1.4B LLM integration module. Implements a llama.cpp-compatible interface for loading GGUF model files, running inference with KV-cache, sampling (temperature, top-p, top-k), and generating text completions. This is the 'voice' that polishes NGF outputs into fluent language. Include: ModelConfig, load_model(), generate(), sample_token(). Note: actual model weights are referenced by path but the code handles loading/inference.",
+    "Create ai_core/ngf/model_config.cpp - Configuration and weight management for the LLM voice module. Defines model architectures (Pythia-1.4B, Pythia-410M), quantization formats (Q4_0, Q4_1, Q8_0), memory requirements, and layer configs. Includes download URLs and SHA256 checksums for model verification.",
+    "All files must use #ifndef include guards and MK-prefixed class names. Do NOT include these in mk_entry.cpp yet - they will be integrated in a later feature."
+  ],
+  "acceptance_criteria": [
+    "All 6 new .cpp files exist in ai_core/ngf/ directory",
+    "Each file has proper #ifndef include guard",
+    "Each file has a class with MK prefix (MKActivationSpreading, MKPathTracer, MKVerbalizer, MKNGFEngine, MKLLMVoice, MKModelConfig)",
+    "NGF engine demonstrates activation spreading algorithm with decay and threshold",
+    "Path tracer implements at least BFS and weighted shortest path",
+    "Verbalizer has at least 20 sentence templates for different relation types",
+    "LLM voice module has full inference pipeline (load, tokenize, forward pass, sample, decode)",
+    "Model config lists Pythia-1.4B architecture details (layers, heads, hidden dim, vocab size)",
+    "make all compiles without errors"
+  ],
+  "verification": [
+    "Run 'make all' from /projects/sandbox/MK_os-2/MK_OS/ and confirm it produces the mk_os binary without errors"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

@@ -1,0 +1,40 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Build the full coding engine with write-test-verify loop, conversation engine with personality and memory, and web scraping/search for real-time answers. Also build task automation with reminders and project indexing.",
+  "status": "pending",
+  "steps": [
+    "Create ai_core/coding_engine/ directory for the full coding engine",
+    "Create ai_core/coding_engine/code_writer.cpp - Full code generation engine. Takes a goal description and produces complete, runnable code in Python/JavaScript/C++/Rust/Go. Includes: language detection from goal, function scaffolding, import generation, docstring/comment generation, error handling boilerplate. Has 50+ code templates for common tasks (HTTP server, file parser, data pipeline, CLI tool, web scraper, API client, database CRUD, etc).",
+    "Create ai_core/coding_engine/code_tester.cpp - Automated test generation and execution. Given generated code, produces unit tests, runs them, captures output. Includes: test framework detection, assertion generation, edge case identification, coverage tracking, test report formatting.",
+    "Create ai_core/coding_engine/code_verifier.cpp - Code verification loop. Compiles/runs code, checks output against expected behavior, identifies failures, generates fix suggestions, and re-runs. Implements the write->test->verify->fix cycle up to 3 iterations. Includes: CompileResult, TestResult, VerificationLoop structs.",
+    "Create ai_core/coding_engine/project_indexer.cpp - Indexes entire project directories. Walks filesystem, identifies file types, extracts function/class signatures, builds a searchable index of the project structure. Used for 'find where X is defined' and 'show me all files that use Y' queries. Includes: ProjectIndex, FileEntry, SymbolTable classes.",
+    "Create ai_core/conversation/ directory",
+    "Create ai_core/conversation/personality_engine.cpp - Full personality system for MK. Defines personality traits (helpfulness, humor, formality, verbosity, curiosity), mood states, response style adaptation based on user interaction patterns. Has 5 preset personalities (Friendly, Technical, Teacher, Creative, Concise). Includes dynamic personality blending based on context.",
+    "Create ai_core/conversation/memory_manager.cpp - Long-term conversation memory. Stores user preferences, conversation history summaries, named entities mentioned, user's skill level estimates, favorite topics. Persists to disk. Includes: UserProfile, ConversationSummary, TopicHistory structs. Remembers user name, preferences, and past interactions across sessions.",
+    "Create ai_core/conversation/context_tracker.cpp - Tracks conversation context across turns. Resolves pronouns (it, that, they), maintains topic stack, detects topic changes, handles multi-turn Q&A sequences. Includes: ContextWindow (last 30 turns), ReferenceResolver, TopicStack.",
+    "Create network/web_scraper.cpp - Full web scraping engine. Fetches web pages, extracts text content, handles redirects, respects robots.txt, rate-limits requests. Includes: HTML tag stripping, link extraction, content summarization, structured data extraction from common page layouts.",
+    "Create network/realtime_search.cpp - Enhanced real-time search that combines DuckDuckGo, Wikipedia, and web scraping for comprehensive answers. Implements query decomposition (breaks complex questions into sub-queries), result merging, source credibility scoring, and answer synthesis from multiple sources.",
+    "Create ai_core/task_engine/ directory",
+    "Create ai_core/task_engine/reminder_system.cpp - Full reminder/scheduling system. Set reminders by time (in 5 minutes, at 3pm, tomorrow), recurring reminders (every day at 9am), task deadlines. Persists reminders to disk. Includes: Reminder struct, ReminderStore, natural language time parsing (parse '5 minutes from now', 'next tuesday', 'every weekday at 9am').",
+    "Create ai_core/task_engine/task_planner.cpp - Breaks high-level goals into actionable task lists. Given 'build a web app', produces a structured plan with milestones, dependencies, and time estimates. Includes: TaskPlan, Milestone, Dependency structs, plan templates for common project types (web app, CLI tool, data pipeline, mobile app).",
+    "All files use #ifndef include guards, MK-prefixed classes. Do NOT modify mk_entry.cpp yet."
+  ],
+  "acceptance_criteria": [
+    "All new .cpp files exist in their respective directories",
+    "coding_engine/ has code_writer.cpp, code_tester.cpp, code_verifier.cpp, project_indexer.cpp",
+    "conversation/ has personality_engine.cpp, memory_manager.cpp, context_tracker.cpp",
+    "network/ has web_scraper.cpp and realtime_search.cpp added",
+    "task_engine/ has reminder_system.cpp and task_planner.cpp",
+    "Code writer has at least 50 code templates across 5 languages",
+    "Personality engine defines at least 5 personality presets",
+    "Memory manager persists user profile to disk",
+    "Reminder system parses natural language time expressions",
+    "make all compiles without errors"
+  ],
+  "verification": [
+    "Run 'make all' from /projects/sandbox/MK_os-2/MK_OS/ and confirm it produces the mk_os binary without errors"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

@@ -1,0 +1,25 @@
+{
+  "id": "FEAT-005",
+  "type": "feat",
+  "description": "Integrate all new modules into the system entry point, update README.md with all new features, and ensure final build compiles cleanly.",
+  "status": "pending",
+  "steps": [
+    "Update system/mk_entry.cpp to #include the new NGF engine (ai_core/ngf/ngf_engine.cpp), coding engine (ai_core/coding_engine/code_writer.cpp), conversation modules (ai_core/conversation/personality_engine.cpp, memory_manager.cpp, context_tracker.cpp), web scraper (network/web_scraper.cpp, network/realtime_search.cpp), and task engine (ai_core/task_engine/reminder_system.cpp, task_planner.cpp). Add them to the MKSystem struct and wire them into the REPL command handlers. Add new commands: /code, /remind, /plan, /project.",
+    "Update the Makefile if needed to ensure the new directories are found by the source file discovery",
+    "Update README.md at /projects/sandbox/MK_os-2/README.md with all new features: NGF engine description, LLM voice module, full coding engine, conversation personality, memory manager, web scraper, real-time search, reminder system, task planner, project indexer, and the massive 6GB+ knowledge base. Update the architecture diagram, file structure table, stats section (new file count, line count), and What MK OS Can Do section.",
+    "Run make all to verify everything compiles together cleanly"
+  ],
+  "acceptance_criteria": [
+    "system/mk_entry.cpp includes all new modules",
+    "New commands (/code, /remind, /plan, /project) are available in the REPL",
+    "README.md documents all new features",
+    "make all produces mk_os binary without errors",
+    "The architecture diagram in README is updated"
+  ],
+  "verification": [
+    "Run 'make all' from /projects/sandbox/MK_os-2/MK_OS/ and confirm it produces the mk_os binary",
+    "Run 'grep -c FEAT /projects/sandbox/MK_os-2/README.md' or similar to confirm README has new content"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

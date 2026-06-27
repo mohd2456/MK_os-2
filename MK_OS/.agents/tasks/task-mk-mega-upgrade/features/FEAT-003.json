@@ -1,0 +1,40 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Build a massive knowledge base (target: ~3GB) covering science, technology, history, common sense, logic chains, code patterns, world facts, and specialized domains. This is the bulk of the 10GB target. Create multiple large .mk knowledge files with thousands of facts each.",
+  "status": "pending",
+  "steps": [
+    "Create knowledge/massive/ directory for the expanded knowledge base",
+    "Create knowledge/massive/science_physics.mk - 3000+ physics facts covering: classical mechanics (Newton's laws, kinematics, dynamics, rotational motion, oscillations, fluid mechanics), thermodynamics (all laws, entropy, heat engines, phase transitions, statistical mechanics), electromagnetism (Maxwell's equations, circuits, optics, electromagnetic waves), quantum mechanics (wave functions, operators, hydrogen atom, perturbation theory, quantum field theory basics), nuclear physics (fission, fusion, radioactivity, nuclear structure), particle physics (Standard Model, quarks, leptons, bosons, Feynman diagrams), relativity (special and general, gravitational waves, black holes, cosmology), astrophysics (stellar evolution, galaxies, dark matter, dark energy, Big Bang, cosmic microwave background). Each fact in source|relation|target|weight format.",
+    "Create knowledge/massive/science_chemistry.mk - 3000+ chemistry facts: elements (all 118 with properties), chemical bonding, organic chemistry (functional groups, reactions, nomenclature), inorganic chemistry, physical chemistry (kinetics, equilibrium, electrochemistry), biochemistry (amino acids, proteins, DNA, metabolic pathways, enzymes), analytical chemistry, materials science, polymers, nanotechnology.",
+    "Create knowledge/massive/science_biology.mk - 3000+ biology facts: cell biology, genetics (DNA replication, transcription, translation, gene regulation), evolution, ecology, taxonomy, human anatomy (all organ systems in detail), neuroscience, microbiology, immunology, botany, zoology, molecular biology, biotechnology.",
+    "Create knowledge/massive/mathematics_complete.mk - 3000+ math facts: algebra (groups, rings, fields, Galois theory), analysis (real, complex, functional), topology, number theory, combinatorics, graph theory, differential equations, linear algebra (all theorems), probability and statistics, mathematical logic, set theory, category theory, cryptography math, numerical methods.",
+    "Create knowledge/massive/computer_science.mk - 3000+ CS facts: algorithms (sorting, searching, graph, DP, greedy, divide-conquer, string, geometric), data structures (trees, heaps, hash tables, graphs, advanced), operating systems (processes, threads, memory, file systems, scheduling, deadlocks, virtualization), networking (OSI model, TCP/IP, routing, DNS, HTTP, security protocols), databases (relational, NoSQL, distributed, transactions, indexing), compilers (lexing, parsing, optimization, code gen), AI/ML (supervised, unsupervised, reinforcement, neural nets, NLP, computer vision), distributed systems (consensus, replication, CAP theorem, MapReduce), security (cryptography, authentication, attacks, defenses).",
+    "Create knowledge/massive/programming_languages.mk - 3000+ facts about programming languages: Python (stdlib, advanced features, asyncio, metaclasses, decorators, data model), JavaScript (V8, event loop, closures, prototypes, ES2024), C++ (STL, templates, RAII, move semantics, concepts, coroutines, modules), Rust (ownership, lifetimes, traits, async, unsafe, macros), Go (goroutines, channels, interfaces, generics), Java (JVM, generics, streams, concurrency), TypeScript (type system, utility types, conditional types), Swift, Kotlin, Haskell, SQL dialects.",
+    "Create knowledge/massive/history_world.mk - 3000+ history facts: ancient civilizations (Mesopotamia, Egypt, Greece, Rome, China, India, Maya), medieval period, Renaissance, Age of Exploration, Industrial Revolution, World Wars, Cold War, modern history, major figures, inventions, cultural movements, political systems, revolutions, empires.",
+    "Create knowledge/massive/common_sense.mk - 3000+ common sense facts: physical world (things fall down, water is wet, fire is hot, ice is cold), social norms, cause and effect relationships, spatial reasoning facts, temporal reasoning, object properties, human behavior patterns, everyday physics, cooking knowledge, household knowledge, safety knowledge, weather patterns, animal behavior.",
+    "Create knowledge/massive/logic_chains.mk - 2000+ logical inference chains. Format: IF condition THEN conclusion. Covers: transitive relations (if A is_a B and B is_a C then A is_a C), property inheritance, causal chains, mathematical implications, scientific reasoning chains, common sense inferences, temporal logic, spatial logic.",
+    "Create knowledge/massive/code_patterns_python.mk - 2000+ Python code patterns: web frameworks (Flask, Django, FastAPI routes/models/views), data science (pandas, numpy, sklearn pipelines), automation (file processing, web scraping, API calls), testing (pytest fixtures, mocking, parametrize), async patterns, CLI tools (argparse, click), database (SQLAlchemy, raw SQL), DevOps (Docker, CI/CD scripts).",
+    "Create knowledge/massive/code_patterns_javascript.mk - 2000+ JavaScript/TypeScript patterns: React (components, hooks, state, routing, testing), Node.js (Express, middleware, auth, databases), frontend (DOM, events, fetch, WebSocket), build tools (webpack, vite, esbuild), testing (Jest, Vitest, Playwright), TypeScript (types, generics, utility types, decorators).",
+    "Create knowledge/massive/code_patterns_systems.mk - 2000+ systems programming patterns: C++ (STL containers, smart pointers, RAII, templates, concurrency), Rust (ownership patterns, error handling, async, traits), Go (goroutines, channels, interfaces, testing), shell scripting (bash, awk, sed), Makefiles, CMake, Docker, Kubernetes YAML.",
+    "Create knowledge/massive/world_geography.mk - 2000+ geography facts: all countries (capitals, populations, areas, languages, currencies, GDP), oceans, seas, rivers, mountains, deserts, climate zones, tectonic plates, natural resources, major cities, transportation routes.",
+    "Create knowledge/massive/technology_modern.mk - 2000+ modern technology facts: AI/ML (transformers, diffusion models, RLHF, fine-tuning, RAG), cloud computing (AWS, GCP, Azure services), mobile (iOS, Android development), web3/blockchain, quantum computing, robotics, autonomous vehicles, 5G/6G, IoT, cybersecurity trends, developer tools, open source projects.",
+    "Create knowledge/massive/arts_culture.mk - 2000+ arts and culture facts: literature (major works, authors, movements), music (genres, theory, instruments, artists), visual arts (movements, techniques, famous works), film (directors, genres, history), architecture, philosophy, religion, mythology, languages, cultural practices worldwide."
+  ],
+  "acceptance_criteria": [
+    "All 15 .mk files exist in knowledge/massive/ directory",
+    "Each file contains at least 2000 lines of facts in source|relation|target|weight format",
+    "Total size of knowledge/massive/ directory is at least 2GB",
+    "Facts are real, accurate, and properly formatted",
+    "Each file has category headers (# === SECTION NAME ===)",
+    "make all compiles without errors (knowledge files are data, not compiled)"
+  ],
+  "verification": [
+    "Run 'ls -la knowledge/massive/' to confirm all files exist",
+    "Run 'wc -l knowledge/massive/*.mk' to confirm each has 2000+ lines",
+    "Run 'du -sh knowledge/massive/' to confirm total size approaches target",
+    "Run 'make all' to confirm build still works"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
