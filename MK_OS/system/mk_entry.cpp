@@ -877,6 +877,24 @@ int main(int argc, char* argv[]) {
     // Step 4: Load knowledge
     sys.graph.loadAllKnowledge();
 
+    // Step 4a: Index all knowledge into vector search for semantic retrieval
+    {
+        const auto& allEdges = sys.graph.getAllEdges();
+        int indexed = 0;
+        for (const auto& edge : allEdges) {
+            std::string sourceText = edge.source + " " + edge.relation + " " + edge.target;
+            std::string label = edge.source + "_" + edge.relation + "_" + edge.target;
+            auto embedding = sys.vectorSearch.textToEmbedding(sourceText);
+            sys.vectorSearch.addVector(label, sourceText, embedding);
+            indexed++;
+        }
+        if (indexed > 0) {
+            sys.vectorSearch.buildIndex();
+        }
+        std::cout << "  " << Color::BGREEN << "✓" << Color::RESET 
+                  << " Indexed " << indexed << " facts into vector search.\n";
+    }
+
     // Step 4b: Restore learning engine knowledge
     sys.learningEngine.restore();
 
