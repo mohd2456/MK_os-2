@@ -316,3 +316,359 @@ composition|preferred_over|inheritance|1.0
 separation of concerns|is_a|principle|1.0
 kiss|stands_for|keep it simple stupid|1.0
 yagni|stands_for|you aint gonna need it|1.0
+
+# === RUST LANGUAGE ===
+rust|is_a|programming language|1.0
+rust|has|ownership system|1.0
+rust|has|borrow checker|1.0
+rust|has|zero-cost abstractions|1.0
+rust|has|no garbage collector|1.0
+rust|guarantees|memory safety at compile time|1.0
+rust|file_extension|.rs|1.0
+rust|package_manager|cargo|1.0
+ownership|is_a|rust concept|1.0
+ownership|rule|each value has one owner|1.0
+ownership|rule|value dropped when owner goes out of scope|1.0
+borrowing|is_a|rust concept|1.0
+borrowing|allows|references without ownership transfer|1.0
+borrowing|rule|one mutable or many immutable references|1.0
+lifetime|is_a|rust concept|1.0
+lifetime|ensures|references are valid|1.0
+lifetime|annotation|tick a as in 'a|1.0
+trait|is_a|rust concept|1.0
+trait|similar_to|interface in other languages|1.0
+trait|used_for|shared behavior|1.0
+enum|is_a|rust type|1.0
+enum|can_hold|data variants|1.0
+option|is_a|rust enum|1.0
+option|variants|Some and None|1.0
+result|is_a|rust enum|1.0
+result|variants|Ok and Err|1.0
+match|is_a|rust keyword|1.0
+match|used_for|pattern matching|1.0
+pattern matching|is_a|rust feature|1.0
+pattern matching|must_be|exhaustive|1.0
+struct|is_a|rust type|1.0
+impl|is_a|rust keyword|1.0
+impl|used_for|implementing methods|1.0
+cargo|command|cargo build|1.0
+cargo|command|cargo test|1.0
+cargo|command|cargo run|1.0
+cargo|uses|Cargo.toml for configuration|1.0
+unsafe|is_a|rust keyword|1.0
+unsafe|allows|bypassing borrow checker|1.0
+macro|is_a|rust metaprogramming|1.0
+macro|syntax|macro_name!|1.0
+async await|is_a|rust feature|1.0
+tokio|is_a|rust async runtime|1.0
+
+# === GO LANGUAGE ===
+go|is_a|programming language|1.0
+go|created_by|google|1.0
+go|has|goroutines|1.0
+go|has|channels|1.0
+go|has|garbage collector|1.0
+go|has|static typing|1.0
+go|compiles_to|machine code|1.0
+go|file_extension|.go|1.0
+goroutine|is_a|go concurrency primitive|1.0
+goroutine|lighter_than|os thread|1.0
+goroutine|started_with|go keyword|1.0
+channel|is_a|go communication primitive|1.0
+channel|used_for|passing data between goroutines|1.0
+channel|can_be|buffered or unbuffered|1.0
+interface|is_a|go type|1.0
+interface|implemented|implicitly|1.0
+defer|is_a|go keyword|1.0
+defer|executes|function at end of surrounding function|1.0
+slice|is_a|go type|1.0
+slice|is_a|dynamic view of array|1.0
+map|is_a|go builtin type|1.0
+go|error_handling|explicit error return values|1.0
+go|has|multiple return values|1.0
+go|package_manager|go modules|1.0
+go|command|go build|1.0
+go|command|go test|1.0
+go|command|go run|1.0
+go|has|built-in concurrency|1.0
+select|is_a|go keyword|1.0
+select|used_for|waiting on multiple channels|1.0
+go fmt|used_for|code formatting|1.0
+context|is_a|go package|1.0
+context|used_for|cancellation and timeouts|1.0
+
+# === TYPESCRIPT ===
+typescript|is_a|programming language|1.0
+typescript|superset_of|javascript|1.0
+typescript|adds|static typing|1.0
+typescript|compiles_to|javascript|1.0
+typescript|file_extension|.ts .tsx|1.0
+typescript|has|interfaces|1.0
+typescript|has|generics|1.0
+typescript|has|enums|1.0
+typescript|has|type inference|1.0
+generic|is_a|typescript feature|1.0
+generic|syntax|<T>|1.0
+generic|used_for|reusable typed components|1.0
+union type|is_a|typescript feature|1.0
+union type|syntax|type A or B|1.0
+intersection type|is_a|typescript feature|1.0
+intersection type|syntax|type A and B|1.0
+utility type Partial|makes|all properties optional|1.0
+utility type Required|makes|all properties required|1.0
+utility type Readonly|makes|all properties readonly|1.0
+utility type Pick|selects|subset of properties|1.0
+utility type Omit|excludes|subset of properties|1.0
+type guard|is_a|typescript pattern|1.0
+type guard|used_for|narrowing types|1.0
+discriminated union|is_a|typescript pattern|1.0
+discriminated union|uses|literal type discriminant|1.0
+never type|represents|values that never occur|1.0
+unknown type|is_a|safe alternative to any|1.0
+type assertion|syntax|value as Type|1.0
+decorator|is_a|typescript feature|1.0
+decorator|syntax|@decoratorName|1.0
+namespace|is_a|typescript feature|1.0
+mapped type|is_a|typescript feature|1.0
+conditional type|is_a|typescript feature|1.0
+conditional type|syntax|T extends U ? X : Y|1.0
+tsc|is_a|typescript compiler|1.0
+tsconfig.json|configures|typescript compilation|1.0
+
+# === ALGORITHM COMPLEXITY ===
+big o notation|describes|algorithm time complexity|1.0
+O(1)|is_a|constant time|1.0
+O(1)|example|array index access|1.0
+O(log n)|is_a|logarithmic time|1.0
+O(log n)|example|binary search|1.0
+O(n)|is_a|linear time|1.0
+O(n)|example|linear search|1.0
+O(n log n)|is_a|linearithmic time|1.0
+O(n log n)|example|merge sort quick sort|1.0
+O(n squared)|is_a|quadratic time|1.0
+O(n squared)|example|bubble sort insertion sort|1.0
+O(2 to the n)|is_a|exponential time|1.0
+O(n factorial)|is_a|factorial time|1.0
+O(n factorial)|example|brute force traveling salesman|1.0
+space complexity|measures|memory usage|1.0
+amortized analysis|averages|cost over sequence of operations|1.0
+best case|is_a|minimum operations|1.0
+worst case|is_a|maximum operations|1.0
+average case|is_a|expected operations|1.0
+binary search|requires|sorted array|1.0
+binary search|time_complexity|O(log n)|1.0
+hash table lookup|time_complexity|O(1) average|1.0
+hash table lookup|time_complexity|O(n) worst case|1.0
+
+# === ADVANCED DATA STRUCTURES ===
+b-tree|is_a|self-balancing tree|1.0
+b-tree|used_in|databases and file systems|1.0
+b-tree|property|all leaves at same depth|1.0
+b-tree|has|multiple keys per node|1.0
+trie|is_a|tree data structure|1.0
+trie|also_called|prefix tree|1.0
+trie|used_for|string search and autocomplete|1.0
+trie|time_complexity|O(key length) for lookup|1.0
+heap|is_a|tree-based data structure|1.0
+heap|types|min-heap and max-heap|1.0
+heap|used_for|priority queues|1.0
+heap|insert_complexity|O(log n)|1.0
+skip list|is_a|probabilistic data structure|1.0
+skip list|used_for|ordered key-value store|1.0
+skip list|average_complexity|O(log n)|1.0
+bloom filter|is_a|probabilistic data structure|1.0
+bloom filter|can_have|false positives|1.0
+bloom filter|cannot_have|false negatives|1.0
+bloom filter|used_for|membership testing|1.0
+red-black tree|is_a|self-balancing BST|1.0
+red-black tree|guarantees|O(log n) operations|1.0
+avl tree|is_a|self-balancing BST|1.0
+avl tree|more_balanced_than|red-black tree|1.0
+segment tree|is_a|data structure|1.0
+segment tree|used_for|range queries|1.0
+disjoint set|is_a|data structure|1.0
+disjoint set|also_called|union-find|1.0
+graph|is_a|data structure|1.0
+graph|has|vertices and edges|1.0
+directed graph|has|one-way edges|1.0
+adjacency list|is_a|graph representation|1.0
+adjacency matrix|is_a|graph representation|1.0
+
+# === SYSTEM DESIGN ===
+load balancer|distributes|traffic across servers|1.0
+load balancer|algorithms|round robin least connections|1.0
+load balancer|types|L4 and L7|1.0
+caching|is_a|performance optimization|1.0
+caching|strategies|write-through write-back write-around|1.0
+cache invalidation|is_a|hard problem|1.0
+cache eviction|policies|LRU LFU FIFO|1.0
+sharding|is_a|horizontal partitioning|1.0
+sharding|distributes|data across databases|1.0
+sharding|key_types|hash range directory|1.0
+message queue|is_a|async communication|1.0
+message queue|examples|kafka rabbitmq sqs|1.0
+message queue|enables|decoupled services|1.0
+microservices|is_a|architecture pattern|1.0
+microservices|opposite_of|monolith|1.0
+microservices|communicate_via|api or messaging|1.0
+rate limiting|is_a|api protection|1.0
+rate limiting|algorithms|token bucket leaky bucket|1.0
+circuit breaker|is_a|fault tolerance pattern|1.0
+circuit breaker|prevents|cascading failures|1.0
+eventual consistency|is_a|consistency model|1.0
+strong consistency|is_a|consistency model|1.0
+cdn|stands_for|content delivery network|1.0
+cdn|used_for|caching content at edge|1.0
+horizontal scaling|adds|more machines|1.0
+vertical scaling|adds|more resources to machine|1.0
+database replication|types|master-slave master-master|1.0
+consensus|is_a|distributed agreement|1.0
+
+# === NETWORKING PROTOCOLS ===
+grpc|is_a|rpc framework|1.0
+grpc|uses|protocol buffers|1.0
+grpc|uses|http2|1.0
+grpc|supports|bidirectional streaming|1.0
+protocol buffers|is_a|serialization format|1.0
+protocol buffers|created_by|google|1.0
+quic|is_a|transport protocol|1.0
+quic|built_on|udp|1.0
+quic|used_by|http3|1.0
+quic|reduces|connection latency|1.0
+webrtc|is_a|protocol|1.0
+webrtc|used_for|peer-to-peer communication|1.0
+webrtc|supports|audio video data|1.0
+mqtt|is_a|messaging protocol|1.0
+mqtt|used_for|iot devices|1.0
+mqtt|pattern|publish subscribe|1.0
+mqtt|is_a|lightweight protocol|1.0
+http2|is_a|protocol|1.0
+http2|has|multiplexing|1.0
+http2|has|header compression|1.0
+http2|has|server push|1.0
+http3|is_a|protocol|1.0
+http3|uses|quic transport|1.0
+sse|stands_for|server sent events|1.0
+sse|is_a|one-way streaming|1.0
+
+# === CLOUD AND DEVOPS ===
+kubernetes|is_a|container orchestrator|1.0
+kubernetes|manages|containerized applications|1.0
+kubernetes|has|pods|1.0
+kubernetes|has|services|1.0
+kubernetes|has|deployments|1.0
+kubernetes|has|namespaces|1.0
+pod|is_a|kubernetes unit|1.0
+pod|contains|one or more containers|1.0
+service|is_a|kubernetes abstraction|1.0
+service|provides|stable network endpoint|1.0
+helm|is_a|kubernetes package manager|1.0
+docker image|is_a|container template|1.0
+docker container|is_a|running instance of image|1.0
+docker layer|is_a|filesystem change|1.0
+docker compose|used_for|multi-container applications|1.0
+terraform|is_a|infrastructure as code tool|1.0
+terraform|uses|declarative configuration|1.0
+terraform|manages|cloud resources|1.0
+terraform|has|state file|1.0
+ci cd pipeline|automates|build test deploy|1.0
+github actions|is_a|ci cd platform|1.0
+jenkins|is_a|ci cd server|1.0
+infrastructure as code|manages|infra via code files|1.0
+gitops|is_a|deployment methodology|1.0
+gitops|uses|git as source of truth|1.0
+blue-green deployment|is_a|release strategy|1.0
+canary deployment|is_a|gradual release strategy|1.0
+rolling update|is_a|deployment strategy|1.0
+
+# === SECURITY ===
+oauth2|is_a|authorization framework|1.0
+oauth2|grant_types|authorization_code client_credentials implicit|1.0
+oauth2|uses|access tokens|1.0
+jwt|stands_for|json web token|1.0
+jwt|has|header payload signature|1.0
+jwt|is_a|stateless auth token|1.0
+jwt|encoded_with|base64url|1.0
+cors|stands_for|cross origin resource sharing|1.0
+cors|controls|cross-domain requests|1.0
+cors|uses|http headers|1.0
+xss|stands_for|cross site scripting|1.0
+xss|injects|malicious scripts|1.0
+xss|prevented_by|input sanitization|1.0
+xss|types|stored reflected dom-based|1.0
+csrf|stands_for|cross site request forgery|1.0
+csrf|tricks|user into unwanted actions|1.0
+csrf|prevented_by|anti-csrf tokens|1.0
+sql injection|injects|malicious sql|1.0
+sql injection|prevented_by|parameterized queries|1.0
+sql injection|is_a|injection attack|1.0
+bcrypt|is_a|password hashing algorithm|1.0
+bcrypt|has|built-in salt|1.0
+argon2|is_a|password hashing algorithm|1.0
+argon2|winner_of|password hashing competition|1.0
+https|prevents|man in the middle attacks|1.0
+certificate|is_a|digital identity|1.0
+certificate authority|issues|certificates|1.0
+public key cryptography|uses|key pairs|1.0
+public key|used_for|encryption|1.0
+private key|used_for|decryption and signing|1.0
+
+# === DATABASE INTERNALS ===
+b+ tree|is_a|index structure|1.0
+b+ tree|stores|data only in leaves|1.0
+b+ tree|used_by|most relational databases|1.0
+b+ tree|leaves_are|linked for range scans|1.0
+wal|stands_for|write ahead log|1.0
+wal|ensures|durability|1.0
+wal|writes|changes before applying|1.0
+mvcc|stands_for|multi version concurrency control|1.0
+mvcc|allows|concurrent reads and writes|1.0
+mvcc|used_by|postgres and mysql innodb|1.0
+acid|stands_for|atomicity consistency isolation durability|1.0
+acid|is_a|transaction property|1.0
+transaction isolation|levels|read uncommitted read committed repeatable read serializable|1.0
+clustered index|is_a|index type|1.0
+clustered index|determines|physical row order|1.0
+non-clustered index|is_a|index type|1.0
+non-clustered index|stores|pointer to data|1.0
+query optimizer|generates|execution plan|1.0
+query optimizer|uses|cost-based optimization|1.0
+deadlock detection|monitors|circular waits|1.0
+connection pooling|reuses|database connections|1.0
+sharding|splits|data across multiple databases|1.0
+replication lag|is_a|delay between master and replica|1.0
+vacuum|is_a|postgres maintenance|1.0
+vacuum|reclaims|dead tuple space|1.0
+
+# === COMPILER DESIGN ===
+lexer|is_a|compiler phase|1.0
+lexer|also_called|tokenizer or scanner|1.0
+lexer|converts|source code to tokens|1.0
+token|is_a|lexical unit|1.0
+token|types|keyword identifier literal operator|1.0
+parser|is_a|compiler phase|1.0
+parser|converts|tokens to AST|1.0
+parser|types|top-down bottom-up|1.0
+ast|stands_for|abstract syntax tree|1.0
+ast|represents|program structure|1.0
+semantic analysis|is_a|compiler phase|1.0
+semantic analysis|checks|types and scoping|1.0
+intermediate representation|is_a|compiler phase|1.0
+intermediate representation|abstracts|machine details|1.0
+ir|examples|three-address code SSA LLVM IR|1.0
+optimization pass|is_a|compiler phase|1.0
+optimization pass|examples|dead code elimination constant folding inlining|1.0
+code generation|is_a|compiler phase|1.0
+code generation|produces|machine code or bytecode|1.0
+register allocation|is_a|optimization|1.0
+register allocation|maps|variables to cpu registers|1.0
+llvm|is_a|compiler infrastructure|1.0
+llvm|provides|reusable optimization passes|1.0
+llvm|used_by|clang rust swift|1.0
+jit compilation|stands_for|just in time compilation|1.0
+jit compilation|compiles|at runtime|1.0
+jit compilation|used_by|java javascript|1.0
+garbage collector|types|mark-sweep generational reference counting|1.0
+linker|is_a|build tool|1.0
+linker|combines|object files into executable|1.0
+linker|resolves|symbol references|1.0
