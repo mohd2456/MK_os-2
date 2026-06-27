@@ -1,0 +1,35 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Wire shell, service_manager, and daemon into mk_entry.cpp. Add a persistent Telegram polling daemon loop that runs in a background thread and processes incoming messages through the AI pipeline. Also wire the GENERATE route to gracefully fall back through the composer instead of requiring neural_net weights.",
+  "status": "pending",
+  "steps": [
+    "Add #include directives in mk_entry.cpp for: ../system/daemon.cpp, ../system/shell.cpp, ../system/service_manager.cpp, ../plugins/telegram.cpp, ../ai_core/neural_net.cpp. Place telegram.cpp after the network includes.",
+    "Add member instances to MKSystem: MKDaemon daemon; MK_Shell::MKShell shell; MK_Services::ServiceManager serviceManager; MKTelegram* telegram (pointer, only initialized if token is available); MKNeuralNet neuralNet;",
+    "In MKSystem constructor: check if MK_TELEGRAM_TOKEN env var is set. If so, create a new MKTelegram instance with that token. Otherwise set telegram to nullptr and print a note that Telegram integration is disabled.",
+    "Create a telegram_poll_loop function that: (a) calls telegram->getUpdates() with offset tracking, (b) parses the JSON response to extract message text, chat_id, and update_id, (c) routes each message text through handle_natural_query logic (or a simplified version), (d) sends the response back via telegram->sendMessage(), (e) sleeps 2 seconds between polls. Use basic string parsing for JSON (the project doesn't use a JSON library). Track last update_id to avoid processing duplicates.",
+    "In main(), after system initialization and before the REPL loop, if sys.telegram is not null, spawn a std::thread running the telegram polling loop. Store the thread handle.",
+    "Register the Telegram polling as a daemon job via sys.daemon.addJob(\"telegram_poll\", 2, ...).",
+    "Add a /shell command to the REPL that processes the remainder of the input through sys.shell.execute() and prints the result.",
+    "Add a /services command to the REPL that lists all registered services and their status via sys.serviceManager.",
+    "Register key modules as services in the service manager at boot time (e.g., 'knowledge_graph', 'reasoning_engine', 'telegram_bot') and start them all.",
+    "For the GENERATE route in handle_natural_query: The current implementation already uses the composer as fallback. Add a comment noting that neural_net.cpp is wired but has no trained weights - the GENERATE route gracefully falls back to the MKComposer. Initialize neuralNet with a tiny config (vocab=256, dim=32, layers=1, ff=64) so it exists but mark it as 'untrained' - do NOT call it in the hot path.",
+    "In the graceful shutdown, if telegram thread is running, signal stop and join the thread.",
+    "Verify the build compiles."
+  ],
+  "acceptance_criteria": [
+    "mk_entry.cpp includes daemon.cpp, shell.cpp, service_manager.cpp, telegram.cpp, neural_net.cpp",
+    "Telegram polling runs in a background thread when MK_TELEGRAM_TOKEN is set",
+    "The polling loop tracks update_id offset to avoid duplicate message processing",
+    "The /shell command routes input through MK_Shell and prints output",
+    "The /services command shows registered services",
+    "The GENERATE route works gracefully without neural net weights (composer fallback)",
+    "The neural net is initialized but marked as untrained and not called in production paths",
+    "The project builds successfully"
+  ],
+  "verification": [
+    "Run: cd /projects/sandbox/MK_os-2/MK_OS && clang++ -std=c++17 -O2 -Wall -Wextra -DDARWIN -o mk_os system/mk_entry.cpp -lcurl -lsqlite3"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

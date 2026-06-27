@@ -418,13 +418,8 @@ private:
 };
 
 // ===================================================================================
-//  ENTRY POINT
+//  Module-only file: provides MKBrain class for the Hybrid Reasoning Engine.
+//  No standalone entry point - mk_entry.cpp handles the REPL loop.
 // ===================================================================================
-
-int main() {
-    MKBrain mk("knowledge_files");
-    mk.run();
-    return 0;
-}
 
 #endif // MK_HRE_MAIN_CPP

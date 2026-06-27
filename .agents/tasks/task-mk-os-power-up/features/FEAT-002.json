@@ -1,0 +1,34 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Wire all orphaned mk_brain modules into the unified mk_entry.cpp system. Connect learning_engine, brain_memory, embeddings_eng, ann_search, cache_mgr, daily_briefing, fact_extractor/biographical, and reasoning_engine into the MKSystem struct so they are initialized at boot and available to the REPL.",
+  "status": "pending",
+  "steps": [
+    "Add #include directives in mk_entry.cpp for all the unwired mk_brain modules: ../mk_brain/learning/learning_engine.cpp, ../mk_brain/memory/brain_memory.cpp, ../mk_brain/embeddings/embeddings_eng.cpp, ../mk_brain/vector_search/ann_search.cpp, ../mk_brain/cashe/cache_mgr.cpp, ../mk_brain/daily_briefing.cpp, ../mk_brain/fact_extractor/biographical.cpp, ../mk_brain/reasoning/reasoning_engine.cpp. Place them after the existing mk_brain/personality/response_style.cpp include.",
+    "Add corresponding member instances to the MKSystem struct: MKLearningEngine learningEngine; MKBrainMemory brainMemory; MKANNSearch vectorSearch; MKCacheManager cacheManager; MKDailyBriefing dailyBriefing; MKBiographicalExtractor factExtractor; MKEmbeddingsEngine embeddings; MKReasoningEngine reasoningEngine;",
+    "In the MKSystem constructor, initialize them with sensible defaults. Call learningEngine.restore() to load persisted knowledge. The ANN search can use default 128 dims.",
+    "Wire the learning engine into the /learn command: after sys.graph.persistNewFact(), also call sys.learningEngine.learnFact(source, relation, target) so facts go into both systems.",
+    "Wire the biographical fact extractor into handle_natural_query(): after processing a natural language query, call sys.factExtractor.extractFromMessage(input) to passively learn biographical facts from conversation.",
+    "Wire the brain memory (dialog context) into the REPL: call sys.brainMemory.commitToShortTerm(\"user\", input) for each user message and sys.brainMemory.commitToShortTerm(\"mk\", response) for each MK response.",
+    "Wire the vector search into the GRAPH route as a fallback: when graph.getAll() returns empty, try vectorSearch.search(input) and if results are found with score > 0.3, use them as context.",
+    "Wire the daily briefing: add a check at boot (after sys.graph.loadAllKnowledge()) that if sys.dailyBriefing.shouldGenerate() is true, generate and print a briefing with mock system data.",
+    "Add a /briefing command to the REPL that generates and displays the daily briefing on demand.",
+    "In the graceful shutdown section, call sys.learningEngine.persist() to save learned facts.",
+    "Verify the build compiles with all new includes."
+  ],
+  "acceptance_criteria": [
+    "mk_entry.cpp includes all mk_brain modules",
+    "MKSystem struct has instances of all mk_brain module classes",
+    "The /learn command stores facts in both the pattern graph AND the learning engine",
+    "Natural language queries passively trigger biographical fact extraction",
+    "Dialog context is tracked via brainMemory for each turn",
+    "The /briefing command works in the REPL",
+    "Vector search is used as a fallback in the GRAPH route",
+    "The project builds successfully"
+  ],
+  "verification": [
+    "Run: cd /projects/sandbox/MK_os-2/MK_OS && clang++ -std=c++17 -O2 -Wall -Wextra -DDARWIN -o mk_os system/mk_entry.cpp -lcurl -lsqlite3"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
