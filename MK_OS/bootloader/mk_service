@@ -1,0 +1,93 @@
+#!/sbin/openrc-run
+# =============================================================================
+# MK OS - OpenRC Service Script
+# =============================================================================
+# Standard Linux init.d service file for MK OS
+# Install to: /etc/init.d/mk_os
+# Enable with: rc-update add mk_os default
+# =============================================================================
+
+name="mk_os"
+description="MK OS AI Operating System"
+
+command="/opt/mk_os/mk_os"
+command_args=""
+command_background=true
+command_user="root"
+
+pidfile="/var/run/mk_os.pid"
+output_log="/var/log/mk_os.log"
+error_log="/var/log/mk_os.log"
+
+directory="/opt/mk_os"
+
+depend() {
+    need net
+    need localmount
+    after firewall
+    after dns
+}
+
+start_pre() {
+    # Ensure required directories exist
+    checkpath --directory --owner root:root --mode 0755 /opt/mk_os
+    checkpath --directory --owner root:root --mode 0755 /opt/mk_os/knowledge
+    checkpath --file --owner root:root --mode 0644 /var/log/mk_os.log
+
+    # Verify binary exists and is executable
+    if [ ! -x "${command}" ]; then
+        eerror "MK OS binary not found at ${command}"
+        return 1
+    fi
+
+    ebegin "Preparing MK OS environment"
+    # Export necessary environment variables
+    export MK_MODE="service"
+    export MK_KNOWLEDGE_PATH="/opt/mk_os/knowledge"
+    eend 0
+}
+
+start() {
+    ebegin "Starting ${name}"
+    start-stop-daemon --start \
+        --background \
+        --make-pidfile \
+        --pidfile "${pidfile}" \
+        --stdout "${output_log}" \
+        --stderr "${error_log}" \
+        --chdir "${directory}" \
+        --exec "${command}" \
+        -- ${command_args}
+    eend $?
+}
+
+stop() {
+    ebegin "Stopping ${name}"
+    start-stop-daemon --stop \
+        --pidfile "${pidfile}" \
+        --signal TERM \
+        --retry "TERM/10/KILL/5"
+    eend $?
+}
+
+restart() {
+    stop
+    sleep 2
+    start
+}
+
+status() {
+    if [ -f "${pidfile}" ]; then
+        PID=$(cat "${pidfile}")
+        if kill -0 "${PID}" 2>/dev/null; then
+            einfo "${name} is running (PID: ${PID})"
+            return 0
+        else
+            ewarn "${name} is not running (stale PID file)"
+            return 1
+        fi
+    else
+        einfo "${name} is not running"
+        return 3
+    fi
+}
