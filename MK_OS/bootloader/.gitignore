@@ -1,11 +1,15 @@
-# Ignore large raw image (512MB) - use QCOW2 instead
-build_work/mk_os.img
-build_work/partition.ext4
-
-# Ignore extracted rootfs and downloads (rebuilt from script)
+# Temp build files (large, recreated from script)
 build_work/rootfs/
+build_work/rootfs_stage/
+build_work/alpine_mount/
+build_work/iso_root/
+build_work/boot_files/
 build_work/alpine-*.tar.gz
-build_work/mnt/
+build_work/alpine-*.iso
+build_work/partition.ext4
+build_work/mk_os.img
+build_work/mk_os_disk.qcow2
 
-# Keep the QCOW2 (small, compressed, this is what UTM SE uses)
+# Keep the final outputs
+!build_work/mk_os.iso
 !build_work/mk_os.qcow2
