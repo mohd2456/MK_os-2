@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-006",
+  "type": "fix",
+  "description": "Address review findings: add thread safety mutex, fix JSON parser update boundary bug, replace raw MKTelegram* with std::unique_ptr, and route Telegram natural language messages through the AI pipeline.",
+  "status": "completed",
+  "steps": [
+    "Add #include <mutex> and add a std::mutex member to MKSystem for shared state protection",
+    "Wrap Telegram polling thread calls to MKSystem methods in lock_guard",
+    "Wrap REPL thread mutations (handle_natural_query, cmd_learn, etc.) in lock_guard",
+    "Fix JSON parser in telegram_poll_loop to bound field searches to the next update_id position",
+    "Replace raw MKTelegram* with std::unique_ptr<MKTelegram>",
+    "Route natural language Telegram messages through the AI pipeline (simplified handle_natural_query)",
+    "Verify build and tests pass"
+  ],
+  "acceptance_criteria": [
+    "MKSystem has a std::mutex member",
+    "Telegram polling thread acquires lock before calling any MKSystem methods",
+    "REPL thread acquires lock when mutating graph/memory state",
+    "JSON parser bounds chat_id and text searches to stop at next update_id position",
+    "MKTelegram is managed via std::unique_ptr instead of raw pointer",
+    "Natural language Telegram messages are routed through AI pipeline, not just echoed",
+    "Build compiles successfully",
+    "All tests pass"
+  ],
+  "verification": [
+    "Run: cd /projects/sandbox/MK_os-2/MK_OS && make",
+    "Run: cd /projects/sandbox/MK_os-2/MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": "Build passes with 11 pre-existing warnings. All 7 tests pass (62 assertions). The generate_ai_response function provides a simplified AI pipeline for Telegram that uses the router, graph, vector search, and composer without the full REPL display logic. The mutex uses a coarse-grained single-lock approach which is sufficient for this use case since the critical sections are short-lived."
+}

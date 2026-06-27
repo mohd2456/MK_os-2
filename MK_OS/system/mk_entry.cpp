@@ -16,6 +16,7 @@
 #include <vector>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <sstream>
 #include <algorithm>
 
@@ -137,8 +138,13 @@ struct MKSystem {
     MKDaemon daemon;
     MK_Shell::MKShell shell;
     MK_Services::ServiceManager serviceManager;
-    MKTelegram* telegram;
+    std::unique_ptr<MKTelegram> telegram;
     MKNeuralNet neuralNet;
+
+    // Mutex protecting shared state between Telegram polling thread and REPL thread.
+    // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
+    // calls telegram methods must hold this lock.
+    std::mutex systemMutex;
 
     MKSystem()
         : graph("ai_core/hre/knowledge_files"),
@@ -169,7 +175,7 @@ struct MKSystem {
         // Initialize Telegram bot if token is available
         const char* tgToken = std::getenv("MK_TELEGRAM_TOKEN");
         if (tgToken && tgToken[0] != '\0') {
-            telegram = new MKTelegram();
+            telegram = std::make_unique<MKTelegram>();
             std::cout << "  " << Color::BGREEN << "✓" << Color::RESET
                       << " Telegram bot integration enabled.\n";
         } else {
@@ -182,12 +188,7 @@ struct MKSystem {
         neuralNet.init(256, 32, 1, 64);
     }
 
-    ~MKSystem() {
-        if (telegram) {
-            delete telegram;
-            telegram = nullptr;
-        }
-    }
+    ~MKSystem() = default;
 };
 
 // ============================================================
@@ -756,13 +757,115 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
 // ============================================================
 // Telegram Background Polling Loop
 // ============================================================
+
+// Forward declaration - generates an AI response for a natural language query.
+// Caller must hold sys.systemMutex.
+static std::string generate_ai_response(MKSystem& sys, const std::string& input) {
+    auto decision = sys.router.route(input);
+    std::string response;
+    bool answered = false;
+
+    switch (decision.primaryRoute) {
+        case MKRouteType::GRAPH: {
+            auto results = sys.graph.getAll(input);
+            if (!results.empty()) {
+                MKResponseContext ctx;
+                ctx.subject = input;
+                ctx.is_partial = false;
+                ctx.confidence = 0.8f;
+                for (const auto& e : results) {
+                    ctx.facts_found.push_back(e.source + " " + e.relation + " " + e.target);
+                }
+                response = sys.composer.composeAnswer(ctx);
+                answered = true;
+            } else {
+                auto pathResult = sys.graph.pathQuery(input, "is_a", 5);
+                if (pathResult.found) {
+                    response = input + " is " + pathResult.answer;
+                    answered = true;
+                } else {
+                    auto vecResults = sys.vectorSearch.search(input, 3);
+                    if (!vecResults.empty() && vecResults[0].score > 0.3f) {
+                        MKResponseContext ctx;
+                        ctx.subject = input;
+                        ctx.is_partial = false;
+                        ctx.confidence = vecResults[0].score;
+                        for (const auto& vr : vecResults) {
+                            if (vr.score > 0.3f) ctx.facts_found.push_back(vr.sourceText);
+                        }
+                        response = sys.composer.composeAnswer(ctx);
+                        answered = !response.empty();
+                    }
+                }
+            }
+            break;
+        }
+        case MKRouteType::REASON: {
+            sys.chains.deriveAll(sys.graph);
+            auto chain = sys.reasoner.think(input, sys.graph);
+            if (!chain.finalAnswer.empty()) {
+                response = chain.finalAnswer;
+                answered = true;
+            }
+            break;
+        }
+        case MKRouteType::INSTANT:
+        case MKRouteType::SEARCH:
+        case MKRouteType::GENERATE:
+        default: {
+            // For INSTANT/SEARCH/GENERATE, query the graph and compose
+            auto results = sys.graph.getAll(input);
+            if (!results.empty()) {
+                MKResponseContext ctx;
+                ctx.subject = input;
+                ctx.is_partial = false;
+                ctx.confidence = 0.7f;
+                for (const auto& e : results) {
+                    ctx.facts_found.push_back(e.source + " " + e.relation + " " + e.target);
+                }
+                response = sys.composer.composeAnswer(ctx);
+                answered = true;
+            }
+            break;
+        }
+    }
+
+    if (!answered || response.empty()) {
+        // Fallback: try vector search for a relevant answer
+        auto vecResults = sys.vectorSearch.search(input, 3);
+        if (!vecResults.empty() && vecResults[0].score > 0.3f) {
+            MKResponseContext ctx;
+            ctx.subject = input;
+            ctx.is_partial = true;
+            ctx.confidence = vecResults[0].score;
+            for (const auto& vr : vecResults) {
+                if (vr.score > 0.3f) ctx.facts_found.push_back(vr.sourceText);
+            }
+            response = sys.composer.composeAnswer(ctx);
+        }
+        if (response.empty()) {
+            response = "I don't have enough knowledge about that yet. Try asking me about science, technology, or programming.";
+        }
+    }
+
+    // Record interaction
+    sys.memory.recordInteraction("telegram_query", input);
+    sys.factExtractor.extractFromMessage(input);
+
+    return response;
+}
+
 static void telegram_poll_loop(MKSystem& sys) {
     long lastUpdateId = 0;
 
     while (g_running.load()) {
         if (!sys.telegram) break;
 
-        std::string response = sys.telegram->getUpdates(lastUpdateId);
+        std::string response;
+        {
+            std::lock_guard<std::mutex> lock(sys.systemMutex);
+            response = sys.telegram->getUpdates(lastUpdateId);
+        }
 
         // Basic JSON parsing for Telegram Bot API response
         // Format: {"ok":true,"result":[{"update_id":123,"message":{"chat":{"id":456},"text":"hello"}}]}
@@ -772,6 +875,10 @@ static void telegram_poll_loop(MKSystem& sys) {
             // Find next update_id
             size_t uidPos = response.find("\"update_id\":", searchPos);
             if (uidPos == std::string::npos) break;
+
+            // Find the boundary of this update: the next "update_id" position (or end of string)
+            size_t nextUidPos = response.find("\"update_id\":", uidPos + 12);
+            size_t updateBoundary = (nextUidPos != std::string::npos) ? nextUidPos : response.size();
 
             // Extract update_id number
             size_t numStart = uidPos + 12; // length of "\"update_id\":"
@@ -791,12 +898,12 @@ static void telegram_poll_loop(MKSystem& sys) {
             }
             lastUpdateId = updateId + 1;
 
-            // Extract chat id: look for "chat":{"id": after this update_id
+            // Extract chat id: look for "chat":{"id": within this update boundary
             std::string chatId;
             size_t chatPos = response.find("\"chat\"", numEnd);
-            if (chatPos != std::string::npos) {
+            if (chatPos != std::string::npos && chatPos < updateBoundary) {
                 size_t cidPos = response.find("\"id\":", chatPos);
-                if (cidPos != std::string::npos && cidPos < chatPos + 100) {
+                if (cidPos != std::string::npos && cidPos < chatPos + 100 && cidPos < updateBoundary) {
                     size_t cidStart = cidPos + 5;
                     while (cidStart < response.size() && (response[cidStart] == ' '))
                         cidStart++;
@@ -810,13 +917,13 @@ static void telegram_poll_loop(MKSystem& sys) {
                 }
             }
 
-            // Extract message text: look for "text":" after chat
+            // Extract message text: look for "text":" within this update boundary
             std::string msgText;
             size_t textPos = response.find("\"text\":\"", numEnd);
-            if (textPos != std::string::npos) {
+            if (textPos != std::string::npos && textPos < updateBoundary) {
                 size_t txtStart = textPos + 8;
                 size_t txtEnd = txtStart;
-                while (txtEnd < response.size() && response[txtEnd] != '"') {
+                while (txtEnd < response.size() && txtEnd < updateBoundary && response[txtEnd] != '"') {
                     if (response[txtEnd] == '\\') txtEnd++; // skip escaped chars
                     txtEnd++;
                 }
@@ -826,17 +933,18 @@ static void telegram_poll_loop(MKSystem& sys) {
 
             // Process the message if we have chat_id and text
             if (!chatId.empty() && !msgText.empty()) {
-                // Use autoReply for command-based messages, or echo for natural language
+                std::lock_guard<std::mutex> lock(sys.systemMutex);
                 if (msgText[0] == '/') {
+                    // Command-based messages use autoReply
                     sys.telegram->autoReply(chatId, msgText);
                 } else {
-                    // Simple response - acknowledge the message
-                    std::string reply = "MK received: " + msgText;
+                    // Route natural language through the AI pipeline
+                    std::string reply = generate_ai_response(sys, msgText);
                     sys.telegram->sendMessage(chatId, reply);
                 }
             }
 
-            searchPos = numEnd;
+            searchPos = (nextUidPos != std::string::npos) ? nextUidPos : response.size();
         }
 
         // Sleep between polls (2 seconds)
@@ -990,154 +1098,161 @@ int main(int argc, char* argv[]) {
                 g_running = false; commandFound = true;
             } else if (input == "/help") {
                 cmd_help(); commandFound = true;
-            } else if (input == "/status") {
-                cmd_status(sys); commandFound = true;
-            } else if (input == "/sync" || input.substr(0, 6) == "/sync ") {
-                // Sync knowledge with GitHub via system command
-                std::string syncArg = "pull";
-                if (input.size() > 6) syncArg = trim(input.substr(6));
-                std::cout << "\n  " << Color::BCYAN << "⟳" << Color::RESET 
-                          << " Syncing knowledge with GitHub (" << syncArg << ")...\n";
-                std::string cmd = "cd " + std::string("ai_core/hre/knowledge_files") + " && ";
-                if (syncArg == "push") {
-                    // Use git to push learned facts
-                    int result = std::system("git add ai_core/hre/knowledge_files/learned_facts.mk ai_core/hre/knowledge_files/personal_facts.mk 2>/dev/null && git commit -m 'sync: MK auto-push knowledge' 2>/dev/null && git push 2>/dev/null");
-                    if (result == 0) {
-                        std::cout << "  " << Color::GREEN << "✓" << Color::RESET 
-                                  << " Knowledge pushed to GitHub successfully.\n";
-                    } else {
-                        std::cout << "  " << Color::YELLOW << "⚠" << Color::RESET 
-                                  << " Push failed (no changes or no git access). Use mk_sync tool for full sync.\n";
-                    }
-                } else {
-                    // Pull latest knowledge
-                    int result = std::system("git pull --rebase 2>/dev/null");
-                    if (result == 0) {
-                        // Reload knowledge
-                        std::cout << "  " << Color::GREEN << "✓" << Color::RESET 
-                                  << " Pulled latest from GitHub. Reloading knowledge...\n";
-                        sys.graph.loadAllKnowledge();
-                        std::cout << "  " << Color::GREEN << "✓" << Color::RESET
-                                  << " Knowledge reloaded: " << sys.graph.edgeCount() << " facts.\n";
-                    } else {
-                        std::cout << "  " << Color::YELLOW << "⚠" << Color::RESET 
-                                  << " Pull failed. Use mk_sync tool for full GitHub API sync.\n";
-                    }
-                }
-                commandFound = true;
-            } else if (input == "/news") {
-                cmd_news(sys); commandFound = true;
-            } else if (input.size() > 5 && input.substr(0, 5) == "/ask ") {
-                cmd_ask(sys, trim(input.substr(5))); commandFound = true;
-            } else if (input == "/ask") {
-                cmd_ask(sys, ""); commandFound = true;
-            } else if (input.size() > 8 && input.substr(0, 8) == "/search ") {
-                cmd_search(sys, trim(input.substr(8))); commandFound = true;
-            } else if (input == "/search") {
-                cmd_search(sys, ""); commandFound = true;
-            } else if (input.size() > 7 && input.substr(0, 7) == "/learn ") {
-                cmd_learn(sys, trim(input.substr(7))); commandFound = true;
-            } else if (input == "/learn") {
-                cmd_learn(sys, ""); commandFound = true;
-            } else if (input.size() > 9 && input.substr(0, 9) == "/weather ") {
-                cmd_weather(sys, trim(input.substr(9))); commandFound = true;
-            } else if (input == "/weather") {
-                cmd_weather(sys, ""); commandFound = true;
-            } else if (input.size() > 6 && input.substr(0, 6) == "/time ") {
-                cmd_time(sys, trim(input.substr(6))); commandFound = true;
-            } else if (input == "/time") {
-                cmd_time(sys, ""); commandFound = true;
-            } else if (input.size() > 7 && input.substr(0, 7) == "/think ") {
-                cmd_think(sys, trim(input.substr(7))); commandFound = true;
-            } else if (input == "/think") {
-                cmd_think(sys, ""); commandFound = true;
-            } else if (input == "/briefing") {
-                cmd_briefing(sys); commandFound = true;
-            } else if (input.size() > 7 && input.substr(0, 7) == "/shell ") {
-                std::string shellCmd = trim(input.substr(7));
-                if (shellCmd.empty()) {
-                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
-                              << " /shell <command>\n";
-                } else {
-                    std::string result = sys.shell.execute(shellCmd);
-                    if (!result.empty()) {
-                        std::cout << "\n" << result;
-                        if (result.back() != '\n') std::cout << "\n";
-                    }
-                }
-                commandFound = true;
-            } else if (input == "/shell") {
-                std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
-                          << " /shell <command>\n"
-                          << "  " << Color::DIM << "Example: /shell echo hello world"
-                          << Color::RESET << "\n";
-                commandFound = true;
-            } else if (input == "/services") {
-                auto statuses = sys.serviceManager.get_all_status();
-                if (statuses.empty()) {
-                    std::cout << "\n  " << Color::YELLOW << "○" << Color::RESET
-                              << " No services registered.\n";
-                } else {
-                    std::cout << "\n  " << Color::BOLD << Color::BCYAN
-                              << "  ╭─────────────────────────────────────╮\n"
-                              << "  │         REGISTERED SERVICES         │\n"
-                              << "  ╰─────────────────────────────────────╯\n"
-                              << Color::RESET;
-                    for (const auto& [name, status] : statuses) {
-                        const char* statusIcon = "?";
-                        const char* statusColor = Color::WHITE;
-                        std::string statusLabel;
-                        switch (status) {
-                            case MK_Services::ServiceStatus::RUNNING:
-                                statusIcon = "●"; statusColor = Color::BGREEN;
-                                statusLabel = "RUNNING"; break;
-                            case MK_Services::ServiceStatus::STOPPED:
-                                statusIcon = "○"; statusColor = Color::RED;
-                                statusLabel = "STOPPED"; break;
-                            case MK_Services::ServiceStatus::STARTING:
-                                statusIcon = "◐"; statusColor = Color::YELLOW;
-                                statusLabel = "STARTING"; break;
-                            case MK_Services::ServiceStatus::CRASHED:
-                                statusIcon = "✗"; statusColor = Color::BRED;
-                                statusLabel = "CRASHED"; break;
-                            case MK_Services::ServiceStatus::DISABLED:
-                                statusIcon = "⊘"; statusColor = Color::DIM;
-                                statusLabel = "DISABLED"; break;
-                            default:
-                                statusIcon = "?"; statusColor = Color::DIM;
-                                statusLabel = "UNKNOWN"; break;
+            } else {
+                // Acquire system mutex for all commands that access shared state.
+                // This protects against concurrent modification from the Telegram polling thread.
+                std::lock_guard<std::mutex> lock(sys.systemMutex);
+
+                if (input == "/status") {
+                    cmd_status(sys); commandFound = true;
+                } else if (input == "/sync" || input.substr(0, 6) == "/sync ") {
+                    // Sync knowledge with GitHub via system command
+                    std::string syncArg = "pull";
+                    if (input.size() > 6) syncArg = trim(input.substr(6));
+                    std::cout << "\n  " << Color::BCYAN << "⟳" << Color::RESET 
+                              << " Syncing knowledge with GitHub (" << syncArg << ")...\n";
+                    if (syncArg == "push") {
+                        int result = std::system("git add ai_core/hre/knowledge_files/learned_facts.mk ai_core/hre/knowledge_files/personal_facts.mk 2>/dev/null && git commit -m 'sync: MK auto-push knowledge' 2>/dev/null && git push 2>/dev/null");
+                        if (result == 0) {
+                            std::cout << "  " << Color::GREEN << "✓" << Color::RESET 
+                                      << " Knowledge pushed to GitHub successfully.\n";
+                        } else {
+                            std::cout << "  " << Color::YELLOW << "⚠" << Color::RESET 
+                                      << " Push failed (no changes or no git access). Use mk_sync tool for full sync.\n";
                         }
-                        std::cout << "    " << statusColor << statusIcon << Color::RESET
-                                  << " " << Color::BOLD << name << Color::RESET
-                                  << " " << Color::DIM << "[" << statusLabel << "]"
+                    } else {
+                        int result = std::system("git pull --rebase 2>/dev/null");
+                        if (result == 0) {
+                            std::cout << "  " << Color::GREEN << "✓" << Color::RESET 
+                                      << " Pulled latest from GitHub. Reloading knowledge...\n";
+                            sys.graph.loadAllKnowledge();
+                            std::cout << "  " << Color::GREEN << "✓" << Color::RESET
+                                      << " Knowledge reloaded: " << sys.graph.edgeCount() << " facts.\n";
+                        } else {
+                            std::cout << "  " << Color::YELLOW << "⚠" << Color::RESET 
+                                      << " Pull failed. Use mk_sync tool for full GitHub API sync.\n";
+                        }
+                    }
+                    commandFound = true;
+                } else if (input == "/news") {
+                    cmd_news(sys); commandFound = true;
+                } else if (input.size() > 5 && input.substr(0, 5) == "/ask ") {
+                    cmd_ask(sys, trim(input.substr(5))); commandFound = true;
+                } else if (input == "/ask") {
+                    cmd_ask(sys, ""); commandFound = true;
+                } else if (input.size() > 8 && input.substr(0, 8) == "/search ") {
+                    cmd_search(sys, trim(input.substr(8))); commandFound = true;
+                } else if (input == "/search") {
+                    cmd_search(sys, ""); commandFound = true;
+                } else if (input.size() > 7 && input.substr(0, 7) == "/learn ") {
+                    cmd_learn(sys, trim(input.substr(7))); commandFound = true;
+                } else if (input == "/learn") {
+                    cmd_learn(sys, ""); commandFound = true;
+                } else if (input.size() > 9 && input.substr(0, 9) == "/weather ") {
+                    cmd_weather(sys, trim(input.substr(9))); commandFound = true;
+                } else if (input == "/weather") {
+                    cmd_weather(sys, ""); commandFound = true;
+                } else if (input.size() > 6 && input.substr(0, 6) == "/time ") {
+                    cmd_time(sys, trim(input.substr(6))); commandFound = true;
+                } else if (input == "/time") {
+                    cmd_time(sys, ""); commandFound = true;
+                } else if (input.size() > 7 && input.substr(0, 7) == "/think ") {
+                    cmd_think(sys, trim(input.substr(7))); commandFound = true;
+                } else if (input == "/think") {
+                    cmd_think(sys, ""); commandFound = true;
+                } else if (input == "/briefing") {
+                    cmd_briefing(sys); commandFound = true;
+                } else if (input.size() > 7 && input.substr(0, 7) == "/shell ") {
+                    std::string shellCmd = trim(input.substr(7));
+                    if (shellCmd.empty()) {
+                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                                  << " /shell <command>\n";
+                    } else {
+                        std::string result = sys.shell.execute(shellCmd);
+                        if (!result.empty()) {
+                            std::cout << "\n" << result;
+                            if (result.back() != '\n') std::cout << "\n";
+                        }
+                    }
+                    commandFound = true;
+                } else if (input == "/shell") {
+                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                              << " /shell <command>\n"
+                              << "  " << Color::DIM << "Example: /shell echo hello world"
+                              << Color::RESET << "\n";
+                    commandFound = true;
+                } else if (input == "/services") {
+                    auto statuses = sys.serviceManager.get_all_status();
+                    if (statuses.empty()) {
+                        std::cout << "\n  " << Color::YELLOW << "○" << Color::RESET
+                                  << " No services registered.\n";
+                    } else {
+                        std::cout << "\n  " << Color::BOLD << Color::BCYAN
+                                  << "  ╭─────────────────────────────────────╮\n"
+                                  << "  │         REGISTERED SERVICES         │\n"
+                                  << "  ╰─────────────────────────────────────╯\n"
+                                  << Color::RESET;
+                        for (const auto& [name, status] : statuses) {
+                            const char* statusIcon = "?";
+                            const char* statusColor = Color::WHITE;
+                            std::string statusLabel;
+                            switch (status) {
+                                case MK_Services::ServiceStatus::RUNNING:
+                                    statusIcon = "●"; statusColor = Color::BGREEN;
+                                    statusLabel = "RUNNING"; break;
+                                case MK_Services::ServiceStatus::STOPPED:
+                                    statusIcon = "○"; statusColor = Color::RED;
+                                    statusLabel = "STOPPED"; break;
+                                case MK_Services::ServiceStatus::STARTING:
+                                    statusIcon = "◐"; statusColor = Color::YELLOW;
+                                    statusLabel = "STARTING"; break;
+                                case MK_Services::ServiceStatus::CRASHED:
+                                    statusIcon = "✗"; statusColor = Color::BRED;
+                                    statusLabel = "CRASHED"; break;
+                                case MK_Services::ServiceStatus::DISABLED:
+                                    statusIcon = "⊘"; statusColor = Color::DIM;
+                                    statusLabel = "DISABLED"; break;
+                                default:
+                                    statusIcon = "?"; statusColor = Color::DIM;
+                                    statusLabel = "UNKNOWN"; break;
+                            }
+                            std::cout << "    " << statusColor << statusIcon << Color::RESET
+                                      << " " << Color::BOLD << name << Color::RESET
+                                      << " " << Color::DIM << "[" << statusLabel << "]"
+                                      << Color::RESET << "\n";
+                        }
+                        std::cout << "\n  " << Color::DIM << "Total: "
+                                  << sys.serviceManager.running_count() << "/"
+                                  << sys.serviceManager.total_count() << " running"
                                   << Color::RESET << "\n";
                     }
-                    std::cout << "\n  " << Color::DIM << "Total: "
-                              << sys.serviceManager.running_count() << "/"
-                              << sys.serviceManager.total_count() << " running"
-                              << Color::RESET << "\n";
+                    commandFound = true;
                 }
-                commandFound = true;
-            }
 
-            if (!commandFound) {
-                // Show suggestions for the partial command
-                show_slash_suggestions(input);
-                std::cout << "\n  " << Color::YELLOW << "⚠" << Color::RESET 
-                          << " Unknown command: " << Color::RED << input << Color::RESET
-                          << ". Type " << Color::GREEN << "/help" << Color::RESET << " for options.\n";
-            }
+                if (!commandFound) {
+                    // Show suggestions for the partial command
+                    show_slash_suggestions(input);
+                    std::cout << "\n  " << Color::YELLOW << "⚠" << Color::RESET 
+                              << " Unknown command: " << Color::RED << input << Color::RESET
+                              << ". Type " << Color::GREEN << "/help" << Color::RESET << " for options.\n";
+                }
+            } // end of locked else block
         } else {
-            // Natural language routing
+            // Natural language routing (acquire lock for thread safety)
+            std::lock_guard<std::mutex> lock(sys.systemMutex);
             handle_natural_query(sys, input);
         }
 
-        // Track dialog context for all interactions
-        sys.brainMemory.commitToShortTerm("user", input);
+        // Track dialog context for all interactions (lock for thread safety)
+        {
+            std::lock_guard<std::mutex> lock(sys.systemMutex);
+            sys.brainMemory.commitToShortTerm("user", input);
+        }
 
         // Periodic auto-save every N interactions to limit data loss on crash
         interaction_count++;
         if (interaction_count % AUTO_SAVE_INTERVAL == 0) {
+            std::lock_guard<std::mutex> lock(sys.systemMutex);
             sys.memory.saveToDisk();
             sys.improver.saveLog();
         }
