@@ -85,6 +85,7 @@ namespace Color {
 #include "../llm/llm_engine.cpp"
 #include "../ai_core/correction_engine.cpp"
 #include "task_scheduler.cpp"
+#include "../tools/file_reader.cpp"
 
 // ============================================================
 // Global state
@@ -148,6 +149,7 @@ struct MKSystem {
     MKLLMEngine llmEngine;
     MKCorrectionEngine correctionEngine;
     MKTaskScheduler taskScheduler;
+    MKFileReader fileReader;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -1262,6 +1264,24 @@ int main(int argc, char* argv[]) {
                                       << " [" << timeLeft << "] " << task.message << "\n";
                         }
                     }
+                    commandFound = true;
+                } else if (input.size() > 6 && input.substr(0, 6) == "/read ") {
+                    std::string filePath = trim(input.substr(6));
+                    if (filePath.empty()) {
+                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                                  << " /read <filepath>\n";
+                    } else {
+                        auto info = sys.fileReader.readFile(filePath);
+                        std::string result = sys.fileReader.formatResult(info);
+                        std::cout << "\n  " << Color::BOLD << Color::BCYAN << "📄 File Reader"
+                                  << Color::RESET << "\n  " << result << "\n";
+                    }
+                    commandFound = true;
+                } else if (input == "/read") {
+                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                              << " /read <filepath>\n"
+                              << "  " << Color::DIM << "Supports: .txt .md .cpp .py .json .csv .log .pdf"
+                              << Color::RESET << "\n";
                     commandFound = true;
                 } else if (input == "/services") {
                     auto statuses = sys.serviceManager.get_all_status();
