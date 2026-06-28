@@ -203,16 +203,10 @@ struct MKSystem {
           correctionEngine(),
           taskScheduler()
     {
-        // Initialize Telegram bot if token is available
-        const char* tgToken = std::getenv("MK_TELEGRAM_TOKEN");
-        if (tgToken && tgToken[0] != '\0') {
-            telegram = std::make_unique<MKTelegram>();
-            std::cout << "  " << Color::BGREEN << "✓" << Color::RESET
-                      << " Telegram bot integration enabled.\n";
-        } else {
-            std::cout << "  " << Color::DIM << "Note: MK_TELEGRAM_TOKEN not set. "
-                      << "Telegram integration disabled." << Color::RESET << "\n";
-        }
+        // Initialize Telegram bot (token is hardcoded as default)
+        telegram = std::make_unique<MKTelegram>();
+        std::cout << "  " << Color::BGREEN << "✓" << Color::RESET
+                  << " Telegram bot integration enabled.\n";
 
         // Initialize neural net with a tiny config (untrained, not used in hot path)
         // The GENERATE route gracefully falls back to MKComposer instead.
