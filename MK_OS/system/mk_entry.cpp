@@ -91,6 +91,9 @@ namespace Color {
 #include "../tools/file_reader.cpp"
 #include "../tools/code_runner.cpp"
 #include "../tools/image_analyzer.cpp"
+#include "auto_updater.cpp"
+#include "../ai_core/rule_generator.cpp"
+#include "../ai_core/knowledge_grower.cpp"
 
 // ============================================================
 // Global state
@@ -161,6 +164,9 @@ struct MKSystem {
     MKImageAnalyzer imageAnalyzer;
     MKMathSolver mathSolver;
     MKCrypto crypto;
+    MKAutoUpdater autoUpdater;
+    MKRuleGenerator ruleGenerator;
+    MKKnowledgeGrower knowledgeGrower;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -261,7 +267,14 @@ static void cmd_help() {
         << "    " << Color::GREEN << "/shell" << Color::RESET << " <cmd>       Run a command in the MK shell\n"
         << "    " << Color::GREEN << "/services" << Color::RESET << "          List registered services & status\n"
         << "    " << Color::GREEN << "/sync" << Color::RESET << "              Sync knowledge with GitHub\n"
+        << "    " << Color::GREEN << "/update" << Color::RESET << "            Check for updates and rebuild\n"
+        << "    " << Color::GREEN << "/version" << Color::RESET << "           Show version and update info\n"
         << "    " << Color::GREEN << "/quit" << Color::RESET << "              Save and exit\n"
+        << "\n"
+        << Color::BOLD << Color::YELLOW << "  \xF0\x9F\xA7\xA0 SELF-IMPROVEMENT" << Color::RESET << "\n"
+        << "    " << Color::GREEN << "/rules" << Color::RESET << "             Auto-generate reasoning rules\n"
+        << "    " << Color::GREEN << "/grow" << Color::RESET << "              Trigger knowledge growth\n"
+        << "    " << Color::GREEN << "/growth" << Color::RESET << "            Show growth report/stats\n"
         << "\n"
         << Color::DIM << "  Or just type naturally — MK will figure out what you mean.\n"
         << "  Example: \"what is python?\" or \"weather in london\"\n" << Color::RESET << "\n";
@@ -286,6 +299,11 @@ static void show_slash_suggestions(const std::string& partial) {
         {"/shell",    "Run MK shell command"},
         {"/services", "Show service status"},
         {"/sync",     "Sync knowledge with GitHub"},
+        {"/update",   "Check for updates and rebuild"},
+        {"/version",  "Show version and update info"},
+        {"/rules",    "Auto-generate reasoning rules"},
+        {"/grow",     "Trigger knowledge growth"},
+        {"/growth",   "Show growth report/stats"},
         {"/help",     "Show all commands"},
         {"/quit",     "Save and exit"},
     };
@@ -1116,6 +1134,48 @@ int main(int argc, char* argv[]) {
         });
     }
 
+    // Self-improvement daemon jobs
+    sys.daemon.addJob("update_check", 3600, [&sys]() {
+        // Hourly: check if updates are available (don't auto-pull)
+        std::lock_guard<std::mutex> lock(sys.systemMutex);
+        if (sys.autoUpdater.checkForUpdates()) {
+            std::cout << "\n  " << Color::BYELLOW << "\u2191" << Color::RESET
+                      << " Updates available! Use /update to apply.\n";
+            std::cout << "  " << Color::BOLD << Color::BCYAN << "MK"
+                      << Color::RESET << Color::CYAN << " \u203A " << Color::RESET;
+            std::cout.flush();
+        }
+    });
+    sys.daemon.addJob("nightly_update", 60, [&sys]() {
+        // Check every minute if it's nightly update time
+        if (sys.autoUpdater.isNightlyUpdateTime()) {
+            std::lock_guard<std::mutex> lock(sys.systemMutex);
+            sys.autoUpdater.performUpdate();
+        }
+    }, true); // requires cool
+    sys.daemon.addJob("nightly_knowledge_growth", 60, [&sys]() {
+        // Runs at 2am - 1 hour before updates
+        std::time_t now = std::time(nullptr);
+        struct tm* tm_info = std::localtime(&now);
+        if (tm_info && tm_info->tm_hour == 2 && tm_info->tm_min < 5) {
+            std::lock_guard<std::mutex> lock(sys.systemMutex);
+            sys.knowledgeGrower.runNightlyGrowth(
+                sys.graph, sys.improver, sys.integrator, 10);
+        }
+    }, true); // requires cool
+    sys.daemon.addJob("nightly_rule_generation", 60, [&sys]() {
+        // Runs at 2:30am - after knowledge growth, before updates
+        std::time_t now = std::time(nullptr);
+        struct tm* tm_info = std::localtime(&now);
+        if (tm_info && tm_info->tm_hour == 2 && tm_info->tm_min >= 30 &&
+            tm_info->tm_min < 35) {
+            std::lock_guard<std::mutex> lock(sys.systemMutex);
+            auto gaps = sys.improver.getUnresearchedGaps(20);
+            sys.ruleGenerator.autoGenerateAndApply(
+                sys.chains, sys.graph, gaps);
+        }
+    }, true); // requires cool
+
     // ============================================================
     // Main REPL Loop
     // ============================================================
@@ -1394,6 +1454,37 @@ int main(int argc, char* argv[]) {
                               << " /image <filepath>\n"
                               << "  " << Color::DIM << "Supports: PNG, JPEG, GIF, BMP"
                               << Color::RESET << "\n";
+                    commandFound = true;
+                } else if (input == "/update") {
+                    std::cout << "\n  " << Color::BOLD << Color::BCYAN
+                              << "\u2191 Manual Update Check" << Color::RESET << "\n";
+                    sys.autoUpdater.performUpdate();
+                    commandFound = true;
+                } else if (input == "/version") {
+                    std::string status = sys.autoUpdater.getUpdateStatus();
+                    std::cout << "\n  " << Color::BOLD << Color::BCYAN
+                              << "  MK OS Version Info" << Color::RESET << "\n  "
+                              << status << "\n";
+                    commandFound = true;
+                } else if (input == "/rules auto" || input == "/rules") {
+                    std::cout << "\n  " << Color::BOLD << Color::BMAGENTA
+                              << "\u2699 Rule Generation" << Color::RESET << "\n";
+                    auto gaps = sys.improver.getUnresearchedGaps(20);
+                    int applied = sys.ruleGenerator.autoGenerateAndApply(
+                        sys.chains, sys.graph, gaps);
+                    if (applied == 0) {
+                        std::cout << "  " << Color::DIM
+                                  << "No new rules discovered."
+                                  << Color::RESET << "\n";
+                    }
+                    commandFound = true;
+                } else if (input == "/grow") {
+                    sys.knowledgeGrower.runNightlyGrowth(
+                        sys.graph, sys.improver, sys.integrator, 10);
+                    commandFound = true;
+                } else if (input == "/growth") {
+                    std::string report = sys.knowledgeGrower.getGrowthReport();
+                    std::cout << "\n" << report << "\n";
                     commandFound = true;
                 } else if (input == "/plugins") {
                     std::string list = sys.pluginSystem.listPlugins();

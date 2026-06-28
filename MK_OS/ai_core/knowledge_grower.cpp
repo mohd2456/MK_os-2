@@ -12,9 +12,8 @@
 
 // ============================================================
 // MK Knowledge Grower — Nightly Auto-Growth
-// Researches knowledge gaps, verifies facts, and adds them
-// to the knowledge graph. Runs on a nightly schedule with
-// safety limits and audit logging.
+// Researches knowledge gaps, verifies facts, and adds them to
+// the knowledge graph. Runs nightly with safety limits and audit logging.
 // ============================================================
 
 struct MKVerifiedFact {
@@ -23,13 +22,11 @@ struct MKVerifiedFact {
     std::string target;
     float confidence;
     std::string topic;
-    std::string researchedFrom;     // Source of info
+    std::string researchedFrom;
 };
 
 struct MKGrowthStats {
-    int factsAddedToday;
-    int factsAddedThisWeek;
-    int factsAddedAllTime;
+    int factsAddedToday, factsAddedThisWeek, factsAddedAllTime;
     int topicsResearched;
     float avgConfidence;
     std::string nextScheduledGrowth;
@@ -316,24 +313,18 @@ public:
         report += Color::BOLD;
         report += "  Knowledge Growth Report\n";
         report += Color::RESET;
-        report += "  Facts added today:     " +
-                  std::to_string(factsAddedToday) + "\n";
-        report += "  Facts added this week: " +
-                  std::to_string(factsAddedThisWeek) + "\n";
-        report += "  Facts added all time:  " +
+        report += "  Facts today/week/total: " + std::to_string(factsAddedToday) +
+                  "/" + std::to_string(factsAddedThisWeek) + "/" +
                   std::to_string(factsAddedAllTime) + "\n";
         report += "  Topics researched:     " +
                   std::to_string(topicsResearchedTotal) + "\n";
-
         float avgConf = (factsAddedAllTime > 0) ?
             (totalConfidence / (float)factsAddedAllTime) : 0.0f;
         report += "  Avg confidence:        " +
                   std::to_string((int)(avgConf * 100)) + "%\n";
-
-        report += "  Max facts/night:       " +
-                  std::to_string(maxFactsPerNight) + "\n";
-        report += "  Min confidence:        " +
-                  std::to_string((int)(minConfidence * 100)) + "%\n";
+        report += "  Limits:                " + std::to_string(maxFactsPerNight) +
+                  " max/night, " + std::to_string((int)(minConfidence * 100)) +
+                  "% min conf\n";
         report += "  Last growth:           " +
                   (lastGrowthTime > 0 ? formatTime(lastGrowthTime) : "never") + "\n";
         report += "  Next scheduled:        2:00 AM (nightly)\n";
@@ -341,15 +332,10 @@ public:
     }
 
     MKGrowthStats getStats() const {
-        MKGrowthStats stats;
-        stats.factsAddedToday = factsAddedToday;
-        stats.factsAddedThisWeek = factsAddedThisWeek;
-        stats.factsAddedAllTime = factsAddedAllTime;
-        stats.topicsResearched = topicsResearchedTotal;
-        stats.avgConfidence = (factsAddedAllTime > 0) ?
-            (totalConfidence / (float)factsAddedAllTime) : 0.0f;
-        stats.nextScheduledGrowth = "2:00 AM";
-        return stats;
+        return {factsAddedToday, factsAddedThisWeek, factsAddedAllTime,
+                topicsResearchedTotal,
+                (factsAddedAllTime > 0) ? (totalConfidence / (float)factsAddedAllTime) : 0.0f,
+                "2:00 AM"};
     }
 
     void printStats() const {
