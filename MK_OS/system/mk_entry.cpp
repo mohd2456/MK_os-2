@@ -81,6 +81,7 @@ namespace Color {
 #include "shell.cpp"
 #include "service_manager.cpp"
 #include "../plugins/telegram.cpp"
+#include "../plugins/plugin_interface.cpp"
 #include "../ai_core/neural_net.cpp"
 #include "../llm/llm_engine.cpp"
 #include "../ai_core/correction_engine.cpp"
@@ -152,6 +153,8 @@ struct MKSystem {
     MKTaskScheduler taskScheduler;
     MKFileReader fileReader;
     MKCodeRunner codeRunner;
+    MKPluginSystem pluginSystem;
+    MKSystemInfoPlugin sysInfoPlugin;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -202,6 +205,9 @@ struct MKSystem {
         // Initialize neural net with a tiny config (untrained, not used in hot path)
         // The GENERATE route gracefully falls back to MKComposer instead.
         neuralNet.init(256, 32, 1, 64);
+
+        // Register built-in plugins
+        pluginSystem.registerPlugin(&sysInfoPlugin);
     }
 
     ~MKSystem() = default;
@@ -1332,6 +1338,11 @@ int main(int argc, char* argv[]) {
                               << "  " << Color::DIM << "Example: /run python print('hello')"
                               << Color::RESET << "\n";
                     commandFound = true;
+                } else if (input == "/plugins") {
+                    std::string list = sys.pluginSystem.listPlugins();
+                    std::cout << "\n  " << Color::BOLD << Color::BCYAN
+                              << "  Loaded Plugins:" << Color::RESET << "\n" << list << "\n";
+                    commandFound = true;
                 } else if (input == "/services") {
                     auto statuses = sys.serviceManager.get_all_status();
                     if (statuses.empty()) {
@@ -1381,11 +1392,26 @@ int main(int argc, char* argv[]) {
                 }
 
                 if (!commandFound) {
-                    // Show suggestions for the partial command
-                    show_slash_suggestions(input);
-                    std::cout << "\n  " << Color::YELLOW << "⚠" << Color::RESET 
-                              << " Unknown command: " << Color::RED << input << Color::RESET
-                              << ". Type " << Color::GREEN << "/help" << Color::RESET << " for options.\n";
+                    // Try plugins for unknown commands
+                    std::string pluginCmd = input.substr(1); // Remove leading /
+                    std::string pluginArgs;
+                    size_t spPos = pluginCmd.find(' ');
+                    if (spPos != std::string::npos) {
+                        pluginArgs = pluginCmd.substr(spPos + 1);
+                        pluginCmd = pluginCmd.substr(0, spPos);
+                    }
+                    std::string pluginResult = sys.pluginSystem.tryExecute(pluginCmd, pluginArgs);
+                    if (!pluginResult.empty()) {
+                        std::cout << "\n  " << Color::GREEN << "●" << Color::RESET
+                                  << " " << pluginResult << "\n";
+                        commandFound = true;
+                    } else {
+                        // Show suggestions for the partial command
+                        show_slash_suggestions(input);
+                        std::cout << "\n  " << Color::YELLOW << "⚠" << Color::RESET 
+                                  << " Unknown command: " << Color::RED << input << Color::RESET
+                                  << ". Type " << Color::GREEN << "/help" << Color::RESET << " for options.\n";
+                    }
                 }
             } // end of locked else block
         } else {
