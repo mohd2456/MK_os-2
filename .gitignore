@@ -1,19 +1,40 @@
 # Build artifacts
 *.o
+mk_os
+mk_os_test
+mk_sync
+mk_ingest
+mk_telegram
+mk_llm_eater
 *.img
 *.qcow2
 bootloader/build_work/rootfs/
 bootloader/build_work/iso/
 bootloader/build_work/alpine-rootfs.tar.gz
 bootloader/staging/
-mk_os
-mk_sync
-mk_ingest
-mk_telegram
-mk_llm_eater
+
+# Runtime data
 mk_memory.dat
 mk_improvement.log
 
-# LLM model files
+# Config (user-specific)
+.mk_os/
+
+# LLM model files (too large for git)
 MK_OS/llm/models/
 *.gguf
+
+# Logs
+*.log
+*.dat
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
