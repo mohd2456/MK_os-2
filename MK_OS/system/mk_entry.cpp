@@ -86,6 +86,7 @@ namespace Color {
 #include "../ai_core/correction_engine.cpp"
 #include "task_scheduler.cpp"
 #include "../tools/file_reader.cpp"
+#include "../tools/code_runner.cpp"
 
 // ============================================================
 // Global state
@@ -150,6 +151,7 @@ struct MKSystem {
     MKCorrectionEngine correctionEngine;
     MKTaskScheduler taskScheduler;
     MKFileReader fileReader;
+    MKCodeRunner codeRunner;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -1281,6 +1283,53 @@ int main(int argc, char* argv[]) {
                     std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
                               << " /read <filepath>\n"
                               << "  " << Color::DIM << "Supports: .txt .md .cpp .py .json .csv .log .pdf"
+                              << Color::RESET << "\n";
+                    commandFound = true;
+                } else if (input.size() > 5 && input.substr(0, 5) == "/run ") {
+                    std::string args = trim(input.substr(5));
+                    // Parse language and code
+                    size_t spacePos = args.find(' ');
+                    if (spacePos == std::string::npos) {
+                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                                  << " /run python|bash|cpp <code>\n";
+                    } else {
+                        std::string lang = args.substr(0, spacePos);
+                        std::string code = args.substr(spacePos + 1);
+                        std::transform(lang.begin(), lang.end(), lang.begin(), ::tolower);
+
+                        MKRunResult result;
+                        if (lang == "python" || lang == "py") {
+                            result = sys.codeRunner.runPython(code);
+                            lang = "Python";
+                        } else if (lang == "bash" || lang == "sh") {
+                            result = sys.codeRunner.runBash(code);
+                            lang = "Bash";
+                        } else if (lang == "cpp" || lang == "c++") {
+                            result = sys.codeRunner.runCpp(code);
+                            lang = "C++";
+                        } else {
+                            std::cout << "\n  " << Color::RED << "✗" << Color::RESET
+                                      << " Unknown language: " << lang
+                                      << ". Use: python, bash, or cpp\n";
+                            commandFound = true;
+                            continue;
+                        }
+
+                        std::cout << "\n  " << Color::BOLD << Color::BMAGENTA << "▶ " << lang
+                                  << " Output:" << Color::RESET << "\n  ";
+                        std::string formatted = sys.codeRunner.formatResult(result, lang);
+                        // Indent output
+                        for (char c : formatted) {
+                            std::cout << c;
+                            if (c == '\n') std::cout << "  ";
+                        }
+                        std::cout << "\n";
+                    }
+                    commandFound = true;
+                } else if (input == "/run") {
+                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                              << " /run <python|bash|cpp> <code>\n"
+                              << "  " << Color::DIM << "Example: /run python print('hello')"
                               << Color::RESET << "\n";
                     commandFound = true;
                 } else if (input == "/services") {
