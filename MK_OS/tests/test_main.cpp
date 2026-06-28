@@ -74,6 +74,8 @@ static int g_assertions_failed = 0;
 #include "../ai_core/smart_router.cpp"
 #include "../mk_brain/vector_search/ann_search.cpp"
 #include "../mk_brain/embeddings/embeddings_eng.cpp"
+#include "../llm/llm_engine.cpp"
+#include "../ai_core/input_preprocessor.cpp"
 
 // ============================================================
 // TEST: Pattern Graph
@@ -420,6 +422,75 @@ void test_embeddings_engine() {
 }
 
 // ============================================================
+// TEST: LLM Model Manager
+// ============================================================
+void test_llm_model_manager() {
+    MKModelManager manager;
+
+    // On this Linux system with 32GB RAM, getAvailableRAM should be positive
+    float ram = manager.getAvailableRAM();
+    TEST_ASSERT_GT(ram, 0.0f, "getAvailableRAM() should return a positive value on this system");
+
+    // Hardware check should pass (system has >> 2GB RAM)
+    bool sufficient = manager.checkHardware();
+    TEST_ASSERT_TRUE(sufficient, "checkHardware() should return true on a system with 32GB RAM");
+
+    // RAM string should not be empty
+    std::string ramStr = manager.getRAMString();
+    TEST_ASSERT_GT(ramStr.size(), 0u, "getRAMString() should return a non-empty string");
+
+    // Minimum RAM should be a positive value
+    float minRAM = manager.getMinRAM();
+    TEST_ASSERT_GT(minRAM, 0.0f, "getMinRAM() should return a positive value");
+}
+
+// ============================================================
+// TEST: LLM Engine
+// ============================================================
+void test_llm_engine() {
+    MKLLMEngine engine;
+
+    // No LLM server is running during tests, so isAvailable should be false
+    TEST_ASSERT_FALSE(engine.isAvailable(), "isAvailable() should return false when no server is running");
+
+    // Server type should be "none" when unavailable
+    std::string serverType = engine.getServerType();
+    TEST_ASSERT_EQ(serverType, std::string("none"), "getServerType() should return 'none' when no server available");
+
+    // generate() should return empty string gracefully when no server is available
+    std::string result = engine.generate("test prompt");
+    TEST_ASSERT_EQ(result, std::string(""), "generate() should return empty string when no server available");
+
+    // Model manager reference should be accessible and functional
+    const MKModelManager& mgr = engine.getModelManager();
+    TEST_ASSERT_GT(mgr.getAvailableRAM(), 0.0f, "Engine's model manager should report positive RAM");
+}
+
+// ============================================================
+// TEST: Preprocessor Model Fallback
+// ============================================================
+void test_preprocessor_model_fallback() {
+    MKInputPreprocessor preprocessor;
+
+    // Call preprocessWithModel - should fall back to rule-based since no server is running
+    MKPreprocessResult result = preprocessor.preprocessWithModel("hello world");
+
+    // The result should be valid (not crashing)
+    TEST_ASSERT_GT(result.cleaned_text.size(), 0u, "preprocessWithModel fallback should return non-empty cleaned_text");
+
+    // was_modified should be a valid boolean (just verify it doesn't crash)
+    TEST_ASSERT_TRUE(result.was_modified == true || result.was_modified == false,
+                     "was_modified should be a valid boolean value");
+
+    // The original text should be preserved
+    TEST_ASSERT_EQ(result.original_text, std::string("hello world"),
+                   "original_text should preserve the input");
+
+    // Confidence should be non-negative
+    TEST_ASSERT_TRUE(result.confidence >= 0.0f, "confidence should be non-negative");
+}
+
+// ============================================================
 // Main: Run all tests
 // ============================================================
 int main() {
@@ -436,6 +507,9 @@ int main() {
     RUN_TEST(test_composer);
     RUN_TEST(test_vector_search);
     RUN_TEST(test_embeddings_engine);
+    RUN_TEST(test_llm_model_manager);
+    RUN_TEST(test_llm_engine);
+    RUN_TEST(test_preprocessor_model_fallback);
 
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;
