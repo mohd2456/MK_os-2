@@ -1,0 +1,36 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Create the MK_OS/llm/ module with LLM engine, model manager, hardware checker, download script, server launcher script, and README. Wire it into mk_entry.cpp for boot-time status and enhance input_preprocessor.cpp to support both Ollama (localhost:11434) and llama.cpp server (localhost:8080).",
+  "status": "in_progress",
+  "steps": [
+    "Create MK_OS/llm/model_manager.cpp - a class MKModelManager with: (1) getAvailableRAM() that reads /proc/meminfo on Linux or uses sysctl on macOS to get free RAM in GB, (2) checkHardware() that returns true if >= 2GB RAM free, (3) getRAMString() for display. Uses #ifndef guard pattern. Prints colored warning if hardware insufficient.",
+    "Create MK_OS/llm/llm_engine.cpp - a class MKLLMEngine that: (1) holds reference to MKModelManager, (2) has isAvailable() that checks if llama.cpp server (localhost:8080) OR Ollama (localhost:11434) is reachable via a quick HTTP GET with 1-second timeout using libcurl, (3) has generate(prompt) that sends POST to whichever server is available (Ollama format: /api/generate, llama.cpp format: /completion), (4) has getServerType() returning which backend is connected. Uses #ifndef guard. Include model_manager.cpp.",
+    "Create MK_OS/llm/download_model.sh - bash script that downloads TinyLlama-1.1B-Chat-v1.0.Q4_K_M.gguf from HuggingFace to MK_OS/llm/models/ directory. Checks if already downloaded. Shows progress. Make executable.",
+    "Create MK_OS/llm/start_server.sh - bash script that launches llama-server (from llama.cpp) with the downloaded model on port 8080. Checks if model file exists, gives error if not. Make executable.",
+    "Create MK_OS/llm/README.md - instructions for users explaining: model recommendation (TinyLlama 1.1B Q4 for low-resource, Mistral 7B Q4 for better quality), how to download, how to start server, hardware requirements (2GB RAM minimum for TinyLlama), and how MK OS auto-detects the server.",
+    "Modify MK_OS/system/mk_entry.cpp: (1) Add #include '../llm/llm_engine.cpp' in the include section after neural_net.cpp, (2) Add MKLLMEngine llmEngine field to MKSystem struct, (3) In main() after the banner and platform detection but before 'Initializing modules', add an LLM status check section that: checks hardware via model_manager, checks if LLM server is reachable, prints appropriate colored status messages.",
+    "Modify MK_OS/ai_core/input_preprocessor.cpp: Enhance the preprocessWithModel() method to also check llama.cpp server at localhost:8080 (in addition to Ollama at localhost:11434). If llama.cpp is available, send text for cleanup using the /completion endpoint format. Still falls back to rule-based process() if neither is available.",
+    "Add a .gitignore entry for MK_OS/llm/models/ directory so the large model files are never committed."
+  ],
+  "acceptance_criteria": [
+    "Running 'make' from MK_OS/ compiles successfully with zero errors",
+    "Running 'make test' passes all existing tests (no regression)",
+    "MK_OS/llm/ directory contains: llm_engine.cpp, model_manager.cpp, download_model.sh, start_server.sh, README.md",
+    "download_model.sh and start_server.sh are executable",
+    "The hardware check correctly reads /proc/meminfo and returns available RAM",
+    "If RAM < 2GB, a colored warning message is printed at boot",
+    "If no LLM server is running, an informational message is printed at boot",
+    "The preprocessor's preprocessWithModel() checks both localhost:11434 and localhost:8080",
+    "A .gitignore prevents model files from being committed"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && make 2>&1 | tail -5",
+    "cd /projects/sandbox/MK_os-2/MK_OS && make test 2>&1 | tail -10",
+    "ls -la /projects/sandbox/MK_os-2/MK_OS/llm/",
+    "test -x /projects/sandbox/MK_os-2/MK_OS/llm/download_model.sh && echo 'download script is executable'",
+    "test -x /projects/sandbox/MK_os-2/MK_OS/llm/start_server.sh && echo 'start script is executable'"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

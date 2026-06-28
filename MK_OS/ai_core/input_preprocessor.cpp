@@ -645,42 +645,200 @@ public:
     }
 
     // --------------------------------------------------------
-    // Optional: preprocess with Ollama model
-    // Falls back to rule-based if Ollama is unavailable.
+    // Optional: preprocess with local LLM model
+    // Checks both Ollama (localhost:11434) and llama.cpp (localhost:8080).
+    // Falls back to rule-based if neither is available.
     // Only called if rule-based confidence is low (< 0.5).
-    // Note: requires MKHTTP to be available (included after this file).
-    // The caller should use process() directly; this method is provided
-    // for future integration when Ollama support is fully wired.
     // --------------------------------------------------------
     MKPreprocessResult preprocessWithModel(const std::string& input) {
-        // Ollama integration: attempt a connection to localhost:11434
-        // Using libcurl directly to avoid include-order dependency on MKHTTP
-        CURL* curl = curl_easy_init();
-        if (!curl) {
-            return process(input);
-        }
-
-        std::string response;
-        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:11434/api/tags");
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1L); // 1 second timeout
-        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 1L);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, +[](void* contents, size_t size, size_t nmemb, void* userp) -> size_t {
+        // Write callback for curl
+        auto writeCallback = +[](void* contents, size_t size, size_t nmemb, void* userp) -> size_t {
             ((std::string*)userp)->append((char*)contents, size * nmemb);
             return size * nmemb;
-        });
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+        };
 
-        CURLcode res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
+        // First, try llama.cpp server at localhost:8080
+        {
+            CURL* curl = curl_easy_init();
+            if (curl) {
+                std::string response;
+                curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8080/health");
+                curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1L);
+                curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 1L);
+                curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
+                curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+                curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
 
-        // If connection failed or no models found, fall back to rule-based
-        if (res != CURLE_OK || response.empty() || response.find("models") == std::string::npos) {
-            return process(input);
+                CURLcode res = curl_easy_perform(curl);
+                curl_easy_cleanup(curl);
+
+                if (res == CURLE_OK && !response.empty()) {
+                    // llama.cpp is available - send text for cleanup
+                    CURL* genCurl = curl_easy_init();
+                    if (genCurl) {
+                        std::string genResponse;
+                        std::string prompt = "Clean up and fix this text. Only return the cleaned text, nothing else: " + input;
+                        std::string postData = "{\"prompt\":\"";
+                        for (char c : prompt) {
+                            switch (c) {
+                                case '"':  postData += "\\\""; break;
+                                case '\\': postData += "\\\\"; break;
+                                case '\n': postData += "\\n"; break;
+                                case '\r': postData += "\\r"; break;
+                                case '\t': postData += "\\t"; break;
+                                default:   postData += c; break;
+                            }
+                        }
+                        postData += "\",\"n_predict\":128,\"temperature\":0.3}";
+
+                        struct curl_slist* headers = nullptr;
+                        headers = curl_slist_append(headers, "Content-Type: application/json");
+
+                        curl_easy_setopt(genCurl, CURLOPT_URL, "http://localhost:8080/completion");
+                        curl_easy_setopt(genCurl, CURLOPT_POST, 1L);
+                        curl_easy_setopt(genCurl, CURLOPT_POSTFIELDS, postData.c_str());
+                        curl_easy_setopt(genCurl, CURLOPT_HTTPHEADER, headers);
+                        curl_easy_setopt(genCurl, CURLOPT_WRITEFUNCTION, writeCallback);
+                        curl_easy_setopt(genCurl, CURLOPT_WRITEDATA, &genResponse);
+                        curl_easy_setopt(genCurl, CURLOPT_TIMEOUT, 10L);
+                        curl_easy_setopt(genCurl, CURLOPT_NOSIGNAL, 1L);
+
+                        CURLcode genRes = curl_easy_perform(genCurl);
+                        curl_slist_free_all(headers);
+                        curl_easy_cleanup(genCurl);
+
+                        if (genRes == CURLE_OK && !genResponse.empty()) {
+                            // Parse response: {"content":"..."}
+                            size_t contentPos = genResponse.find("\"content\":\"");
+                            if (contentPos != std::string::npos) {
+                                contentPos += 11; // length of "content":"
+                                std::string cleaned;
+                                for (size_t i = contentPos; i < genResponse.size(); i++) {
+                                    if (genResponse[i] == '\\' && i + 1 < genResponse.size()) {
+                                        char next = genResponse[i + 1];
+                                        switch (next) {
+                                            case '"':  cleaned += '"'; break;
+                                            case '\\': cleaned += '\\'; break;
+                                            case 'n':  cleaned += '\n'; break;
+                                            case 't':  cleaned += '\t'; break;
+                                            default:   cleaned += next; break;
+                                        }
+                                        i++;
+                                    } else if (genResponse[i] == '"') {
+                                        break;
+                                    } else {
+                                        cleaned += genResponse[i];
+                                    }
+                                }
+                                if (!cleaned.empty()) {
+                                    // Use AI-cleaned text but still run intent detection
+                                    MKPreprocessResult result;
+                                    result.original_text = input;
+                                    result.cleaned_text = cleaned;
+                                    result.was_modified = (cleaned != input);
+                                    float conf = 0.0f;
+                                    result.detected_intent = detectIntent(cleaned, conf);
+                                    result.confidence = conf;
+                                    return result;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        // Ollama is available -- for now, still use rule-based processing
-        // as the POST endpoint requires more complex setup.
-        // Future: send text to Ollama for AI-powered cleaning.
+        // Second, try Ollama at localhost:11434
+        {
+            CURL* curl = curl_easy_init();
+            if (curl) {
+                std::string response;
+                curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:11434/api/tags");
+                curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1L);
+                curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 1L);
+                curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
+                curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+                curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+
+                CURLcode res = curl_easy_perform(curl);
+                curl_easy_cleanup(curl);
+
+                if (res == CURLE_OK && !response.empty() && response.find("models") != std::string::npos) {
+                    // Ollama is available - send text for cleanup
+                    CURL* genCurl = curl_easy_init();
+                    if (genCurl) {
+                        std::string genResponse;
+                        std::string prompt = "Clean up and fix this text. Only return the cleaned text, nothing else: " + input;
+                        std::string postData = "{\"model\":\"tinyllama\",\"prompt\":\"";
+                        for (char c : prompt) {
+                            switch (c) {
+                                case '"':  postData += "\\\""; break;
+                                case '\\': postData += "\\\\"; break;
+                                case '\n': postData += "\\n"; break;
+                                case '\r': postData += "\\r"; break;
+                                case '\t': postData += "\\t"; break;
+                                default:   postData += c; break;
+                            }
+                        }
+                        postData += "\",\"stream\":false}";
+
+                        struct curl_slist* headers = nullptr;
+                        headers = curl_slist_append(headers, "Content-Type: application/json");
+
+                        curl_easy_setopt(genCurl, CURLOPT_URL, "http://localhost:11434/api/generate");
+                        curl_easy_setopt(genCurl, CURLOPT_POST, 1L);
+                        curl_easy_setopt(genCurl, CURLOPT_POSTFIELDS, postData.c_str());
+                        curl_easy_setopt(genCurl, CURLOPT_HTTPHEADER, headers);
+                        curl_easy_setopt(genCurl, CURLOPT_WRITEFUNCTION, writeCallback);
+                        curl_easy_setopt(genCurl, CURLOPT_WRITEDATA, &genResponse);
+                        curl_easy_setopt(genCurl, CURLOPT_TIMEOUT, 10L);
+                        curl_easy_setopt(genCurl, CURLOPT_NOSIGNAL, 1L);
+
+                        CURLcode genRes = curl_easy_perform(genCurl);
+                        curl_slist_free_all(headers);
+                        curl_easy_cleanup(genCurl);
+
+                        if (genRes == CURLE_OK && !genResponse.empty()) {
+                            // Parse response: {"response":"..."}
+                            size_t respPos = genResponse.find("\"response\":\"");
+                            if (respPos != std::string::npos) {
+                                respPos += 12; // length of "response":"
+                                std::string cleaned;
+                                for (size_t i = respPos; i < genResponse.size(); i++) {
+                                    if (genResponse[i] == '\\' && i + 1 < genResponse.size()) {
+                                        char next = genResponse[i + 1];
+                                        switch (next) {
+                                            case '"':  cleaned += '"'; break;
+                                            case '\\': cleaned += '\\'; break;
+                                            case 'n':  cleaned += '\n'; break;
+                                            case 't':  cleaned += '\t'; break;
+                                            default:   cleaned += next; break;
+                                        }
+                                        i++;
+                                    } else if (genResponse[i] == '"') {
+                                        break;
+                                    } else {
+                                        cleaned += genResponse[i];
+                                    }
+                                }
+                                if (!cleaned.empty()) {
+                                    MKPreprocessResult result;
+                                    result.original_text = input;
+                                    result.cleaned_text = cleaned;
+                                    result.was_modified = (cleaned != input);
+                                    float conf = 0.0f;
+                                    result.detected_intent = detectIntent(cleaned, conf);
+                                    result.confidence = conf;
+                                    return result;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Neither server available - fall back to rule-based processing
         return process(input);
     }
 

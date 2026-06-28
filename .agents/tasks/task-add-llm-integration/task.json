@@ -1,0 +1,7 @@
+{
+  "task_id": "task-add-llm-integration",
+  "task_description": "Add a lightweight LLM integration to MK OS in MK_OS/llm/ folder. Provides hardware detection (RAM check), server connectivity for both Ollama and llama.cpp, graceful fallback to rule-based processing, model download script, and boot-time status messages.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}

@@ -82,6 +82,7 @@ namespace Color {
 #include "service_manager.cpp"
 #include "../plugins/telegram.cpp"
 #include "../ai_core/neural_net.cpp"
+#include "../llm/llm_engine.cpp"
 
 // ============================================================
 // Global state
@@ -142,6 +143,7 @@ struct MKSystem {
     std::unique_ptr<MKTelegram> telegram;
     MKNeuralNet neuralNet;
     MKInputPreprocessor preprocessor;
+    MKLLMEngine llmEngine;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -173,7 +175,8 @@ struct MKSystem {
           serviceManager(),
           telegram(nullptr),
           neuralNet(),
-          preprocessor()
+          preprocessor(),
+          llmEngine()
     {
         // Initialize Telegram bot if token is available
         const char* tgToken = std::getenv("MK_TELEGRAM_TOKEN");
@@ -984,6 +987,9 @@ int main(int argc, char* argv[]) {
     // Step 3: Initialize all modules
     std::cout << "  " << Color::DIM << "Initializing modules..." << Color::RESET << "\n\n";
     MKSystem sys;
+
+    // Step 3a: LLM Status Check
+    sys.llmEngine.checkAndReport();
 
     // Step 4: Load knowledge
     sys.graph.loadAllKnowledge();

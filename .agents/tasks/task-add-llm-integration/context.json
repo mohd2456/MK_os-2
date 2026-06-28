@@ -1,0 +1,23 @@
+{
+  "project_type": "C++ AI personal assistant OS (single compilation unit)",
+  "language": "C++17",
+  "build_system": "Makefile with clang++. Single compilation unit: mk_entry.cpp #includes all other .cpp files. No separate .o linking. Uses -lcurl -lsqlite3",
+  "test_framework": "Custom test framework in tests/test_main.cpp using TEST_ASSERT macros and RUN_TEST. Tests compile as a separate single compilation unit that #includes module .cpp files directly.",
+  "build_command": "cd /projects/sandbox/MK_os-2/MK_OS && make",
+  "test_command": "cd /projects/sandbox/MK_os-2/MK_OS && make test",
+  "verification_instructions": "1. Run 'make' from MK_OS/ - must compile with zero errors. 2. Run 'make test' - all tests must pass. 3. Verify the llm/ directory contains: llm_engine.cpp, model_manager.cpp, download_model.sh, start_server.sh, README.md",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "No setup needed. clang++, libcurl, and libsqlite3 are already available.",
+  "environment_constraints": "Linux (Amazon Linux 2023), clang++ 15, open internet access. No Docker daemon available for container builds. /proc/meminfo is available for RAM checks.",
+  "contribution_requirements": "No formal CONTRIBUTING.md. Code follows MK OS patterns: #ifndef guards, classes prefixed with MK, Color:: namespace for terminal output, std::cout for status messages.",
+  "key_patterns": "1. All modules are header-like .cpp files with #ifndef guards, #included into mk_entry.cpp. 2. Classes use MK prefix (MKInputPreprocessor, MKSmartRouter, etc). 3. Boot sequence prints colored status lines with checkmarks. 4. HTTP calls use libcurl directly. 5. Tests #include module .cpp files directly. 6. Input preprocessor already has preprocessWithModel() that checks Ollama at localhost:11434.",
+  "relevant_files": [
+    "MK_OS/system/mk_entry.cpp",
+    "MK_OS/ai_core/input_preprocessor.cpp",
+    "MK_OS/network/http.cpp",
+    "MK_OS/tools/llm_eater.cpp",
+    "MK_OS/Makefile",
+    "MK_OS/tests/test_main.cpp"
+  ],
+  "directory_structure": "MK_OS/ is root. system/ has mk_entry.cpp (main). ai_core/ has preprocessor, router, knowledge. network/ has HTTP. tools/ has standalone binaries. tests/ has test_main.cpp. mk_brain/ has reasoning/memory/embeddings modules."
+}

@@ -13,3 +13,7 @@ mk_telegram
 mk_llm_eater
 mk_memory.dat
 mk_improvement.log
+
+# LLM model files
+MK_OS/llm/models/
+*.gguf

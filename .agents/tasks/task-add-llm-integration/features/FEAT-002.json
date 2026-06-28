@@ -1,0 +1,20 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Add tests for the LLM module: hardware detection, RAM parsing, server availability check logic, and input preprocessor dual-server support.",
+  "status": "pending",
+  "steps": [
+    "Add tests to MK_OS/tests/test_main.cpp that: (1) #include the llm_engine.cpp module, (2) Test MKModelManager::getAvailableRAM() returns a positive value on this Linux system, (3) Test MKModelManager::checkHardware() returns true (this machine has 32GB RAM), (4) Test MKLLMEngine::isAvailable() returns false when no server is running (expected since we don't start one in tests), (5) Test MKLLMEngine::getServerType() returns 'none' when unavailable, (6) Test MKInputPreprocessor::preprocessWithModel() gracefully falls back to rule-based when no server is available.",
+    "Run 'make test' to verify all new tests pass alongside existing tests."
+  ],
+  "acceptance_criteria": [
+    "New tests for LLM module are added to test_main.cpp",
+    "All tests pass including both old and new tests",
+    "Tests verify: RAM detection works, hardware check passes, graceful fallback when no LLM server available"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && make test 2>&1 | tail -15"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
