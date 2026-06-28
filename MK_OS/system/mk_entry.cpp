@@ -1149,15 +1149,83 @@ int main(int argc, char* argv[]) {
 
     // Step 8: Try connecting to remote PC agent
     {
-        std::cout << "  " << Color::DIM << "Connecting to PC agent..." << Color::RESET << "\n";
-        if (sys.pcController.connect()) {
-            std::cout << "  " << Color::BGREEN << "\u2713" << Color::RESET
-                      << " PC connected (" << sys.pcController.getIP()
-                      << ":" << sys.pcController.getPort() << ")\n";
+        const char* manualIP = std::getenv("MK_PC_IP");
+        if (manualIP && manualIP[0] != '\0') {
+            // Manual IP configured — connect directly (existing behavior)
+            std::cout << "  " << Color::DIM << "Connecting to PC agent..." << Color::RESET << "\n";
+            if (sys.pcController.connect()) {
+                std::cout << "  " << Color::BGREEN << "\u2713" << Color::RESET
+                          << " PC connected (" << sys.pcController.getIP()
+                          << ":" << sys.pcController.getPort() << ")\n";
+            } else {
+                std::cout << "  " << Color::DIM
+                          << "\u2139 PC agent not responding at " << manualIP
+                          << ". Check agent is running."
+                          << Color::RESET << "\n";
+            }
         } else {
-            std::cout << "  " << Color::DIM
-                      << "\u2139 PC agent not detected. Set MK_PC_IP and run agent.py on your PC."
+            // No manual IP — try auto-discovery
+            std::cout << "  " << Color::DIM << "Scanning for PC agents on local network..."
                       << Color::RESET << "\n";
+            if (sys.pcController.autoConnect()) {
+                std::cout << "  " << Color::BGREEN << "\u2713" << Color::RESET
+                          << " PC auto-discovered: "
+                          << Color::BOLD << sys.pcController.getConnectedHostname() << Color::RESET
+                          << " (" << sys.pcController.getIP()
+                          << ":" << sys.pcController.getPort() << ")\n";
+            } else {
+                std::cout << "  " << Color::DIM
+                          << "\u2139 No PC agent found. Start the agent on your PC to auto-connect."
+                          << Color::RESET << "\n";
+            }
+        }
+    }
+
+    // Step 8b: Background PC discovery thread (continuous scan every 30s)
+    std::thread pcDiscoveryThread;
+    bool pcDiscoveryRunning = false;
+    {
+        const char* manualIP = std::getenv("MK_PC_IP");
+        if (!manualIP || manualIP[0] == '\0') {
+            // Only run background discovery when no manual IP is set
+            pcDiscoveryRunning = true;
+            pcDiscoveryThread = std::thread([&sys]() {
+                bool wasConnected = sys.pcController.isConnected();
+                while (g_running.load()) {
+                    // Sleep 30 seconds (in small increments for responsive shutdown)
+                    for (int i = 0; i < 300 && g_running.load(); i++) {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    }
+                    if (!g_running.load()) break;
+
+                    bool currentlyConnected = sys.pcController.isConnected();
+
+                    if (!currentlyConnected) {
+                        // Not connected — try to discover and connect
+                        if (sys.pcController.autoConnect()) {
+                            std::cout << "\n  " << Color::BGREEN << "\u2713" << Color::RESET
+                                      << " PC agent connected: "
+                                      << Color::BOLD << sys.pcController.getConnectedHostname()
+                                      << Color::RESET
+                                      << " (" << sys.pcController.getIP() << ":"
+                                      << sys.pcController.getPort() << ")\n";
+                            std::cout << "  " << Color::BOLD << Color::BCYAN << "MK"
+                                      << Color::RESET << Color::CYAN << " \u203A " << Color::RESET;
+                            std::cout.flush();
+                            wasConnected = true;
+                        }
+                    } else if (wasConnected && !currentlyConnected) {
+                        // Was connected, now disconnected — notify and resume scanning
+                        std::cout << "\n  " << Color::YELLOW << "\u26A0" << Color::RESET
+                                  << " PC agent disconnected. Scanning..."
+                                  << Color::RESET << "\n";
+                        std::cout << "  " << Color::BOLD << Color::BCYAN << "MK"
+                                  << Color::RESET << Color::CYAN << " \u203A " << Color::RESET;
+                        std::cout.flush();
+                        wasConnected = false;
+                    }
+                }
+            });
         }
     }
 
@@ -1685,6 +1753,11 @@ int main(int argc, char* argv[]) {
     // Graceful Shutdown
     // ============================================================
     std::cout << "\n  " << Color::YELLOW << "⏻" << Color::RESET << " Shutting down...\n";
+
+    // Signal and join the PC discovery thread
+    if (pcDiscoveryRunning && pcDiscoveryThread.joinable()) {
+        pcDiscoveryThread.join();
+    }
 
     // Signal and join the telegram polling thread
     if (telegramThreadRunning && telegramThread.joinable()) {

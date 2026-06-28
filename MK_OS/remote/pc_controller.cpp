@@ -27,6 +27,7 @@ private:
     std::string authToken;
     std::atomic<bool> connected;
     int nextRequestId;
+    std::string connectedHostname;  // Hostname of the connected PC agent
 
     // ─── JSON Helpers ────────────────────────────────────────────────────────
 
@@ -184,6 +185,107 @@ public:
     ~MKPCController() {
         disconnect();
     }
+
+    // ─── Discovery Types ─────────────────────────────────────────────────────
+
+    struct DiscoveredAgent {
+        std::string ip;
+        int port;
+        std::string hostname;
+        std::string tokenHint;
+    };
+
+    // ─── Network Discovery ───────────────────────────────────────────────────
+
+    std::vector<DiscoveredAgent> discoverAgents(int timeoutSeconds = 3) {
+        std::vector<DiscoveredAgent> agents;
+
+        int udpSock = socket(AF_INET, SOCK_DGRAM, 0);
+        if (udpSock < 0) return agents;
+
+        // Allow address reuse
+        int reuse = 1;
+        setsockopt(udpSock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+
+        // Bind to discovery port
+        struct sockaddr_in bindAddr;
+        std::memset(&bindAddr, 0, sizeof(bindAddr));
+        bindAddr.sin_family = AF_INET;
+        bindAddr.sin_port = htons(9877);
+        bindAddr.sin_addr.s_addr = INADDR_ANY;
+
+        if (bind(udpSock, (struct sockaddr*)&bindAddr, sizeof(bindAddr)) < 0) {
+            ::close(udpSock);
+            return agents;
+        }
+
+        // Set receive timeout
+        struct timeval tv;
+        tv.tv_sec = timeoutSeconds;
+        tv.tv_usec = 0;
+        setsockopt(udpSock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+        // Listen for beacons until timeout
+        auto startTime = std::chrono::steady_clock::now();
+        while (true) {
+            auto elapsed = std::chrono::steady_clock::now() - startTime;
+            if (std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() >= timeoutSeconds)
+                break;
+
+            char buf[512];
+            struct sockaddr_in fromAddr;
+            socklen_t fromLen = sizeof(fromAddr);
+            ssize_t n = recvfrom(udpSock, buf, sizeof(buf) - 1, 0,
+                                 (struct sockaddr*)&fromAddr, &fromLen);
+            if (n > 0) {
+                buf[n] = '\0';
+                std::string packet(buf);
+                std::string senderIP = inet_ntoa(fromAddr.sin_addr);
+
+                // Parse JSON beacon: {"service":"mk_agent","port":9876,"hostname":"...","token_hint":"..."}
+                std::string service = jsonGetString(packet, "service");
+                if (service == "mk_agent") {
+                    DiscoveredAgent agent;
+                    agent.ip = senderIP;
+                    std::string portStr = jsonGetString(packet, "port");
+                    agent.port = portStr.empty() ? 9876 : std::atoi(portStr.c_str());
+                    agent.hostname = jsonGetString(packet, "hostname");
+                    agent.tokenHint = jsonGetString(packet, "token_hint");
+
+                    // Avoid duplicates
+                    bool duplicate = false;
+                    for (const auto& existing : agents) {
+                        if (existing.ip == agent.ip && existing.port == agent.port) {
+                            duplicate = true;
+                            break;
+                        }
+                    }
+                    if (!duplicate) {
+                        agents.push_back(agent);
+                    }
+                }
+            }
+        }
+
+        ::close(udpSock);
+        return agents;
+    }
+
+    bool autoConnect() {
+        auto agents = discoverAgents(3);
+        if (agents.empty()) return false;
+
+        for (const auto& agent : agents) {
+            // Try connecting with stored auth token
+            if (connect(agent.ip, agent.port, authToken)) {
+                connectedHostname = agent.hostname;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::string getConnectedHostname() const { return connectedHostname; }
 
     // ─── Connection Management ───────────────────────────────────────────────
 
