@@ -84,6 +84,7 @@ namespace Color {
 #include "../ai_core/neural_net.cpp"
 #include "../llm/llm_engine.cpp"
 #include "../ai_core/correction_engine.cpp"
+#include "task_scheduler.cpp"
 
 // ============================================================
 // Global state
@@ -146,6 +147,7 @@ struct MKSystem {
     MKInputPreprocessor preprocessor;
     MKLLMEngine llmEngine;
     MKCorrectionEngine correctionEngine;
+    MKTaskScheduler taskScheduler;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -179,7 +181,8 @@ struct MKSystem {
           neuralNet(),
           preprocessor(),
           llmEngine(),
-          correctionEngine()
+          correctionEngine(),
+          taskScheduler()
     {
         // Initialize Telegram bot if token is available
         const char* tgToken = std::getenv("MK_TELEGRAM_TOKEN");
@@ -1070,6 +1073,21 @@ int main(int argc, char* argv[]) {
     sys.daemon.addJob("health_check", 30, [&sys]() {
         sys.serviceManager.run_health_checks();
     });
+    sys.daemon.addJob("task_scheduler_check", 15, [&sys]() {
+        std::lock_guard<std::mutex> lock(sys.systemMutex);
+        auto dueTasks = sys.taskScheduler.checkDueTasks();
+        for (const auto& task : dueTasks) {
+            std::cout << "\n  " << Color::BYELLOW << "⏰" << Color::RESET
+                      << " Reminder: " << Color::BOLD << task.message << Color::RESET << "\n";
+            std::cout << "  " << Color::BOLD << Color::BCYAN << "MK"
+                      << Color::RESET << Color::CYAN << " › " << Color::RESET;
+            std::cout.flush();
+            // Send via Telegram if chatId is set
+            if (sys.telegram && !task.chatId.empty()) {
+                sys.telegram->sendMessage(task.chatId, "⏰ Reminder: " + task.message);
+            }
+        }
+    });
     if (sys.telegram) {
         sys.daemon.addJob("telegram_poll_monitor", 60, []() {
             // Monitoring placeholder - the actual polling runs in its own thread
@@ -1192,6 +1210,58 @@ int main(int argc, char* argv[]) {
                               << " /shell <command>\n"
                               << "  " << Color::DIM << "Example: /shell echo hello world"
                               << Color::RESET << "\n";
+                    commandFound = true;
+                } else if (input.size() > 8 && input.substr(0, 8) == "/remind ") {
+                    std::string args = trim(input.substr(8));
+                    // Format: /remind <time> <message>
+                    // time: 5m, 1h, 2d, 30s
+                    size_t spacePos = args.find(' ');
+                    if (spacePos != std::string::npos) {
+                        std::string timeStr = args.substr(0, spacePos);
+                        std::string msg = trim(args.substr(spacePos + 1));
+                        int offset = MKTaskScheduler::parseTimeOffset(timeStr);
+                        if (offset > 0 && !msg.empty()) {
+                            int id = sys.taskScheduler.addReminder(offset, msg);
+                            std::cout << "\n  " << Color::BGREEN << "✓" << Color::RESET
+                                      << " Reminder #" << id << " set for " << timeStr
+                                      << " from now: " << Color::BOLD << msg << Color::RESET << "\n";
+                        } else {
+                            std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                                      << " /remind <time> <message>\n"
+                                      << "  " << Color::DIM << "Example: /remind 5m check email"
+                                      << Color::RESET << "\n";
+                        }
+                    } else {
+                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                                  << " /remind <time> <message>\n"
+                                  << "  " << Color::DIM << "Time: 30s, 5m, 2h, 1d"
+                                  << Color::RESET << "\n";
+                    }
+                    commandFound = true;
+                } else if (input == "/remind") {
+                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                              << " /remind <time> <message>\n"
+                              << "  " << Color::DIM << "Time formats: 30s, 5m, 2h, 1d"
+                              << Color::RESET << "\n";
+                    commandFound = true;
+                } else if (input == "/schedule") {
+                    auto pending = sys.taskScheduler.getDueTasks();
+                    if (pending.empty()) {
+                        std::cout << "\n  " << Color::DIM << "No scheduled tasks."
+                                  << Color::RESET << "\n";
+                    } else {
+                        std::cout << "\n  " << Color::BOLD << Color::BCYAN
+                                  << "  Scheduled Tasks:" << Color::RESET << "\n";
+                        for (const auto& task : pending) {
+                            std::time_t remaining = task.triggerTime - std::time(nullptr);
+                            std::string timeLeft;
+                            if (remaining < 60) timeLeft = std::to_string(remaining) + "s";
+                            else if (remaining < 3600) timeLeft = std::to_string(remaining / 60) + "m";
+                            else timeLeft = std::to_string(remaining / 3600) + "h";
+                            std::cout << "    " << Color::CYAN << "#" << task.id << Color::RESET
+                                      << " [" << timeLeft << "] " << task.message << "\n";
+                        }
+                    }
                     commandFound = true;
                 } else if (input == "/services") {
                     auto statuses = sys.serviceManager.get_all_status();
