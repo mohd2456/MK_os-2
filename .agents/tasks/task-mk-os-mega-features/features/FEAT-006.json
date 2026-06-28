@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-006",
+  "type": "feat",
+  "description": "Multi-language Arabic support, plugin API with dynamic loading, and security hardening (AES-256, auth tokens, rate limiting, input sanitization).",
+  "status": "pending",
+  "steps": [
+    "Create MK_OS/ai_core/arabic_support.cpp - MKArabicSupport class: (a) detects Arabic UTF-8 input by checking Unicode ranges (0x0600-0x06FF), (b) Arabic slang dictionary (50+ entries: common Arabic internet slang to formal), (c) Arabic greeting detection and response ('marhaba', 'ahlan', 'salam', etc.), (d) basic Arabic knowledge facts (50+ facts about Arab world, Arabic language, Islamic golden age, etc.) added to knowledge_files/arabic_knowledge.mk, (e) bidirectional text handling notes, (f) integration with preprocessor to route Arabic text appropriately",
+    "Create MK_OS/plugins/plugin_api.cpp - formal plugin interface: (a) define MKPlugin base class with virtual methods: init(), getName(), getVersion(), handleCommand(), handleQuery(), shutdown(), (b) MKPluginRegistry that manages plugin lifecycle (register, enable, disable, list), (c) plugins are .cpp files in plugins/ that inherit MKPlugin, (d) /plugins command to list loaded plugins, /plugin enable|disable <name>, (e) convert existing telegram plugin to use the interface as an example, (f) create a sample 'hello' plugin demonstrating the API",
+    "Upgrade MK_OS/security/main_security.cpp - enhance with: (a) replace XOR cipher with AES-256-CBC implementation (pure C++ using lookup tables, no external lib needed), (b) add MKAuthManager class for token-based authentication (generate tokens, validate, expire), (c) add MKRateLimiter class (sliding window, per-IP/per-user rate limiting), (d) add MKInputSanitizer class (SQL injection prevention, path traversal prevention, XSS filtering, command injection blocking), (e) encrypt mk_memory.dat and mk_schedule.dat at rest, (f) /auth command for token management",
+    "Integrate all into mk_entry.cpp: add #includes for arabic_support, plugin_api, and updated security. Add MKArabicSupport, MKPluginRegistry, MKAuthManager, MKRateLimiter, MKInputSanitizer to MKSystem. Add /plugins /auth commands. Wire Arabic detection into preprocessor pipeline. Apply input sanitization to all user inputs before processing.",
+    "Run make && make test to confirm compilation"
+  ],
+  "acceptance_criteria": [
+    "Arabic text detection works for Arabic Unicode characters",
+    "Plugin API defines clear interface with register/enable/disable",
+    "AES-256 implementation encrypts/decrypts correctly (symmetric)",
+    "Rate limiter blocks requests exceeding threshold",
+    "Input sanitizer catches path traversal and injection attempts",
+    "System compiles and existing tests pass"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

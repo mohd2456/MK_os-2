@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Learn from corrections and math/science solver. When user says 'no that's wrong, actually X is Y', MK detects the correction pattern, updates the knowledge graph, removes the wrong fact, and persists the correction. Also add advanced math solver supporting: quadratic equations, unit conversions, basic calculus, physics formulas, symbolic algebra.",
+  "status": "pending",
+  "steps": [
+    "Create MK_OS/ai_core/correction_engine.cpp - MKCorrectionEngine class that: (a) detects correction patterns in user input (e.g., 'no', 'wrong', 'actually', 'not X, it's Y', 'incorrect'), (b) extracts the wrong fact and the correct replacement, (c) removes or lowers weight of the wrong fact in the pattern graph, (d) adds the correct fact with high confidence, (e) logs corrections to a corrections_log.mk file, (f) supports undoing corrections",
+    "Create MK_OS/ai_core/math_solver.cpp - MKMathSolver class that: (a) parses math expressions (quadratic, linear, polynomial), (b) solves quadratic equations (ax^2+bx+c=0) with discriminant, (c) performs unit conversions (miles/km, lbs/kg, F/C, etc.), (d) computes derivatives of simple polynomials, (e) computes integrals of simple polynomials, (f) evaluates physics formulas (F=ma, E=mc^2, v=d/t, etc.), (g) handles natural language math queries like 'solve x^2 + 3x - 4 = 0' or 'convert 5 miles to km'",
+    "Integrate both into mk_entry.cpp: add #include for both modules, add MKCorrectionEngine and MKMathSolver to MKSystem struct, add /correct command and /math command, wire correction detection into handle_natural_query (check if input matches correction patterns before routing), wire math detection into smart router (detect math-like queries and route to solver)",
+    "Add /math command to cmd_help() output",
+    "Run make && make test to confirm compilation"
+  ],
+  "acceptance_criteria": [
+    "Correction patterns like 'no actually X is Y' are detected and processed",
+    "Wrong facts are removed/downweighted, correct facts are added",
+    "Quadratic solver returns correct roots for x^2+3x-4=0 (x=1, x=-4)",
+    "Unit conversions work (5 miles = 8.045 km)",
+    "System compiles and existing tests pass"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

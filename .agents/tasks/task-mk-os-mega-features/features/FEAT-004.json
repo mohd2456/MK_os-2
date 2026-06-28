@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Scheduled tasks with proactive Telegram, personal assistant (calendar/todos/notes), and file reading capabilities.",
+  "status": "pending",
+  "steps": [
+    "Create MK_OS/ai_core/task_scheduler.cpp - MKTaskScheduler class: (a) cron-like scheduled task system with struct MKScheduledTask (time, recurrence, action, chat_id), (b) supports one-shot reminders ('remind me in 30 minutes'), (c) supports recurring tasks ('brief me every morning at 8am'), (d) runs in a background thread checking every 30 seconds, (e) integrates with Telegram to send proactive messages when tasks fire, (f) persists scheduled tasks to mk_schedule.dat file, (g) natural language time parsing ('tomorrow at 3pm', 'every day at 8am', 'in 2 hours')",
+    "Create MK_OS/ai_core/personal_assistant.cpp - MKPersonalAssistant class: (a) calendar events with date/time/description stored in mk_calendar.dat, (b) to-do list with add/remove/complete/list operations stored in mk_todos.dat, (c) notes with title and content stored in mk_notes.dat, (d) supports natural language commands: 'add meeting tomorrow at 3pm', 'show my todos', 'note: buy groceries', 'mark todo 2 as done', 'show calendar', 'delete note 1'",
+    "Create MK_OS/ai_core/file_reader.cpp - MKFileReader class: (a) reads text files and returns content, (b) reads code files with syntax detection, (c) reads PDF files by extracting text (basic: scan for readable ASCII sequences between PDF markers), (d) summarizes file content (first N lines + word count + line count), (e) supports /read <path> command",
+    "Integrate all three into mk_entry.cpp: add #includes, add instances to MKSystem struct, add /schedule /remind /todo /note /calendar /read commands to REPL loop and cmd_help, wire 'remind me' and 'schedule' patterns into natural language handler, start scheduler thread alongside telegram thread",
+    "Run make && make test to confirm compilation"
+  ],
+  "acceptance_criteria": [
+    "Scheduler can store and fire one-shot and recurring tasks",
+    "Personal assistant can add/list/complete todos, add calendar events, store notes",
+    "File reader can read text/code files and report metadata",
+    "All new commands appear in /help output",
+    "System compiles and existing tests pass"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

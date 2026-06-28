@@ -1,0 +1,31 @@
+{
+  "project_type": "C++17 AI assistant OS with REPL and Telegram bot",
+  "language": "C++17",
+  "build_system": "Makefile with clang++, single compilation unit via #include chains. mk_entry.cpp includes all modules. Test binary separately compiled from tests/test_main.cpp.",
+  "test_framework": "Custom test framework in tests/test_main.cpp with TEST_ASSERT macros and RUN_TEST. Tests include modules via #include. Currently 10 tests, 74 assertions.",
+  "build_command": "cd MK_OS && make",
+  "test_command": "cd MK_OS && make test",
+  "verification_instructions": "1) Run 'make' in MK_OS/ to confirm binary builds. 2) Run 'make test' to confirm all tests pass. 3) Check no new compilation warnings.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "clang++ with C++17 support, libcurl, libsqlite3 must be available. Build with 'make' in MK_OS/.",
+  "environment_constraints": "Open internet. Linux sandbox (not macOS despite Makefile comment). clang++ and libraries available. No audio hardware for voice testing.",
+  "contribution_requirements": "Each feature should leave system compilable. Step by step approach.",
+  "key_patterns": "All modules are header-only .cpp files with #ifndef guards. mk_entry.cpp #includes them all into a single compilation unit. New modules must be added as #include in mk_entry.cpp. Knowledge stored as .mk files (source|relation|target|weight format). Tests in tests/test_main.cpp include modules directly. MKSystem struct in mk_entry.cpp holds all module instances. Commands handled in REPL loop with /command syntax. Natural language routed through MKSmartRouter.",
+  "relevant_files": [
+    "MK_OS/system/mk_entry.cpp",
+    "MK_OS/tests/test_main.cpp",
+    "MK_OS/Makefile",
+    "MK_OS/ai_core/smart_router.cpp",
+    "MK_OS/ai_core/input_preprocessor.cpp",
+    "MK_OS/ai_core/hre/pattern_graph.cpp",
+    "MK_OS/ai_core/persistent_memory.cpp",
+    "MK_OS/mk_brain/learning/learning_engine.cpp",
+    "MK_OS/plugins/telegram.cpp",
+    "MK_OS/plugins/manager.cpp",
+    "MK_OS/security/main_security.cpp",
+    "MK_OS/scheduler/mk_scheduler.cpp",
+    "MK_OS/tools/knowledge_ingest.cpp",
+    "MK_OS/ai_core/hre/knowledge_files/core_facts.mk"
+  ],
+  "directory_structure": "MK_OS/ is the main project dir. ai_core/ has smart_router, preprocessor, persistent_memory, self_improver, neural_net. ai_core/hre/ has pattern_graph, deep_reasoner, reasoning_chains, composer, knowledge_files/. mk_brain/ has learning, memory, embeddings, vector_search, daily_briefing. plugins/ has telegram, manager. network/ has realtime_apis, search_engine. security/ has main_security, encrypted_shards. scheduler/ has mk_scheduler. system/ has mk_entry.cpp, daemon, shell, service_manager, diagnostics. tools/ has standalone utilities. tests/ has test_main.cpp."
+}

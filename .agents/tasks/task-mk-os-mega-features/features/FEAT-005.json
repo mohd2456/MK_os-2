@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-005",
+  "type": "feat",
+  "description": "Voice input/output framework, code execution sandbox, and image understanding module.",
+  "status": "pending",
+  "steps": [
+    "Create MK_OS/ai_core/voice_engine.cpp - MKVoiceEngine class: (a) text-to-speech using system commands (espeak on Linux, say on macOS) via std::system(), (b) speech-to-text framework (MKSTTEngine) with a method that would call Whisper API if available - for now implements a stub that explains how to configure, (c) /speak command that speaks MK's last response, (d) /voice on|off toggle for auto-speaking responses, (e) detects platform and uses appropriate TTS command, (f) adjustable speech rate and voice",
+    "Create MK_OS/ai_core/code_executor.cpp - MKCodeExecutor class: (a) executes Python code in a subprocess (writes to temp file, runs python3, captures stdout/stderr), (b) executes bash commands (pipes through sh), (c) executes C++ code (writes to temp file, compiles with g++, runs binary), (d) timeout protection (kill after 10 seconds), (e) output capture with line limit (max 100 lines), (f) sandboxing: blocks dangerous commands (rm -rf, fork bombs, etc.), (g) /run <lang> <code> command or 'run this python: ...' natural language",
+    "Create MK_OS/ai_core/image_analyzer.cpp - MKImageAnalyzer class: (a) accepts file paths for images (jpg, png, gif, bmp), (b) extracts basic metadata by reading file headers (dimensions from PNG/JPEG headers, file size, format detection), (c) reports: filename, format, dimensions (if parseable), file size, (d) framework for LLM vision integration (stub method describe_image() that notes LLaVA could be used), (e) /image <path> command",
+    "Integrate all three into mk_entry.cpp: add #includes, add instances to MKSystem struct, add /speak /voice /run /image commands to REPL and cmd_help, wire 'run this code' and 'execute' patterns into natural language handler for code execution",
+    "Run make && make test to confirm compilation"
+  ],
+  "acceptance_criteria": [
+    "Voice engine TTS framework compiles and has platform detection logic",
+    "Code executor can run Python and bash code safely with timeout",
+    "Image analyzer can read PNG/JPEG headers and report dimensions",
+    "All new commands available via /help",
+    "System compiles and existing tests pass"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

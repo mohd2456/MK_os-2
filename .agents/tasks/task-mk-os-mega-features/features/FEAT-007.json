@@ -1,0 +1,24 @@
+{
+  "id": "FEAT-007",
+  "type": "feat",
+  "description": "Comprehensive testing. Add tests for ALL new features: correction engine, math solver, scheduler, personal assistant, file reader, voice engine, code executor, image analyzer, Arabic support, plugin API, security (AES, auth, rate limiter, sanitizer). Target: 30+ tests, 200+ assertions.",
+  "status": "pending",
+  "steps": [
+    "Update MK_OS/tests/test_main.cpp to include all new modules and add test functions for each. New tests needed: (1) test_correction_engine - detect correction patterns, extract wrong/correct facts, verify graph update. (2) test_math_solver - quadratic solving, unit conversions, derivative computation, physics formulas. (3) test_task_scheduler - task creation, time parsing, recurrence logic. (4) test_personal_assistant - todo CRUD, calendar events, notes. (5) test_file_reader - text file reading, metadata extraction. (6) test_voice_engine - platform detection, command building. (7) test_code_executor - safe execution, timeout, dangerous command blocking. (8) test_image_analyzer - PNG/JPEG header parsing, format detection. (9) test_arabic_support - Arabic detection, slang expansion, greeting detection. (10) test_plugin_api - plugin registration, enable/disable, lifecycle. (11) test_security_aes - AES-256 encrypt/decrypt roundtrip. (12) test_auth_manager - token generation, validation, expiration. (13) test_rate_limiter - allow under limit, block over limit. (14) test_input_sanitizer - catch injections, allow clean input. (15) test_math_advanced - more complex math scenarios. (16) test_correction_persistence - corrections saved and reloaded. (17) test_scheduler_time_parsing - natural language time parsing. (18) test_todo_operations - add, complete, delete todos. (19) test_knowledge_loading - verify expanded knowledge loads. (20) test_router_new_routes - math/code/file queries route correctly.",
+    "Each test function should have 8-15 assertions testing different aspects of the module",
+    "Add all new RUN_TEST() calls to the main() function in test_main.cpp",
+    "Run make test and confirm all tests pass (target: 30+ tests, 200+ assertions)"
+  ],
+  "acceptance_criteria": [
+    "At least 30 test functions defined and called",
+    "At least 200 assertions total",
+    "All tests pass (0 failures)",
+    "Tests cover all new modules from FEAT-002 through FEAT-006",
+    "make test exits with code 0"
+  ],
+  "verification": [
+    "cd MK_OS && make test 2>&1 | grep -E '(RESULTS|ASSERTIONS)'"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

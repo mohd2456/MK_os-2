@@ -63,7 +63,6 @@ namespace Color {
 #include "../ai_core/hre/reasoning_chains.cpp"
 #include "../ai_core/hre/composer.cpp"
 #include "../ai_core/smart_router.cpp"
-#include "../ai_core/input_preprocessor.cpp"
 #include "../network/realtime_apis.cpp"
 #include "../ai_core/persistent_memory.cpp"
 #include "../ai_core/knowledge_integrator.cpp"
@@ -81,19 +80,7 @@ namespace Color {
 #include "shell.cpp"
 #include "service_manager.cpp"
 #include "../plugins/telegram.cpp"
-#include "../plugins/plugin_interface.cpp"
 #include "../ai_core/neural_net.cpp"
-#include "../llm/llm_engine.cpp"
-#include "../ai_core/correction_engine.cpp"
-#include "../ai_core/math_solver.cpp"
-#include "../security/crypto.cpp"
-#include "task_scheduler.cpp"
-#include "../tools/file_reader.cpp"
-#include "../tools/code_runner.cpp"
-#include "../tools/image_analyzer.cpp"
-#include "auto_updater.cpp"
-#include "../ai_core/rule_generator.cpp"
-#include "../ai_core/knowledge_grower.cpp"
 
 // ============================================================
 // Global state
@@ -153,20 +140,6 @@ struct MKSystem {
     MK_Services::ServiceManager serviceManager;
     std::unique_ptr<MKTelegram> telegram;
     MKNeuralNet neuralNet;
-    MKInputPreprocessor preprocessor;
-    MKLLMEngine llmEngine;
-    MKCorrectionEngine correctionEngine;
-    MKTaskScheduler taskScheduler;
-    MKFileReader fileReader;
-    MKCodeRunner codeRunner;
-    MKPluginSystem pluginSystem;
-    MKSystemInfoPlugin sysInfoPlugin;
-    MKImageAnalyzer imageAnalyzer;
-    MKMathSolver mathSolver;
-    MKCrypto crypto;
-    MKAutoUpdater autoUpdater;
-    MKRuleGenerator ruleGenerator;
-    MKKnowledgeGrower knowledgeGrower;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -197,29 +170,22 @@ struct MKSystem {
           shell(),
           serviceManager(),
           telegram(nullptr),
-          neuralNet(),
-          preprocessor(),
-          llmEngine(),
-          correctionEngine(),
-          taskScheduler()
+          neuralNet()
     {
-        // Initialize Telegram bot (token is hardcoded as default)
-        telegram = std::make_unique<MKTelegram>();
-        std::cout << "  " << Color::BGREEN << "✓" << Color::RESET
-                  << " Telegram bot integration enabled.\n";
+        // Initialize Telegram bot if token is available
+        const char* tgToken = std::getenv("MK_TELEGRAM_TOKEN");
+        if (tgToken && tgToken[0] != '\0') {
+            telegram = std::make_unique<MKTelegram>();
+            std::cout << "  " << Color::BGREEN << "✓" << Color::RESET
+                      << " Telegram bot integration enabled.\n";
+        } else {
+            std::cout << "  " << Color::DIM << "Note: MK_TELEGRAM_TOKEN not set. "
+                      << "Telegram integration disabled." << Color::RESET << "\n";
+        }
 
         // Initialize neural net with a tiny config (untrained, not used in hot path)
         // The GENERATE route gracefully falls back to MKComposer instead.
         neuralNet.init(256, 32, 1, 64);
-
-        // Register built-in plugins
-        pluginSystem.registerPlugin(&sysInfoPlugin);
-
-        // Wire encryption into persistent memory
-        memory.setEncryption(
-            [this](const std::string& data) { return crypto.encrypt(data); },
-            [this](const std::string& data) { return crypto.decrypt(data); }
-        );
     }
 
     ~MKSystem() = default;
@@ -261,14 +227,7 @@ static void cmd_help() {
         << "    " << Color::GREEN << "/shell" << Color::RESET << " <cmd>       Run a command in the MK shell\n"
         << "    " << Color::GREEN << "/services" << Color::RESET << "          List registered services & status\n"
         << "    " << Color::GREEN << "/sync" << Color::RESET << "              Sync knowledge with GitHub\n"
-        << "    " << Color::GREEN << "/update" << Color::RESET << "            Check for updates and rebuild\n"
-        << "    " << Color::GREEN << "/version" << Color::RESET << "           Show version and update info\n"
         << "    " << Color::GREEN << "/quit" << Color::RESET << "              Save and exit\n"
-        << "\n"
-        << Color::BOLD << Color::YELLOW << "  \xF0\x9F\xA7\xA0 SELF-IMPROVEMENT" << Color::RESET << "\n"
-        << "    " << Color::GREEN << "/rules" << Color::RESET << "             Auto-generate reasoning rules\n"
-        << "    " << Color::GREEN << "/grow" << Color::RESET << "              Trigger knowledge growth\n"
-        << "    " << Color::GREEN << "/growth" << Color::RESET << "            Show growth report/stats\n"
         << "\n"
         << Color::DIM << "  Or just type naturally — MK will figure out what you mean.\n"
         << "  Example: \"what is python?\" or \"weather in london\"\n" << Color::RESET << "\n";
@@ -293,11 +252,6 @@ static void show_slash_suggestions(const std::string& partial) {
         {"/shell",    "Run MK shell command"},
         {"/services", "Show service status"},
         {"/sync",     "Sync knowledge with GitHub"},
-        {"/update",   "Check for updates and rebuild"},
-        {"/version",  "Show version and update info"},
-        {"/rules",    "Auto-generate reasoning rules"},
-        {"/grow",     "Trigger knowledge growth"},
-        {"/growth",   "Show growth report/stats"},
         {"/help",     "Show all commands"},
         {"/quit",     "Save and exit"},
     };
@@ -1028,9 +982,6 @@ int main(int argc, char* argv[]) {
     std::cout << "  " << Color::DIM << "Initializing modules..." << Color::RESET << "\n\n";
     MKSystem sys;
 
-    // Step 3a: LLM Status Check
-    sys.llmEngine.checkAndReport();
-
     // Step 4: Load knowledge
     sys.graph.loadAllKnowledge();
 
@@ -1107,68 +1058,11 @@ int main(int argc, char* argv[]) {
     sys.daemon.addJob("health_check", 30, [&sys]() {
         sys.serviceManager.run_health_checks();
     });
-    sys.daemon.addJob("task_scheduler_check", 15, [&sys]() {
-        std::lock_guard<std::mutex> lock(sys.systemMutex);
-        auto dueTasks = sys.taskScheduler.checkDueTasks();
-        for (const auto& task : dueTasks) {
-            std::cout << "\n  " << Color::BYELLOW << "⏰" << Color::RESET
-                      << " Reminder: " << Color::BOLD << task.message << Color::RESET << "\n";
-            std::cout << "  " << Color::BOLD << Color::BCYAN << "MK"
-                      << Color::RESET << Color::CYAN << " › " << Color::RESET;
-            std::cout.flush();
-            // Send via Telegram if chatId is set
-            if (sys.telegram && !task.chatId.empty()) {
-                sys.telegram->sendMessage(task.chatId, "⏰ Reminder: " + task.message);
-            }
-        }
-    });
     if (sys.telegram) {
         sys.daemon.addJob("telegram_poll_monitor", 60, []() {
             // Monitoring placeholder - the actual polling runs in its own thread
         });
     }
-
-    // Self-improvement daemon jobs
-    sys.daemon.addJob("update_check", 3600, [&sys]() {
-        // Hourly: check if updates are available (don't auto-pull)
-        std::lock_guard<std::mutex> lock(sys.systemMutex);
-        if (sys.autoUpdater.checkForUpdates()) {
-            std::cout << "\n  " << Color::BYELLOW << "\u2191" << Color::RESET
-                      << " Updates available! Use /update to apply.\n";
-            std::cout << "  " << Color::BOLD << Color::BCYAN << "MK"
-                      << Color::RESET << Color::CYAN << " \u203A " << Color::RESET;
-            std::cout.flush();
-        }
-    });
-    sys.daemon.addJob("nightly_update", 60, [&sys]() {
-        // Check every minute if it's nightly update time
-        if (sys.autoUpdater.isNightlyUpdateTime()) {
-            std::lock_guard<std::mutex> lock(sys.systemMutex);
-            sys.autoUpdater.performUpdate();
-        }
-    }, true); // requires cool
-    sys.daemon.addJob("nightly_knowledge_growth", 60, [&sys]() {
-        // Runs at 2am - 1 hour before updates
-        std::time_t now = std::time(nullptr);
-        struct tm* tm_info = std::localtime(&now);
-        if (tm_info && tm_info->tm_hour == 2 && tm_info->tm_min < 5) {
-            std::lock_guard<std::mutex> lock(sys.systemMutex);
-            sys.knowledgeGrower.runNightlyGrowth(
-                sys.graph, sys.improver, sys.integrator, 10);
-        }
-    }, true); // requires cool
-    sys.daemon.addJob("nightly_rule_generation", 60, [&sys]() {
-        // Runs at 2:30am - after knowledge growth, before updates
-        std::time_t now = std::time(nullptr);
-        struct tm* tm_info = std::localtime(&now);
-        if (tm_info && tm_info->tm_hour == 2 && tm_info->tm_min >= 30 &&
-            tm_info->tm_min < 35) {
-            std::lock_guard<std::mutex> lock(sys.systemMutex);
-            auto gaps = sys.improver.getUnresearchedGaps(20);
-            sys.ruleGenerator.autoGenerateAndApply(
-                sys.chains, sys.graph, gaps);
-        }
-    }, true); // requires cool
 
     // ============================================================
     // Main REPL Loop
@@ -1287,204 +1181,6 @@ int main(int argc, char* argv[]) {
                               << "  " << Color::DIM << "Example: /shell echo hello world"
                               << Color::RESET << "\n";
                     commandFound = true;
-                } else if (input.size() > 8 && input.substr(0, 8) == "/remind ") {
-                    std::string args = trim(input.substr(8));
-                    // Format: /remind <time> <message>
-                    // time: 5m, 1h, 2d, 30s
-                    size_t spacePos = args.find(' ');
-                    if (spacePos != std::string::npos) {
-                        std::string timeStr = args.substr(0, spacePos);
-                        std::string msg = trim(args.substr(spacePos + 1));
-                        int offset = MKTaskScheduler::parseTimeOffset(timeStr);
-                        if (offset > 0 && !msg.empty()) {
-                            int id = sys.taskScheduler.addReminder(offset, msg);
-                            std::cout << "\n  " << Color::BGREEN << "✓" << Color::RESET
-                                      << " Reminder #" << id << " set for " << timeStr
-                                      << " from now: " << Color::BOLD << msg << Color::RESET << "\n";
-                        } else {
-                            std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
-                                      << " /remind <time> <message>\n"
-                                      << "  " << Color::DIM << "Example: /remind 5m check email"
-                                      << Color::RESET << "\n";
-                        }
-                    } else {
-                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
-                                  << " /remind <time> <message>\n"
-                                  << "  " << Color::DIM << "Time: 30s, 5m, 2h, 1d"
-                                  << Color::RESET << "\n";
-                    }
-                    commandFound = true;
-                } else if (input == "/remind") {
-                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
-                              << " /remind <time> <message>\n"
-                              << "  " << Color::DIM << "Time formats: 30s, 5m, 2h, 1d"
-                              << Color::RESET << "\n";
-                    commandFound = true;
-                } else if (input == "/schedule") {
-                    auto pending = sys.taskScheduler.getDueTasks();
-                    if (pending.empty()) {
-                        std::cout << "\n  " << Color::DIM << "No scheduled tasks."
-                                  << Color::RESET << "\n";
-                    } else {
-                        std::cout << "\n  " << Color::BOLD << Color::BCYAN
-                                  << "  Scheduled Tasks:" << Color::RESET << "\n";
-                        for (const auto& task : pending) {
-                            std::time_t remaining = task.triggerTime - std::time(nullptr);
-                            std::string timeLeft;
-                            if (remaining < 60) timeLeft = std::to_string(remaining) + "s";
-                            else if (remaining < 3600) timeLeft = std::to_string(remaining / 60) + "m";
-                            else timeLeft = std::to_string(remaining / 3600) + "h";
-                            std::cout << "    " << Color::CYAN << "#" << task.id << Color::RESET
-                                      << " [" << timeLeft << "] " << task.message << "\n";
-                        }
-                    }
-                    commandFound = true;
-                } else if (input.size() > 6 && input.substr(0, 6) == "/read ") {
-                    std::string filePath = trim(input.substr(6));
-                    if (filePath.empty()) {
-                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
-                                  << " /read <filepath>\n";
-                    } else {
-                        auto info = sys.fileReader.readFile(filePath);
-                        std::string result = sys.fileReader.formatResult(info);
-                        std::cout << "\n  " << Color::BOLD << Color::BCYAN << "📄 File Reader"
-                                  << Color::RESET << "\n  " << result << "\n";
-                    }
-                    commandFound = true;
-                } else if (input == "/read") {
-                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
-                              << " /read <filepath>\n"
-                              << "  " << Color::DIM << "Supports: .txt .md .cpp .py .json .csv .log .pdf"
-                              << Color::RESET << "\n";
-                    commandFound = true;
-                } else if (input.size() > 5 && input.substr(0, 5) == "/run ") {
-                    std::string args = trim(input.substr(5));
-                    // Parse language and code
-                    size_t spacePos = args.find(' ');
-                    if (spacePos == std::string::npos) {
-                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
-                                  << " /run python|bash|cpp <code>\n";
-                    } else {
-                        std::string lang = args.substr(0, spacePos);
-                        std::string code = args.substr(spacePos + 1);
-                        std::transform(lang.begin(), lang.end(), lang.begin(), ::tolower);
-
-                        MKRunResult result;
-                        if (lang == "python" || lang == "py") {
-                            result = sys.codeRunner.runPython(code);
-                            lang = "Python";
-                        } else if (lang == "bash" || lang == "sh") {
-                            // Sanitize bash commands for security
-                            code = MKCrypto::sanitizeInput(code);
-                            result = sys.codeRunner.runBash(code);
-                            lang = "Bash";
-                        } else if (lang == "cpp" || lang == "c++") {
-                            result = sys.codeRunner.runCpp(code);
-                            lang = "C++";
-                        } else {
-                            std::cout << "\n  " << Color::RED << "✗" << Color::RESET
-                                      << " Unknown language: " << lang
-                                      << ". Use: python, bash, or cpp\n";
-                            commandFound = true;
-                            continue;
-                        }
-
-                        std::cout << "\n  " << Color::BOLD << Color::BMAGENTA << "▶ " << lang
-                                  << " Output:" << Color::RESET << "\n  ";
-                        std::string formatted = sys.codeRunner.formatResult(result, lang);
-                        // Indent output
-                        for (char c : formatted) {
-                            std::cout << c;
-                            if (c == '\n') std::cout << "  ";
-                        }
-                        std::cout << "\n";
-                    }
-                    commandFound = true;
-                } else if (input == "/run") {
-                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
-                              << " /run <python|bash|cpp> <code>\n"
-                              << "  " << Color::DIM << "Example: /run python print('hello')"
-                              << Color::RESET << "\n";
-                    commandFound = true;
-                } else if (input.size() > 6 && input.substr(0, 6) == "/calc ") {
-                    std::string expr = trim(input.substr(6));
-                    if (expr.empty()) {
-                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
-                                  << " /calc <expression>\n";
-                    } else {
-                        auto mathResult = sys.mathSolver.solve(expr);
-                        if (mathResult.success) {
-                            std::cout << "\n  " << Color::BGREEN << "🔢" << Color::RESET
-                                      << " " << mathResult.answer << "\n";
-                        } else {
-                            std::cout << "\n  " << Color::RED << "✗" << Color::RESET
-                                      << " " << mathResult.error << "\n";
-                        }
-                    }
-                    commandFound = true;
-                } else if (input == "/calc") {
-                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
-                              << " /calc <expression>\n"
-                              << "  " << Color::DIM << "Examples: /calc solve x^2+3x-4=0\n"
-                              << "           /calc convert 5 miles to km\n"
-                              << "           /calc what is 20% of 150\n"
-                              << "           /calc sin 45"
-                              << Color::RESET << "\n";
-                    commandFound = true;
-                } else if (input.size() > 7 && input.substr(0, 7) == "/image ") {
-                    std::string imgPath = trim(input.substr(7));
-                    if (imgPath.empty()) {
-                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
-                                  << " /image <filepath>\n";
-                    } else {
-                        auto info = sys.imageAnalyzer.analyze(imgPath);
-                        std::string result = sys.imageAnalyzer.formatResult(info);
-                        std::cout << "\n  " << Color::BOLD << Color::BCYAN << "🖼 Image Analysis"
-                                  << Color::RESET << "\n  " << result << "\n";
-                    }
-                    commandFound = true;
-                } else if (input == "/image") {
-                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
-                              << " /image <filepath>\n"
-                              << "  " << Color::DIM << "Supports: PNG, JPEG, GIF, BMP"
-                              << Color::RESET << "\n";
-                    commandFound = true;
-                } else if (input == "/update") {
-                    std::cout << "\n  " << Color::BOLD << Color::BCYAN
-                              << "\u2191 Manual Update Check" << Color::RESET << "\n";
-                    sys.autoUpdater.performUpdate();
-                    commandFound = true;
-                } else if (input == "/version") {
-                    std::string status = sys.autoUpdater.getUpdateStatus();
-                    std::cout << "\n  " << Color::BOLD << Color::BCYAN
-                              << "  MK OS Version Info" << Color::RESET << "\n  "
-                              << status << "\n";
-                    commandFound = true;
-                } else if (input == "/rules auto" || input == "/rules") {
-                    std::cout << "\n  " << Color::BOLD << Color::BMAGENTA
-                              << "\u2699 Rule Generation" << Color::RESET << "\n";
-                    auto gaps = sys.improver.getUnresearchedGaps(20);
-                    int applied = sys.ruleGenerator.autoGenerateAndApply(
-                        sys.chains, sys.graph, gaps);
-                    if (applied == 0) {
-                        std::cout << "  " << Color::DIM
-                                  << "No new rules discovered."
-                                  << Color::RESET << "\n";
-                    }
-                    commandFound = true;
-                } else if (input == "/grow") {
-                    sys.knowledgeGrower.runNightlyGrowth(
-                        sys.graph, sys.improver, sys.integrator, 10);
-                    commandFound = true;
-                } else if (input == "/growth") {
-                    std::string report = sys.knowledgeGrower.getGrowthReport();
-                    std::cout << "\n" << report << "\n";
-                    commandFound = true;
-                } else if (input == "/plugins") {
-                    std::string list = sys.pluginSystem.listPlugins();
-                    std::cout << "\n  " << Color::BOLD << Color::BCYAN
-                              << "  Loaded Plugins:" << Color::RESET << "\n" << list << "\n";
-                    commandFound = true;
                 } else if (input == "/services") {
                     auto statuses = sys.serviceManager.get_all_status();
                     if (statuses.empty()) {
@@ -1534,58 +1230,17 @@ int main(int argc, char* argv[]) {
                 }
 
                 if (!commandFound) {
-                    // Try plugins for unknown commands
-                    std::string pluginCmd = input.substr(1); // Remove leading /
-                    std::string pluginArgs;
-                    size_t spPos = pluginCmd.find(' ');
-                    if (spPos != std::string::npos) {
-                        pluginArgs = pluginCmd.substr(spPos + 1);
-                        pluginCmd = pluginCmd.substr(0, spPos);
-                    }
-                    std::string pluginResult = sys.pluginSystem.tryExecute(pluginCmd, pluginArgs);
-                    if (!pluginResult.empty()) {
-                        std::cout << "\n  " << Color::GREEN << "●" << Color::RESET
-                                  << " " << pluginResult << "\n";
-                        commandFound = true;
-                    } else {
-                        // Show suggestions for the partial command
-                        show_slash_suggestions(input);
-                        std::cout << "\n  " << Color::YELLOW << "⚠" << Color::RESET 
-                                  << " Unknown command: " << Color::RED << input << Color::RESET
-                                  << ". Type " << Color::GREEN << "/help" << Color::RESET << " for options.\n";
-                    }
+                    // Show suggestions for the partial command
+                    show_slash_suggestions(input);
+                    std::cout << "\n  " << Color::YELLOW << "⚠" << Color::RESET 
+                              << " Unknown command: " << Color::RED << input << Color::RESET
+                              << ". Type " << Color::GREEN << "/help" << Color::RESET << " for options.\n";
                 }
             } // end of locked else block
         } else {
             // Natural language routing (acquire lock for thread safety)
             std::lock_guard<std::mutex> lock(sys.systemMutex);
-
-            // Check for correction BEFORE normal routing
-            if (sys.correctionEngine.detectCorrection(input)) {
-                std::string response = sys.correctionEngine.applyCorrection(sys.graph, input);
-                std::cout << "\n  " << Color::BGREEN << "✓" << Color::RESET << " " << response << "\n";
-            } else if (sys.mathSolver.isMathQuery(input)) {
-                // Detect math queries in natural language
-                auto mathResult = sys.mathSolver.solve(input);
-                if (mathResult.success) {
-                    std::cout << "\n  " << Color::BGREEN << "🔢" << Color::RESET
-                              << " " << mathResult.answer << "\n";
-                } else {
-                    handle_natural_query(sys, input);
-                }
-            } else {
-                // Preprocess the input: clean slang, fix spelling, resolve pronouns
-                auto ppResult = sys.preprocessor.process(input);
-                std::string processedInput = ppResult.cleaned_text;
-
-                // Show what MK understood (only if text was actually modified)
-                if (ppResult.was_modified && processedInput != input) {
-                    std::cout << "  " << Color::DIM << "(understood: " 
-                              << processedInput << ")" << Color::RESET << "\n";
-                }
-
-                handle_natural_query(sys, processedInput);
-            }
+            handle_natural_query(sys, input);
         }
 
         // Track dialog context for all interactions (lock for thread safety)

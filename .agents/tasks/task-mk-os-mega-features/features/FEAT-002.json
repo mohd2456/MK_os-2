@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Bulk knowledge ingestion pipeline. Create a Python script that generates .mk knowledge files from structured data. Add 5,000-10,000 facts across categories: science, math, geography, history, literature, music, sports, medicine, law, economics, philosophy, art, food, languages.",
+  "status": "in_progress",
+  "steps": [
+    "Create MK_OS/tools/generate_knowledge.py - a Python script that programmatically generates .mk format facts across many categories. Use hardcoded structured data (dictionaries, lists) rather than downloading from the internet. Categories: elements (118), countries (195+capitals+continents), planets, human body, math constants, programming languages, famous scientists, historical events, animals (expanded), foods, sports, musical instruments, world religions, literary works, etc.",
+    "Run the Python script to generate multiple .mk files in ai_core/hre/knowledge_files/: generated_science.mk, generated_geography.mk, generated_history.mk, generated_culture.mk, generated_math.mk, generated_nature.mk, generated_technology.mk, generated_language.mk",
+    "Ensure each file follows the format: source|relation|target|weight (one fact per line, with # comments for section headers)",
+    "Target: at least 7,000 new facts total across all generated files",
+    "Verify pattern_graph.cpp can load the new files by confirming its loadAllKnowledge() scans the knowledge_files/ directory",
+    "Run make && make test to confirm the system compiles and loads expanded knowledge without issues"
+  ],
+  "acceptance_criteria": [
+    "At least 7,000 new facts generated across 8+ .mk files",
+    "All facts follow source|relation|target|weight format",
+    "make compiles successfully with expanded knowledge",
+    "make test passes all existing tests"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && make test",
+    "wc -l MK_OS/ai_core/hre/knowledge_files/generated_*.mk | tail -1"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
