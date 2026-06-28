@@ -92,6 +92,7 @@ namespace Color {
 #include "../tools/code_runner.cpp"
 #include "../tools/image_analyzer.cpp"
 #include "../remote/pc_controller.cpp"
+#include "../remote/query_server.cpp"
 
 // ============================================================
 // Global state
@@ -163,6 +164,7 @@ struct MKSystem {
     MKMathSolver mathSolver;
     MKCrypto crypto;
     MKPCController pcController;
+    MKQueryServer queryServer;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -1181,7 +1183,38 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Step 8b: Background PC discovery thread (continuous scan every 30s)
+    // Step 8b: Start Query Server (for remote CLI/Chat clients)
+    {
+        // Read port from env or use default
+        int queryPort = 9878;
+        const char* qPortEnv = std::getenv("MK_QUERY_PORT");
+        if (qPortEnv && qPortEnv[0] != '\0') {
+            queryPort = std::atoi(qPortEnv);
+        }
+
+        // Read token from env (shared with PC agent token)
+        const char* qToken = std::getenv("MK_PC_TOKEN");
+        if (qToken && qToken[0] != '\0') {
+            sys.queryServer.setAuthToken(qToken);
+        }
+
+        sys.queryServer.setPort(queryPort);
+        sys.queryServer.setBrainMutex(&sys.systemMutex);
+        sys.queryServer.setQueryHandler([&sys](const std::string& input) -> std::string {
+            return generate_ai_response(sys, input);
+        });
+
+        if (sys.queryServer.start()) {
+            std::cout << "  " << Color::BGREEN << "✓" << Color::RESET
+                      << " Query server listening on port " << queryPort
+                      << " (for remote clients)\n";
+        } else {
+            std::cout << "  " << Color::YELLOW << "⚠" << Color::RESET
+                      << " Query server failed to start on port " << queryPort << "\n";
+        }
+    }
+
+    // Step 8c: Background PC discovery thread (continuous scan every 30s)
     std::thread pcDiscoveryThread;
     bool pcDiscoveryRunning = false;
     {
@@ -1753,6 +1786,9 @@ int main(int argc, char* argv[]) {
     // Graceful Shutdown
     // ============================================================
     std::cout << "\n  " << Color::YELLOW << "⏻" << Color::RESET << " Shutting down...\n";
+
+    // Stop the query server
+    sys.queryServer.stop();
 
     // Signal and join the PC discovery thread
     if (pcDiscoveryRunning && pcDiscoveryThread.joinable()) {
