@@ -17,7 +17,7 @@
 // Feeds extracted facts directly into the MKLearningEngine knowledge graph.
 // ===================================================================================
 
-enum class MKFactCategory {
+enum class MKBioFactCategory {
     IDENTITY,       // Name, age, nationality
     FAMILY,         // Parents, siblings, spouse, children
     LOCATION,       // Where they live, work, travel
@@ -34,7 +34,7 @@ struct MKExtractedFact {
     std::string subject;
     std::string predicate;
     std::string object;
-    MKFactCategory category;
+    MKBioFactCategory category;
     float confidence;       // 0.0 to 1.0, how sure we are
     std::string sourceQuote; // The exact text that triggered extraction
 };
@@ -49,7 +49,7 @@ private:
     struct PatternRule {
         std::string trigger;       // Keyword to look for
         std::string predicate;     // What relationship it implies
-        MKFactCategory category;
+        MKBioFactCategory category;
         float baseConfidence;
     };
 
@@ -57,53 +57,53 @@ private:
 
     void initRules() {
         // Identity patterns
-        rules.push_back({"my name is", "has_name", MKFactCategory::IDENTITY, 0.95f});
-        rules.push_back({"i am", "is_described_as", MKFactCategory::IDENTITY, 0.7f});
-        rules.push_back({"i'm", "is_described_as", MKFactCategory::IDENTITY, 0.7f});
-        rules.push_back({"years old", "has_age", MKFactCategory::IDENTITY, 0.9f});
+        rules.push_back({"my name is", "has_name", MKBioFactCategory::IDENTITY, 0.95f});
+        rules.push_back({"i am", "is_described_as", MKBioFactCategory::IDENTITY, 0.7f});
+        rules.push_back({"i'm", "is_described_as", MKBioFactCategory::IDENTITY, 0.7f});
+        rules.push_back({"years old", "has_age", MKBioFactCategory::IDENTITY, 0.9f});
         
         // Family patterns
-        rules.push_back({"my mom", "has_mother", MKFactCategory::FAMILY, 0.9f});
-        rules.push_back({"my dad", "has_father", MKFactCategory::FAMILY, 0.9f});
-        rules.push_back({"my brother", "has_brother", MKFactCategory::FAMILY, 0.9f});
-        rules.push_back({"my sister", "has_sister", MKFactCategory::FAMILY, 0.9f});
-        rules.push_back({"my wife", "has_spouse", MKFactCategory::FAMILY, 0.9f});
-        rules.push_back({"my husband", "has_spouse", MKFactCategory::FAMILY, 0.9f});
+        rules.push_back({"my mom", "has_mother", MKBioFactCategory::FAMILY, 0.9f});
+        rules.push_back({"my dad", "has_father", MKBioFactCategory::FAMILY, 0.9f});
+        rules.push_back({"my brother", "has_brother", MKBioFactCategory::FAMILY, 0.9f});
+        rules.push_back({"my sister", "has_sister", MKBioFactCategory::FAMILY, 0.9f});
+        rules.push_back({"my wife", "has_spouse", MKBioFactCategory::FAMILY, 0.9f});
+        rules.push_back({"my husband", "has_spouse", MKBioFactCategory::FAMILY, 0.9f});
         
         // Location patterns
-        rules.push_back({"i live in", "lives_in", MKFactCategory::LOCATION, 0.9f});
-        rules.push_back({"i'm from", "is_from", MKFactCategory::LOCATION, 0.85f});
-        rules.push_back({"i moved to", "lives_in", MKFactCategory::LOCATION, 0.85f});
+        rules.push_back({"i live in", "lives_in", MKBioFactCategory::LOCATION, 0.9f});
+        rules.push_back({"i'm from", "is_from", MKBioFactCategory::LOCATION, 0.85f});
+        rules.push_back({"i moved to", "lives_in", MKBioFactCategory::LOCATION, 0.85f});
         
         // Preference patterns
-        rules.push_back({"i like", "likes", MKFactCategory::PREFERENCE, 0.8f});
-        rules.push_back({"i love", "loves", MKFactCategory::PREFERENCE, 0.85f});
-        rules.push_back({"i hate", "dislikes", MKFactCategory::PREFERENCE, 0.85f});
-        rules.push_back({"i don't like", "dislikes", MKFactCategory::PREFERENCE, 0.8f});
-        rules.push_back({"my favorite", "has_favorite", MKFactCategory::PREFERENCE, 0.9f});
+        rules.push_back({"i like", "likes", MKBioFactCategory::PREFERENCE, 0.8f});
+        rules.push_back({"i love", "loves", MKBioFactCategory::PREFERENCE, 0.85f});
+        rules.push_back({"i hate", "dislikes", MKBioFactCategory::PREFERENCE, 0.85f});
+        rules.push_back({"i don't like", "dislikes", MKBioFactCategory::PREFERENCE, 0.8f});
+        rules.push_back({"my favorite", "has_favorite", MKBioFactCategory::PREFERENCE, 0.9f});
         
         // Work patterns
-        rules.push_back({"i work at", "works_at", MKFactCategory::WORK, 0.9f});
-        rules.push_back({"i work as", "works_as", MKFactCategory::WORK, 0.9f});
-        rules.push_back({"my job is", "works_as", MKFactCategory::WORK, 0.9f});
-        rules.push_back({"i'm building", "is_building", MKFactCategory::WORK, 0.75f});
+        rules.push_back({"i work at", "works_at", MKBioFactCategory::WORK, 0.9f});
+        rules.push_back({"i work as", "works_as", MKBioFactCategory::WORK, 0.9f});
+        rules.push_back({"my job is", "works_as", MKBioFactCategory::WORK, 0.9f});
+        rules.push_back({"i'm building", "is_building", MKBioFactCategory::WORK, 0.75f});
         
         // Habit patterns
-        rules.push_back({"i usually", "usually_does", MKFactCategory::HABIT, 0.7f});
-        rules.push_back({"every morning", "morning_routine", MKFactCategory::HABIT, 0.75f});
-        rules.push_back({"every night", "night_routine", MKFactCategory::HABIT, 0.75f});
-        rules.push_back({"i always", "always_does", MKFactCategory::HABIT, 0.8f});
+        rules.push_back({"i usually", "usually_does", MKBioFactCategory::HABIT, 0.7f});
+        rules.push_back({"every morning", "morning_routine", MKBioFactCategory::HABIT, 0.75f});
+        rules.push_back({"every night", "night_routine", MKBioFactCategory::HABIT, 0.75f});
+        rules.push_back({"i always", "always_does", MKBioFactCategory::HABIT, 0.8f});
         
         // Device patterns
-        rules.push_back({"my laptop", "owns_device", MKFactCategory::DEVICE, 0.85f});
-        rules.push_back({"my phone", "owns_device", MKFactCategory::DEVICE, 0.85f});
-        rules.push_back({"my computer", "owns_device", MKFactCategory::DEVICE, 0.85f});
-        rules.push_back({"macbook", "owns_device", MKFactCategory::DEVICE, 0.8f});
+        rules.push_back({"my laptop", "owns_device", MKBioFactCategory::DEVICE, 0.85f});
+        rules.push_back({"my phone", "owns_device", MKBioFactCategory::DEVICE, 0.85f});
+        rules.push_back({"my computer", "owns_device", MKBioFactCategory::DEVICE, 0.85f});
+        rules.push_back({"macbook", "owns_device", MKBioFactCategory::DEVICE, 0.8f});
         
         // Memory/reminder patterns
-        rules.push_back({"remember that", "should_remember", MKFactCategory::MEMORY, 0.95f});
-        rules.push_back({"don't forget", "should_remember", MKFactCategory::MEMORY, 0.95f});
-        rules.push_back({"keep in mind", "should_remember", MKFactCategory::MEMORY, 0.9f});
+        rules.push_back({"remember that", "should_remember", MKBioFactCategory::MEMORY, 0.95f});
+        rules.push_back({"don't forget", "should_remember", MKBioFactCategory::MEMORY, 0.95f});
+        rules.push_back({"keep in mind", "should_remember", MKBioFactCategory::MEMORY, 0.9f});
     }
 
 
@@ -191,7 +191,7 @@ public:
     }
     
     // Get all facts of a specific category
-    std::vector<MKExtractedFact> getFactsByCategory(MKFactCategory category) {
+    std::vector<MKExtractedFact> getFactsByCategory(MKBioFactCategory category) {
         std::string key = std::to_string((int)category);
         if (extractedFacts.find(key) != extractedFacts.end()) {
             return extractedFacts[key];
@@ -205,7 +205,7 @@ public:
         summary << "=== MK USER PROFILE ===\n";
         summary << "Subject: " << userName << "\n\n";
         
-        auto printCategory = [&](MKFactCategory cat, const std::string& label) {
+        auto printCategory = [&](MKBioFactCategory cat, const std::string& label) {
             auto facts = getFactsByCategory(cat);
             if (!facts.empty()) {
                 summary << "[" << label << "]\n";
@@ -216,14 +216,14 @@ public:
             }
         };
         
-        printCategory(MKFactCategory::IDENTITY, "IDENTITY");
-        printCategory(MKFactCategory::FAMILY, "FAMILY");
-        printCategory(MKFactCategory::LOCATION, "LOCATION");
-        printCategory(MKFactCategory::PREFERENCE, "PREFERENCES");
-        printCategory(MKFactCategory::WORK, "WORK");
-        printCategory(MKFactCategory::HABIT, "HABITS");
-        printCategory(MKFactCategory::DEVICE, "DEVICES");
-        printCategory(MKFactCategory::MEMORY, "REMEMBERED");
+        printCategory(MKBioFactCategory::IDENTITY, "IDENTITY");
+        printCategory(MKBioFactCategory::FAMILY, "FAMILY");
+        printCategory(MKBioFactCategory::LOCATION, "LOCATION");
+        printCategory(MKBioFactCategory::PREFERENCE, "PREFERENCES");
+        printCategory(MKBioFactCategory::WORK, "WORK");
+        printCategory(MKBioFactCategory::HABIT, "HABITS");
+        printCategory(MKBioFactCategory::DEVICE, "DEVICES");
+        printCategory(MKBioFactCategory::MEMORY, "REMEMBERED");
         
         return summary.str();
     }

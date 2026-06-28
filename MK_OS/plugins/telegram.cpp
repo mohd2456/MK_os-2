@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <cstdlib>
 #include <map>
 #include <sstream>
 #include <fstream>
@@ -84,6 +85,19 @@ public:
         std::cout << "[PLUGIN - TELEGRAM] Upgraded Telegram Bot telemetry layer initialized.\n";
     }
 
+    // Default constructor: reads token from MK_TELEGRAM_TOKEN environment variable
+    MKTelegram() {
+        const char* envToken = std::getenv("MK_TELEGRAM_TOKEN");
+        if (envToken && envToken[0] != '\0') {
+            token = std::string(envToken);
+            std::cout << "[PLUGIN - TELEGRAM] Token loaded from MK_TELEGRAM_TOKEN env var.\n";
+        } else {
+            std::cerr << "[PLUGIN - TELEGRAM] WARNING: MK_TELEGRAM_TOKEN not set. "
+                      << "Bot will not be able to authenticate.\n";
+            token = "";
+        }
+    }
+
     std::string sendMessage(const std::string& chatId, const std::string& message) {
         std::string escapedMessage = urlEncode(message);
         // Added parse_mode=Markdown to allow clean styling on your phone
@@ -93,10 +107,15 @@ public:
         return request(url);
     }
 
-    std::string getUpdates() {
+    std::string getUpdates(long offset = 0) {
         std::string url = "https://api.telegram.org/bot" + token + "/getUpdates";
+        if (offset > 0) {
+            url += "?offset=" + std::to_string(offset) + "&timeout=5";
+        }
         return request(url);
     }
+
+    bool hasToken() const { return !token.empty(); }
 
     void autoReply(const std::string& chatId, const std::string& updates) {
         std::cout << "[TELEGRAM] Evaluating incoming updates payload...\n";

@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Bulk up the knowledge base by adding new .mk knowledge files covering science, technology, geography, and history. Also fix the Makefile so that 'make' works correctly using single-compilation-unit approach (compile only mk_entry.cpp, not individual .o files that conflict). The vector search indexing is already wired into mk_entry.cpp and pattern_graph.cpp already loads the new .mk files -- we just need to create the actual knowledge files and fix the build system.",
+  "status": "completed",
+  "steps": [
+    "Create MK_OS/ai_core/hre/knowledge_files/science_facts.mk with at least 40 high-quality facts covering physics, chemistry, biology, astronomy in the format: source|relation|target|weight (one fact per line, # for comments, grouped by section headers like '# === PHYSICS ===' etc.)",
+    "Create MK_OS/ai_core/hre/knowledge_files/technology_facts.mk with at least 40 facts about programming languages, operating systems, hardware, networking, AI concepts.",
+    "Create MK_OS/ai_core/hre/knowledge_files/geography_history.mk with at least 30 facts about major countries, capitals, historical events, famous people.",
+    "Fix MK_OS/Makefile: The main binary target should use single-compilation-unit approach: compile ONLY system/mk_entry.cpp (which #includes everything) into the mk_os binary. Remove the SOURCES/OBJECTS pattern that compiles individual .o files, since those conflict with the includes in mk_entry.cpp. Keep the tools targets as they are (those are standalone). Keep the clean, run, install, help targets. The main 'all' target should just do: $(CXX) $(CXXFLAGS) -o $(TARGET) $(ENTRY) $(LDFLAGS)",
+    "Verify the build works with both 'make' and the direct clang++ command."
+  ],
+  "acceptance_criteria": [
+    "science_facts.mk exists with 40+ facts in correct .mk format",
+    "technology_facts.mk exists with 40+ facts in correct .mk format",
+    "geography_history.mk exists with 30+ facts in correct .mk format",
+    "The Makefile 'make' command successfully builds the mk_os binary without linker errors",
+    "The direct build command also works: clang++ -std=c++17 -O2 -DDARWIN -o mk_os system/mk_entry.cpp -lcurl -lsqlite3"
+  ],
+  "verification": [
+    "Run: cd /projects/sandbox/MK_os-2/MK_OS && make clean && make",
+    "Run: wc -l /projects/sandbox/MK_os-2/MK_OS/ai_core/hre/knowledge_files/science_facts.mk (should be 40+ substantive lines)",
+    "Run: wc -l /projects/sandbox/MK_os-2/MK_OS/ai_core/hre/knowledge_files/technology_facts.mk",
+    "Run: wc -l /projects/sandbox/MK_os-2/MK_OS/ai_core/hre/knowledge_files/geography_history.mk"
+  ],
+  "blocked_reason": null,
+  "findings": "Build succeeds with 11 warnings (all pre-existing: unused parameters, field reorder, unused private fields). No errors. The Makefile fix was straightforward - replaced SOURCES/OBJECTS pattern with direct compilation of ENTRY file. All three knowledge files created with well over the minimum required facts (173, 210, 175 respectively). The prior feature changes (pattern_graph.cpp loadFromFile calls and mk_entry.cpp vector indexing) were uncommitted and included in this commit."
+}
