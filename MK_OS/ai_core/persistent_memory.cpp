@@ -9,6 +9,7 @@
 #include <ctime>
 #include <algorithm>
 #include <unordered_map>
+#include <functional>
 
 // ===================================================================================
 // MK PERSISTENT MEMORY
@@ -384,6 +385,16 @@ public:
     void setMaxInteractions(int max) { maxInteractions = max; pruneIfNeeded(); }
     void setMaxQAEntries(int max) { maxQAEntries = max; pruneIfNeeded(); }
     void setMemoryFilePath(const std::string& path) { memoryFilePath = path; }
+
+    // Encryption support: set encrypt/decrypt functions
+    using CryptoFunc = std::function<std::string(const std::string&)>;
+    CryptoFunc encryptFunc;
+    CryptoFunc decryptFunc;
+
+    void setEncryption(CryptoFunc encrypt, CryptoFunc decrypt) {
+        encryptFunc = encrypt;
+        decryptFunc = decrypt;
+    }
 
     void printStats() const {
         std::cout << "[MEMORY STATS] Interactions: " << interactions.size()

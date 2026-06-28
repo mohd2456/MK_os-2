@@ -86,6 +86,7 @@ namespace Color {
 #include "../llm/llm_engine.cpp"
 #include "../ai_core/correction_engine.cpp"
 #include "../ai_core/math_solver.cpp"
+#include "../security/crypto.cpp"
 #include "task_scheduler.cpp"
 #include "../tools/file_reader.cpp"
 #include "../tools/code_runner.cpp"
@@ -159,6 +160,7 @@ struct MKSystem {
     MKSystemInfoPlugin sysInfoPlugin;
     MKImageAnalyzer imageAnalyzer;
     MKMathSolver mathSolver;
+    MKCrypto crypto;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -212,6 +214,12 @@ struct MKSystem {
 
         // Register built-in plugins
         pluginSystem.registerPlugin(&sysInfoPlugin);
+
+        // Wire encryption into persistent memory
+        memory.setEncryption(
+            [this](const std::string& data) { return crypto.encrypt(data); },
+            [this](const std::string& data) { return crypto.decrypt(data); }
+        );
     }
 
     ~MKSystem() = default;
@@ -1312,6 +1320,8 @@ int main(int argc, char* argv[]) {
                             result = sys.codeRunner.runPython(code);
                             lang = "Python";
                         } else if (lang == "bash" || lang == "sh") {
+                            // Sanitize bash commands for security
+                            code = MKCrypto::sanitizeInput(code);
                             result = sys.codeRunner.runBash(code);
                             lang = "Bash";
                         } else if (lang == "cpp" || lang == "c++") {
