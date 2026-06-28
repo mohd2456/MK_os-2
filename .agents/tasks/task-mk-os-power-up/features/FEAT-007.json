@@ -2,7 +2,7 @@
   "id": "FEAT-007",
   "type": "feat",
   "description": "Add input preprocessor module that cleans messy/casual text before routing. Implements slang dictionary, fuzzy spelling correction, intent detection, context buffer, and optional Ollama integration. Wires into mk_entry.cpp before the smart router.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create MK_OS/ai_core/input_preprocessor.cpp with MKInputPreprocessor class",
     "Implement slang/shorthand dictionary with 50+ entries",
