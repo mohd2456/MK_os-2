@@ -63,6 +63,7 @@ namespace Color {
 #include "../ai_core/hre/reasoning_chains.cpp"
 #include "../ai_core/hre/composer.cpp"
 #include "../ai_core/smart_router.cpp"
+#include "../ai_core/input_preprocessor.cpp"
 #include "../network/realtime_apis.cpp"
 #include "../ai_core/persistent_memory.cpp"
 #include "../ai_core/knowledge_integrator.cpp"
@@ -140,6 +141,7 @@ struct MKSystem {
     MK_Services::ServiceManager serviceManager;
     std::unique_ptr<MKTelegram> telegram;
     MKNeuralNet neuralNet;
+    MKInputPreprocessor preprocessor;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -170,7 +172,8 @@ struct MKSystem {
           shell(),
           serviceManager(),
           telegram(nullptr),
-          neuralNet()
+          neuralNet(),
+          preprocessor()
     {
         // Initialize Telegram bot if token is available
         const char* tgToken = std::getenv("MK_TELEGRAM_TOKEN");
@@ -1240,7 +1243,18 @@ int main(int argc, char* argv[]) {
         } else {
             // Natural language routing (acquire lock for thread safety)
             std::lock_guard<std::mutex> lock(sys.systemMutex);
-            handle_natural_query(sys, input);
+
+            // Preprocess the input: clean slang, fix spelling, resolve pronouns
+            auto ppResult = sys.preprocessor.process(input);
+            std::string processedInput = ppResult.cleaned_text;
+
+            // Show what MK understood (only if text was actually modified)
+            if (ppResult.was_modified && processedInput != input) {
+                std::cout << "  " << Color::DIM << "(understood: " 
+                          << processedInput << ")" << Color::RESET << "\n";
+            }
+
+            handle_natural_query(sys, processedInput);
         }
 
         // Track dialog context for all interactions (lock for thread safety)

@@ -1,0 +1,25 @@
+{
+  "id": "FEAT-007",
+  "type": "feat",
+  "description": "Add input preprocessor module that cleans messy/casual text before routing. Implements slang dictionary, fuzzy spelling correction, intent detection, context buffer, and optional Ollama integration. Wires into mk_entry.cpp before the smart router.",
+  "status": "in_progress",
+  "steps": [
+    "Create MK_OS/ai_core/input_preprocessor.cpp with MKInputPreprocessor class",
+    "Implement slang/shorthand dictionary with 50+ entries",
+    "Implement Levenshtein distance fuzzy spelling correction",
+    "Implement intent detection returning struct with cleaned_text, detected_intent, confidence, was_modified, original_text",
+    "Implement context buffer storing last 5 messages with pronoun resolution",
+    "Add optional Ollama integration with fallback",
+    "Wire into mk_entry.cpp: include, add to MKSystem, preprocess before routing in REPL and handle_natural_query"
+  ],
+  "acceptance_criteria": [
+    "input_preprocessor.cpp compiles without errors as part of the unified build",
+    "Slang dictionary translates 50+ common abbreviations and shorthand",
+    "Fuzzy correction fixes misspellings within Levenshtein distance 1-2 of known keywords",
+    "Intent detection identifies questions, commands, learning, greetings, weather, and time intents",
+    "Context buffer resolves pronouns from last 5 messages",
+    "Ollama integration checks localhost:11434 and falls back gracefully when unavailable",
+    "REPL shows (understood: ...) message only when text was modified",
+    "Full build succeeds with no errors"
+  ]
+}
