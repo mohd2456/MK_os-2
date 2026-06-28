@@ -2,13 +2,20 @@
 # ============================================================
 # MK OS — One-Shot Installer
 # ============================================================
-# Usage:
-#   git clone https://github.com/mohd2456/MK_os-2.git
-#   cd MK_os-2
+# Works from a COMPLETELY fresh system. Just run:
+#
+#   curl -sSL https://raw.githubusercontent.com/mohd2456/MK_os-2/main/install.sh | bash
+#
+# OR if you already cloned:
 #   ./install.sh
 #
-# OR (curl one-liner):
-#   curl -sSL https://raw.githubusercontent.com/mohd2456/MK_os-2/main/install.sh | bash
+# This script handles EVERYTHING:
+#   1. Installs git (if missing)
+#   2. Clones the repo (if not already in it)
+#   3. Installs all dependencies
+#   4. Builds MK OS
+#   5. Installs 'mk' command
+#   6. Sets up Telegram
 # ============================================================
 
 set -e
@@ -44,9 +51,12 @@ warn()    { echo -e "${YELLOW}[!]${NC} $1"; }
 error()   { echo -e "${RED}[✗]${NC} $1"; }
 
 check_root() {
+    # Allow root on Arch (alarm user is often root on ARM)
     if [ "$EUID" -eq 0 ]; then
-        error "Do NOT run this script as root. It will use sudo when needed."
-        exit 1
+        warn "Running as root. Will install without sudo."
+        # Redefine sudo to nothing since we're already root
+        sudo() { "$@"; }
+        export -f sudo
     fi
 }
 
@@ -361,7 +371,25 @@ main() {
 
 # Handle curl pipe install (no repo cloned yet)
 if [ ! -d "MK_OS" ] && [ ! -d "../MK_OS" ]; then
-    info "No local repo detected. Cloning from GitHub..."
+    info "No local repo detected. Need to clone from GitHub..."
+    
+    # Install git first if not available
+    if ! command -v git &>/dev/null; then
+        info "Git not found. Installing git first..."
+        if [ -f /etc/arch-release ] || command -v pacman &>/dev/null; then
+            pacman -Sy --noconfirm git
+        elif command -v apt &>/dev/null; then
+            apt update && apt install -y git
+        elif command -v dnf &>/dev/null; then
+            dnf install -y git
+        else
+            error "Cannot install git automatically. Please install git manually:"
+            error "  pacman -S git"
+            exit 1
+        fi
+        success "Git installed!"
+    fi
+    
     git clone https://github.com/mohd2456/MK_os-2.git /tmp/mk_os_install
     cd /tmp/mk_os_install
 fi
