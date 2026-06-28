@@ -30,6 +30,8 @@ from datetime import datetime
 
 DEFAULT_PORT = 9876
 DEFAULT_HOST = "0.0.0.0"
+DISCOVERY_PORT = 9877
+BEACON_INTERVAL = 5  # seconds
 COMMAND_TIMEOUT = 30
 MAX_MESSAGE_SIZE = 1048576  # 1MB
 ALLOWED_IPS = []  # Empty = allow all; set to ["192.168.1.x"] to whitelist
@@ -399,10 +401,39 @@ def handle_client(conn, addr, auth_token):
         log("INFO", f"Disconnected: {addr[0]}:{addr[1]}")
 
 
+# ─── Discovery Beacon ─────────────────────────────────────────────────────────
+
+def broadcast_beacon(port, token, interval=BEACON_INTERVAL):
+    """Broadcast a UDP discovery beacon so MK can auto-discover this agent."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+    msg = json.dumps({
+        "service": "mk_agent",
+        "port": port,
+        "hostname": platform.node(),
+        "token_hint": token[:4] if len(token) >= 4 else token
+    }).encode()
+
+    while True:
+        try:
+            sock.sendto(msg, ("255.255.255.255", DISCOVERY_PORT))
+        except Exception:
+            pass  # Silently retry on network errors
+        time.sleep(interval)
+
+
 # ─── Server ───────────────────────────────────────────────────────────────────
 
 def start_server(host, port, auth_token):
     """Start the TCP agent server."""
+    # Start discovery beacon in background
+    beacon_thread = threading.Thread(
+        target=broadcast_beacon, args=(port, auth_token), daemon=True
+    )
+    beacon_thread.start()
+    log("INFO", f"Broadcasting discovery beacon on UDP port {DISCOVERY_PORT}...")
+
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 

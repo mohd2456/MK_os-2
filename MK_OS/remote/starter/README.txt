@@ -22,6 +22,12 @@ SECURITY:
 - The agent only accepts connections with the correct token
 - Only use on your home network
 
+AUTO-DISCOVERY:
+- MK automatically finds your PC on the network!
+- Just start the agent and MK will connect within 30 seconds.
+- No need to manually configure the IP address.
+- The only thing both sides need is the SAME TOKEN.
+
 TROUBLESHOOTING:
 - "Python not found" → Install Python from python.org, check "Add to PATH"
 - "Token not found"  → Run INSTALL.bat again

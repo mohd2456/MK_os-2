@@ -62,6 +62,7 @@ echo  Port:  9876
 echo  Token: %TOKEN:~0,8%... (hidden for security)
 echo.
 echo  ─────────────────────────────────────────────
+echo  Discovery beacon: ACTIVE (MK will find this PC automatically)
 echo  On your Mac, configure MK with this IP + token.
 echo  Keep this window open! Close it to stop the agent.
 echo  ─────────────────────────────────────────────
