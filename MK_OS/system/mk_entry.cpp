@@ -85,6 +85,7 @@ namespace Color {
 #include "../ai_core/neural_net.cpp"
 #include "../llm/llm_engine.cpp"
 #include "../ai_core/correction_engine.cpp"
+#include "../ai_core/math_solver.cpp"
 #include "task_scheduler.cpp"
 #include "../tools/file_reader.cpp"
 #include "../tools/code_runner.cpp"
@@ -157,6 +158,7 @@ struct MKSystem {
     MKPluginSystem pluginSystem;
     MKSystemInfoPlugin sysInfoPlugin;
     MKImageAnalyzer imageAnalyzer;
+    MKMathSolver mathSolver;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -1340,6 +1342,31 @@ int main(int argc, char* argv[]) {
                               << "  " << Color::DIM << "Example: /run python print('hello')"
                               << Color::RESET << "\n";
                     commandFound = true;
+                } else if (input.size() > 6 && input.substr(0, 6) == "/calc ") {
+                    std::string expr = trim(input.substr(6));
+                    if (expr.empty()) {
+                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                                  << " /calc <expression>\n";
+                    } else {
+                        auto mathResult = sys.mathSolver.solve(expr);
+                        if (mathResult.success) {
+                            std::cout << "\n  " << Color::BGREEN << "🔢" << Color::RESET
+                                      << " " << mathResult.answer << "\n";
+                        } else {
+                            std::cout << "\n  " << Color::RED << "✗" << Color::RESET
+                                      << " " << mathResult.error << "\n";
+                        }
+                    }
+                    commandFound = true;
+                } else if (input == "/calc") {
+                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                              << " /calc <expression>\n"
+                              << "  " << Color::DIM << "Examples: /calc solve x^2+3x-4=0\n"
+                              << "           /calc convert 5 miles to km\n"
+                              << "           /calc what is 20% of 150\n"
+                              << "           /calc sin 45"
+                              << Color::RESET << "\n";
+                    commandFound = true;
                 } else if (input.size() > 7 && input.substr(0, 7) == "/image ") {
                     std::string imgPath = trim(input.substr(7));
                     if (imgPath.empty()) {
@@ -1442,6 +1469,15 @@ int main(int argc, char* argv[]) {
             if (sys.correctionEngine.detectCorrection(input)) {
                 std::string response = sys.correctionEngine.applyCorrection(sys.graph, input);
                 std::cout << "\n  " << Color::BGREEN << "✓" << Color::RESET << " " << response << "\n";
+            } else if (sys.mathSolver.isMathQuery(input)) {
+                // Detect math queries in natural language
+                auto mathResult = sys.mathSolver.solve(input);
+                if (mathResult.success) {
+                    std::cout << "\n  " << Color::BGREEN << "🔢" << Color::RESET
+                              << " " << mathResult.answer << "\n";
+                } else {
+                    handle_natural_query(sys, input);
+                }
             } else {
                 // Preprocess the input: clean slang, fix spelling, resolve pronouns
                 auto ppResult = sys.preprocessor.process(input);
