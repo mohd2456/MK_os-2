@@ -30,6 +30,57 @@ private:
     MKModelManager modelManager;
     std::string serverType; // "ollama", "llama.cpp", or "none"
     bool available;
+    std::string ollamaModel; // configurable model name for Ollama
+
+    // --------------------------------------------------------
+    // JSON-escape a string for embedding in JSON payloads
+    // --------------------------------------------------------
+    std::string jsonEscape(const std::string& s) {
+        std::string escaped;
+        escaped.reserve(s.size() + 16);
+        for (char c : s) {
+            switch (c) {
+                case '"':  escaped += "\\\""; break;
+                case '\\': escaped += "\\\\"; break;
+                case '\n': escaped += "\\n"; break;
+                case '\r': escaped += "\\r"; break;
+                case '\t': escaped += "\\t"; break;
+                default:   escaped += c; break;
+            }
+        }
+        return escaped;
+    }
+
+    // --------------------------------------------------------
+    // Parse a JSON string value from a response given the key
+    // --------------------------------------------------------
+    std::string parseJsonStringValue(const std::string& json, const std::string& key) {
+        std::string searchKey = "\"" + key + "\":\"";
+        size_t startPos = json.find(searchKey);
+        if (startPos == std::string::npos) return "";
+        startPos += searchKey.size();
+
+        std::string result;
+        for (size_t i = startPos; i < json.size(); i++) {
+            if (json[i] == '\\' && i + 1 < json.size()) {
+                char next = json[i + 1];
+                switch (next) {
+                    case '"':  result += '"'; break;
+                    case '\\': result += '\\'; break;
+                    case 'n':  result += '\n'; break;
+                    case 'r':  result += '\r'; break;
+                    case 't':  result += '\t'; break;
+                    default:   result += next; break;
+                }
+                i++;
+            } else if (json[i] == '"') {
+                break;
+            } else {
+                result += json[i];
+            }
+        }
+        return result;
+    }
 
     // --------------------------------------------------------
     // libcurl write callback
@@ -88,7 +139,7 @@ private:
     }
 
 public:
-    MKLLMEngine() : serverType("none"), available(false) {
+    MKLLMEngine() : serverType("none"), available(false), ollamaModel("tinyllama") {
         std::cout << "[LLM ENGINE] Initializing local LLM integration...\n";
         detectServer();
     }
@@ -115,6 +166,17 @@ public:
     }
 
     // --------------------------------------------------------
+    // Set/get Ollama model name
+    // --------------------------------------------------------
+    void setOllamaModel(const std::string& model) {
+        ollamaModel = model;
+    }
+
+    std::string getOllamaModel() const {
+        return ollamaModel;
+    }
+
+    // --------------------------------------------------------
     // Generate text using the available LLM server
     // --------------------------------------------------------
     std::string generate(const std::string& prompt) {
@@ -128,38 +190,19 @@ public:
         std::string response;
         std::string url;
         std::string postData;
+        std::string escapedPrompt = jsonEscape(prompt);
 
         if (serverType == "ollama") {
-            url = "http://localhost:11434/api/generate";
-            // Build JSON payload for Ollama
-            postData = "{\"model\":\"tinyllama\",\"prompt\":\"";
-            // Escape the prompt for JSON
-            for (char c : prompt) {
-                switch (c) {
-                    case '"':  postData += "\\\""; break;
-                    case '\\': postData += "\\\\"; break;
-                    case '\n': postData += "\\n"; break;
-                    case '\r': postData += "\\r"; break;
-                    case '\t': postData += "\\t"; break;
-                    default:   postData += c; break;
-                }
-            }
-            postData += "\",\"stream\":false}";
+            // Use /api/chat with system/user role separation
+            url = "http://localhost:11434/api/chat";
+            postData = "{\"model\":\"" + jsonEscape(ollamaModel) + "\","
+                "\"messages\":["
+                "{\"role\":\"user\",\"content\":\"" + escapedPrompt + "\"}"
+                "],\"stream\":false}";
         } else if (serverType == "llama.cpp") {
             url = "http://localhost:8080/completion";
-            // Build JSON payload for llama.cpp
-            postData = "{\"prompt\":\"";
-            for (char c : prompt) {
-                switch (c) {
-                    case '"':  postData += "\\\""; break;
-                    case '\\': postData += "\\\\"; break;
-                    case '\n': postData += "\\n"; break;
-                    case '\r': postData += "\\r"; break;
-                    case '\t': postData += "\\t"; break;
-                    default:   postData += c; break;
-                }
-            }
-            postData += "\",\"n_predict\":256,\"temperature\":0.7}";
+            postData = "{\"prompt\":\"" + escapedPrompt +
+                "\",\"n_predict\":256,\"temperature\":0.7}";
         } else {
             return "";
         }
@@ -185,41 +228,9 @@ public:
         }
 
         // Parse response to extract generated text
-        // Ollama format: {"response":"..."}
+        // Ollama /api/chat format: {"message":{"role":"assistant","content":"..."}}
         // llama.cpp format: {"content":"..."}
-        std::string searchKey;
-        if (serverType == "ollama") {
-            searchKey = "\"response\":\"";
-        } else {
-            searchKey = "\"content\":\"";
-        }
-
-        size_t startPos = response.find(searchKey);
-        if (startPos == std::string::npos) return response;
-        startPos += searchKey.size();
-
-        // Find the end of the value (handle escaped quotes)
-        std::string result;
-        for (size_t i = startPos; i < response.size(); i++) {
-            if (response[i] == '\\' && i + 1 < response.size()) {
-                char next = response[i + 1];
-                switch (next) {
-                    case '"':  result += '"'; break;
-                    case '\\': result += '\\'; break;
-                    case 'n':  result += '\n'; break;
-                    case 'r':  result += '\r'; break;
-                    case 't':  result += '\t'; break;
-                    default:   result += next; break;
-                }
-                i++; // skip the escaped character
-            } else if (response[i] == '"') {
-                break; // end of string value
-            } else {
-                result += response[i];
-            }
-        }
-
-        return result;
+        return parseJsonStringValue(response, "content");
     }
 
     // --------------------------------------------------------

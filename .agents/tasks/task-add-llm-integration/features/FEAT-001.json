@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Create the MK_OS/llm/ module with LLM engine, model manager, hardware checker, download script, server launcher script, and README. Wire it into mk_entry.cpp for boot-time status and enhance input_preprocessor.cpp to support both Ollama (localhost:11434) and llama.cpp server (localhost:8080).",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create MK_OS/llm/model_manager.cpp - a class MKModelManager with: (1) getAvailableRAM() that reads /proc/meminfo on Linux or uses sysctl on macOS to get free RAM in GB, (2) checkHardware() that returns true if >= 2GB RAM free, (3) getRAMString() for display. Uses #ifndef guard pattern. Prints colored warning if hardware insufficient.",
     "Create MK_OS/llm/llm_engine.cpp - a class MKLLMEngine that: (1) holds reference to MKModelManager, (2) has isAvailable() that checks if llama.cpp server (localhost:8080) OR Ollama (localhost:11434) is reachable via a quick HTTP GET with 1-second timeout using libcurl, (3) has generate(prompt) that sends POST to whichever server is available (Ollama format: /api/generate, llama.cpp format: /completion), (4) has getServerType() returning which backend is connected. Uses #ifndef guard. Include model_manager.cpp.",
@@ -32,5 +32,5 @@
     "test -x /projects/sandbox/MK_os-2/MK_OS/llm/start_server.sh && echo 'start script is executable'"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Build and all 10 tests pass cleanly. Review fixes applied: (1) Refactored preprocessWithModel() to extract shared helper functions (jsonEscape, parseJsonStringValue, sendGenerationRequest, buildModelResult, checkServerHealth), eliminating ~150 lines of duplication. (2) Made Ollama model name configurable via static ollamaModelName variable with setOllamaModel()/getOllamaModel() accessors. (3) Added prompt injection mitigation: system instruction explicitly says to ignore user-embedded instructions, user text wrapped in [USER_TEXT]/[/USER_TEXT] delimiters, and Ollama now uses /api/chat with proper system/user role separation instead of flat /api/generate."
 }
