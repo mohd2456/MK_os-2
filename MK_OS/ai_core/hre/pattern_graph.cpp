@@ -310,6 +310,25 @@ public:
         return false;
     }
 
+    // Remove a specific edge (for corrections)
+    void removeEdge(const std::string& source, const std::string& relation, const std::string& target) {
+        std::string src = normalize(source);
+        std::string rel = normalize(relation);
+        std::string tgt = normalize(target);
+        std::string key = makeKey(src, rel);
+
+        auto it = source_relation_index.find(key);
+        if (it != source_relation_index.end()) {
+            for (auto idxIt = it->second.begin(); idxIt != it->second.end(); ++idxIt) {
+                if (edges[*idxIt].target == tgt) {
+                    edges[*idxIt].weight = 0.0f; // Mark as removed (soft delete)
+                    it->second.erase(idxIt);
+                    break;
+                }
+            }
+        }
+    }
+
     // ─────────────────────────────────────────
     //  PERSISTENCE: SAVE/LOAD KNOWLEDGE FILES
     // ─────────────────────────────────────────

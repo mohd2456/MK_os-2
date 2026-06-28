@@ -83,6 +83,7 @@ namespace Color {
 #include "../plugins/telegram.cpp"
 #include "../ai_core/neural_net.cpp"
 #include "../llm/llm_engine.cpp"
+#include "../ai_core/correction_engine.cpp"
 
 // ============================================================
 // Global state
@@ -144,6 +145,7 @@ struct MKSystem {
     MKNeuralNet neuralNet;
     MKInputPreprocessor preprocessor;
     MKLLMEngine llmEngine;
+    MKCorrectionEngine correctionEngine;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -176,7 +178,8 @@ struct MKSystem {
           telegram(nullptr),
           neuralNet(),
           preprocessor(),
-          llmEngine()
+          llmEngine(),
+          correctionEngine()
     {
         // Initialize Telegram bot if token is available
         const char* tgToken = std::getenv("MK_TELEGRAM_TOKEN");
@@ -1250,17 +1253,23 @@ int main(int argc, char* argv[]) {
             // Natural language routing (acquire lock for thread safety)
             std::lock_guard<std::mutex> lock(sys.systemMutex);
 
-            // Preprocess the input: clean slang, fix spelling, resolve pronouns
-            auto ppResult = sys.preprocessor.process(input);
-            std::string processedInput = ppResult.cleaned_text;
+            // Check for correction BEFORE normal routing
+            if (sys.correctionEngine.detectCorrection(input)) {
+                std::string response = sys.correctionEngine.applyCorrection(sys.graph, input);
+                std::cout << "\n  " << Color::BGREEN << "✓" << Color::RESET << " " << response << "\n";
+            } else {
+                // Preprocess the input: clean slang, fix spelling, resolve pronouns
+                auto ppResult = sys.preprocessor.process(input);
+                std::string processedInput = ppResult.cleaned_text;
 
-            // Show what MK understood (only if text was actually modified)
-            if (ppResult.was_modified && processedInput != input) {
-                std::cout << "  " << Color::DIM << "(understood: " 
-                          << processedInput << ")" << Color::RESET << "\n";
+                // Show what MK understood (only if text was actually modified)
+                if (ppResult.was_modified && processedInput != input) {
+                    std::cout << "  " << Color::DIM << "(understood: " 
+                              << processedInput << ")" << Color::RESET << "\n";
+                }
+
+                handle_natural_query(sys, processedInput);
             }
-
-            handle_natural_query(sys, processedInput);
         }
 
         // Track dialog context for all interactions (lock for thread safety)
