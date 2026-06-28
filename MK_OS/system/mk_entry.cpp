@@ -91,6 +91,7 @@ namespace Color {
 #include "../tools/file_reader.cpp"
 #include "../tools/code_runner.cpp"
 #include "../tools/image_analyzer.cpp"
+#include "../remote/pc_controller.cpp"
 
 // ============================================================
 // Global state
@@ -161,6 +162,7 @@ struct MKSystem {
     MKImageAnalyzer imageAnalyzer;
     MKMathSolver mathSolver;
     MKCrypto crypto;
+    MKPCController pcController;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -260,6 +262,7 @@ static void cmd_help() {
         << "    " << Color::GREEN << "/briefing" << Color::RESET << "          Daily system briefing report\n"
         << "    " << Color::GREEN << "/shell" << Color::RESET << " <cmd>       Run a command in the MK shell\n"
         << "    " << Color::GREEN << "/services" << Color::RESET << "          List registered services & status\n"
+        << "    " << Color::GREEN << "/pc" << Color::RESET << " <cmd>          Remote PC control (run /pc help)\n"
         << "    " << Color::GREEN << "/sync" << Color::RESET << "              Sync knowledge with GitHub\n"
         << "    " << Color::GREEN << "/quit" << Color::RESET << "              Save and exit\n"
         << "\n"
@@ -285,6 +288,7 @@ static void show_slash_suggestions(const std::string& partial) {
         {"/briefing", "Daily briefing report"},
         {"/shell",    "Run MK shell command"},
         {"/services", "Show service status"},
+        {"/pc",       "Remote PC control"},
         {"/sync",     "Sync knowledge with GitHub"},
         {"/help",     "Show all commands"},
         {"/quit",     "Save and exit"},
@@ -573,6 +577,68 @@ static void cmd_briefing(MKSystem& sys) {
 // Natural Language Routing
 // ============================================================
 static void handle_natural_query(MKSystem& sys, const std::string& input) {
+    // ─── PC Routing: detect "on my pc" / "on the pc" / "on my computer" ─────
+    {
+        std::string lower = input;
+        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+        bool pcRouted = false;
+
+        if (lower.find("on my pc") != std::string::npos ||
+            lower.find("on the pc") != std::string::npos ||
+            lower.find("on my computer") != std::string::npos) {
+
+            if (!sys.pcController.isConnected()) {
+                sys.pcController.connect();
+            }
+            if (sys.pcController.isConnected()) {
+                std::string result;
+                if (lower.find("open ") != std::string::npos) {
+                    // Extract app name: "open X on my pc"
+                    size_t openPos = lower.find("open ");
+                    size_t onPos = lower.find(" on ");
+                    if (openPos != std::string::npos && onPos != std::string::npos && onPos > openPos + 5) {
+                        std::string app = input.substr(openPos + 5, onPos - (openPos + 5));
+                        result = sys.pcController.openApp(trim(app));
+                    }
+                } else if (lower.find("running") != std::string::npos ||
+                           lower.find("processes") != std::string::npos ||
+                           lower.find("what's running") != std::string::npos) {
+                    result = sys.pcController.listProcesses();
+                } else if (lower.find("system info") != std::string::npos ||
+                           lower.find("specs") != std::string::npos) {
+                    result = sys.pcController.getSystemInfo();
+                } else if (lower.find("clipboard") != std::string::npos) {
+                    result = sys.pcController.getClipboard();
+                } else if (lower.find("screenshot") != std::string::npos) {
+                    result = sys.pcController.screenshot();
+                } else if (lower.find("read ") != std::string::npos) {
+                    // "read X on my pc"
+                    size_t readPos = lower.find("read ");
+                    size_t onPos = lower.find(" on ");
+                    if (readPos != std::string::npos && onPos != std::string::npos && onPos > readPos + 5) {
+                        std::string path = input.substr(readPos + 5, onPos - (readPos + 5));
+                        result = sys.pcController.readFile(trim(path));
+                    }
+                } else if (lower.find("files") != std::string::npos ||
+                           lower.find("list") != std::string::npos) {
+                    result = sys.pcController.listFiles("~");
+                }
+
+                if (!result.empty()) {
+                    std::cout << "\n  " << Color::BCYAN << "[PC]" << Color::RESET
+                              << " " << result;
+                    if (result.back() != '\n') std::cout << "\n";
+                    pcRouted = true;
+                }
+            } else {
+                std::cout << "\n  " << Color::RED << "✗" << Color::RESET
+                          << " PC agent not connected. Set MK_PC_IP and run agent.py on your PC.\n";
+                pcRouted = true;
+            }
+        }
+        if (pcRouted) return;
+    }
+
     // Route through MKSmartRouter
     auto decision = sys.router.route(input);
     std::string response;
@@ -1081,7 +1147,21 @@ int main(int argc, char* argv[]) {
               << Color::BOLD << sys.serviceManager.running_count() << Color::RESET
               << "/" << sys.serviceManager.total_count() << " running\n";
 
-    // Step 8: Start Telegram polling thread if token is available
+    // Step 8: Try connecting to remote PC agent
+    {
+        std::cout << "  " << Color::DIM << "Connecting to PC agent..." << Color::RESET << "\n";
+        if (sys.pcController.connect()) {
+            std::cout << "  " << Color::BGREEN << "\u2713" << Color::RESET
+                      << " PC connected (" << sys.pcController.getIP()
+                      << ":" << sys.pcController.getPort() << ")\n";
+        } else {
+            std::cout << "  " << Color::DIM
+                      << "\u2139 PC agent not detected. Set MK_PC_IP and run agent.py on your PC."
+                      << Color::RESET << "\n";
+        }
+    }
+
+    // Step 9: Start Telegram polling thread if token is available
     std::thread telegramThread;
     bool telegramThreadRunning = false;
     if (sys.telegram) {
@@ -1446,6 +1526,89 @@ int main(int argc, char* argv[]) {
                                   << Color::RESET << "\n";
                     }
                     commandFound = true;
+                }
+
+                // ─── /pc commands (Remote PC Control) ────────────────────
+                if (!commandFound && input.size() >= 3 && input.substr(0, 3) == "/pc") {
+                    std::string pcArgs = input.size() > 4 ? trim(input.substr(4)) : "";
+
+                    if (pcArgs.empty() || pcArgs == "help") {
+                        std::cout << "\n  " << Color::BOLD << Color::BCYAN
+                                  << "  Remote PC Commands:" << Color::RESET << "\n"
+                                  << "    " << Color::GREEN << "/pc run" << Color::RESET << " <cmd>     Run shell command\n"
+                                  << "    " << Color::GREEN << "/pc open" << Color::RESET << " <app>    Open application\n"
+                                  << "    " << Color::GREEN << "/pc read" << Color::RESET << " <path>   Read file\n"
+                                  << "    " << Color::GREEN << "/pc write" << Color::RESET << " <path> <text> Write file\n"
+                                  << "    " << Color::GREEN << "/pc info" << Color::RESET << "          System info\n"
+                                  << "    " << Color::GREEN << "/pc processes" << Color::RESET << "     List processes\n"
+                                  << "    " << Color::GREEN << "/pc kill" << Color::RESET << " <name>   Kill process\n"
+                                  << "    " << Color::GREEN << "/pc files" << Color::RESET << " <dir>   List directory\n"
+                                  << "    " << Color::GREEN << "/pc clipboard" << Color::RESET << "     Get clipboard\n"
+                                  << "    " << Color::GREEN << "/pc screenshot" << Color::RESET << "    Take screenshot\n"
+                                  << "    " << Color::GREEN << "/pc status" << Color::RESET << "        Connection status\n";
+                        commandFound = true;
+                    } else if (pcArgs == "status") {
+                        if (sys.pcController.isConnected()) {
+                            std::cout << "\n  " << Color::BGREEN << "●" << Color::RESET
+                                      << " PC connected: " << sys.pcController.getIP()
+                                      << ":" << sys.pcController.getPort() << "\n";
+                        } else {
+                            std::cout << "\n  " << Color::RED << "○" << Color::RESET
+                                      << " PC not connected. Set MK_PC_IP, MK_PC_PORT, MK_PC_TOKEN.\n";
+                        }
+                        commandFound = true;
+                    } else if (!sys.pcController.isConnected()) {
+                        // Try to reconnect
+                        if (!sys.pcController.connect()) {
+                            std::cout << "\n  " << Color::RED << "✗" << Color::RESET
+                                      << " PC agent unreachable. Is agent.py running?\n";
+                            commandFound = true;
+                        }
+                    }
+
+                    if (!commandFound && sys.pcController.isConnected()) {
+                        std::string result;
+                        if (pcArgs.substr(0, 4) == "run " && pcArgs.size() > 4) {
+                            result = sys.pcController.runShell(trim(pcArgs.substr(4)));
+                        } else if (pcArgs.substr(0, 5) == "open " && pcArgs.size() > 5) {
+                            result = sys.pcController.openApp(trim(pcArgs.substr(5)));
+                        } else if (pcArgs.substr(0, 5) == "read " && pcArgs.size() > 5) {
+                            result = sys.pcController.readFile(trim(pcArgs.substr(5)));
+                        } else if (pcArgs.substr(0, 6) == "write " && pcArgs.size() > 6) {
+                            std::string rest = trim(pcArgs.substr(6));
+                            size_t sp = rest.find(' ');
+                            if (sp != std::string::npos) {
+                                std::string path = rest.substr(0, sp);
+                                std::string content = rest.substr(sp + 1);
+                                result = sys.pcController.writeFile(path, content);
+                            } else {
+                                result = "Usage: /pc write <path> <content>";
+                            }
+                        } else if (pcArgs == "info") {
+                            result = sys.pcController.getSystemInfo();
+                        } else if (pcArgs == "processes") {
+                            result = sys.pcController.listProcesses();
+                        } else if (pcArgs.substr(0, 5) == "kill " && pcArgs.size() > 5) {
+                            result = sys.pcController.killProcess(trim(pcArgs.substr(5)));
+                        } else if (pcArgs.substr(0, 6) == "files " && pcArgs.size() > 6) {
+                            result = sys.pcController.listFiles(trim(pcArgs.substr(6)));
+                        } else if (pcArgs == "files") {
+                            result = sys.pcController.listFiles(".");
+                        } else if (pcArgs == "clipboard") {
+                            result = sys.pcController.getClipboard();
+                        } else if (pcArgs == "screenshot") {
+                            result = sys.pcController.screenshot();
+                        } else {
+                            result = "Unknown /pc subcommand. Type /pc help.";
+                        }
+
+                        if (!result.empty()) {
+                            std::cout << "\n  " << Color::BCYAN << "[PC]" << Color::RESET
+                                      << " " << result;
+                            if (result.back() != '\n') std::cout << "\n";
+                        }
+                        commandFound = true;
+                    }
                 }
 
                 if (!commandFound) {
