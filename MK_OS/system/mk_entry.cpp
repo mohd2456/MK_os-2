@@ -88,6 +88,7 @@ namespace Color {
 #include "task_scheduler.cpp"
 #include "../tools/file_reader.cpp"
 #include "../tools/code_runner.cpp"
+#include "../tools/image_analyzer.cpp"
 
 // ============================================================
 // Global state
@@ -155,6 +156,7 @@ struct MKSystem {
     MKCodeRunner codeRunner;
     MKPluginSystem pluginSystem;
     MKSystemInfoPlugin sysInfoPlugin;
+    MKImageAnalyzer imageAnalyzer;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -1336,6 +1338,24 @@ int main(int argc, char* argv[]) {
                     std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
                               << " /run <python|bash|cpp> <code>\n"
                               << "  " << Color::DIM << "Example: /run python print('hello')"
+                              << Color::RESET << "\n";
+                    commandFound = true;
+                } else if (input.size() > 7 && input.substr(0, 7) == "/image ") {
+                    std::string imgPath = trim(input.substr(7));
+                    if (imgPath.empty()) {
+                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                                  << " /image <filepath>\n";
+                    } else {
+                        auto info = sys.imageAnalyzer.analyze(imgPath);
+                        std::string result = sys.imageAnalyzer.formatResult(info);
+                        std::cout << "\n  " << Color::BOLD << Color::BCYAN << "🖼 Image Analysis"
+                                  << Color::RESET << "\n  " << result << "\n";
+                    }
+                    commandFound = true;
+                } else if (input == "/image") {
+                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                              << " /image <filepath>\n"
+                              << "  " << Color::DIM << "Supports: PNG, JPEG, GIF, BMP"
                               << Color::RESET << "\n";
                     commandFound = true;
                 } else if (input == "/plugins") {
