@@ -44,7 +44,7 @@ struct MKTensor {
     int cols;
     
     MKTensor() : rows(0), cols(0) {}
-    MKTensor(int r, int c) : rows(r), cols(c), data(r * c, 0.0f) {}
+    MKTensor(int r, int c) : data(r * c, 0.0f), rows(r), cols(c) {}
     
     float& at(int r, int c) { return data[r * cols + c]; }
     float at(int r, int c) const { return data[r * cols + c]; }
@@ -66,8 +66,8 @@ struct MKQuantizedTensor {
     int rows, cols;
     
     MKQuantizedTensor() : scale(1.0f), zeroPoint(0.0f), rows(0), cols(0) {}
-    MKQuantizedTensor(int r, int c) : rows(r), cols(c), data(r * c, 0), 
-                                       scale(1.0f), zeroPoint(0.0f) {}
+    MKQuantizedTensor(int r, int c) : data(r * c, 0), scale(1.0f), zeroPoint(0.0f),
+                                       rows(r), cols(c) {}
     
     // Quantize a float tensor to INT8
     static MKQuantizedTensor fromFloat(const MKTensor& t) {

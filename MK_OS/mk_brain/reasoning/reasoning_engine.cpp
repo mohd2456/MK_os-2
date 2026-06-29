@@ -30,6 +30,7 @@ public:
 
     // Simulates a deep reasoning execution stack
     void executeThinkChain(const std::string& prompt) {
+        std::cout << "[THINK CHAIN] Analyzing: " << prompt.substr(0, 50) << "...\n";
         std::cout << "[THINK CHAIN] Phase 1: Breaking down logical dependencies...\n";
         std::cout << "[THINK CHAIN] Phase 2: Verifying memory safety constraints...\n";
         std::cout << "[THINK CHAIN] Phase 3: Formulating structured output payload.\n";

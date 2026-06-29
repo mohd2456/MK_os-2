@@ -126,6 +126,7 @@ private:
         // Different assembly strategies based on variation number
         switch (variation % 5) {
             case 0:  // Sequential: all fragments in order
+                code += "# Goal: " + goal.substr(0, 80) + "\n";
                 for (const auto& f : fragments) {
                     code += f + "\n";
                 }

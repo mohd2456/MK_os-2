@@ -257,7 +257,8 @@ public:
         // For each rule, try every possible variable binding
         // (Simplified: iterate all edges and try to match rule patterns)
         
-        std::cout << "[REASONING] Running full derivation pass...\n";
+        std::cout << "[REASONING] Running full derivation pass (" 
+                  << graph.edgeCount() << " edges in graph)...\n";
         // Implementation would iterate all nodes and try each rule
         // For now, this is called selectively during maintenance windows
         std::cout << "[REASONING] Derivation complete. New facts: " << newFacts << "\n";

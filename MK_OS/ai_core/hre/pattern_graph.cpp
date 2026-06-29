@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <ctime>
 #include <set>
+#include <list>
 
 // ===================================================================================
 // MK HYBRID REASONING ENGINE — LAYER 1: PATTERN GRAPH
@@ -65,11 +66,47 @@ private:
     int total_queries;
     int cache_hits;
 
-    // Index: relation → list of edge indexes (for fast "find all X" queries)
+    // Index: relation -> list of edge indexes (for fast "find all X" queries)
     std::unordered_map<std::string, std::vector<int>> relation_index;
     
-    // Index: source+relation → list of edge indexes (for fast specific lookups)
+    // Index: source+relation -> list of edge indexes (for fast specific lookups)
     std::unordered_map<std::string, std::vector<int>> source_relation_index;
+
+    // LRU Query Cache: maps query key -> cached results
+    static const int LRU_CAPACITY = 256;
+    std::list<std::pair<std::string, std::vector<std::string>>> lru_list;
+    std::unordered_map<std::string, decltype(lru_list)::iterator> lru_map;
+
+    // LRU cache helpers
+    void lruPut(const std::string& key, const std::vector<std::string>& value) {
+        auto it = lru_map.find(key);
+        if (it != lru_map.end()) {
+            lru_list.erase(it->second);
+            lru_map.erase(it);
+        }
+        lru_list.push_front({key, value});
+        lru_map[key] = lru_list.begin();
+        if ((int)lru_map.size() > LRU_CAPACITY) {
+            auto last = lru_list.end();
+            --last;
+            lru_map.erase(last->first);
+            lru_list.pop_back();
+        }
+    }
+
+    bool lruGet(const std::string& key, std::vector<std::string>& out) {
+        auto it = lru_map.find(key);
+        if (it == lru_map.end()) return false;
+        lru_list.splice(lru_list.begin(), lru_list, it->second);
+        out = it->second->second;
+        cache_hits++;
+        return true;
+    }
+
+    void lruInvalidate() {
+        lru_list.clear();
+        lru_map.clear();
+    }
 
     // Normalize concept names (lowercase, trim whitespace)
     std::string normalize(const std::string& concept) {
@@ -154,6 +191,9 @@ public:
         relation_index[rel].push_back(edgeIdx);
         source_relation_index[key].push_back(edgeIdx);
 
+        // Invalidate LRU cache on new knowledge
+        lruInvalidate();
+
         total_facts++;
     }
 
@@ -177,12 +217,19 @@ public:
     // ─────────────────────────────────────────
 
     // Direct lookup: "what does [source] [relation]?"
-    // Example: query("cat", "is_a") → returns ["animal", "pet"]
+    // Example: query("cat", "is_a") -> returns ["animal", "pet"]
     std::vector<std::string> query(const std::string& source, const std::string& relation) {
         total_queries++;
         std::string src = normalize(source);
         std::string rel = normalize(relation);
         std::vector<std::string> results;
+
+        // Check LRU cache first
+        std::string cacheKey = src + "|" + rel;
+        if (lruGet(cacheKey, results)) {
+            if (!results.empty()) nodes[src].access_count++;
+            return results;
+        }
 
         std::string key = makeKey(src, rel);
         auto it = source_relation_index.find(key);
@@ -192,6 +239,9 @@ public:
             }
             if (!results.empty()) nodes[src].access_count++;
         }
+
+        // Store in LRU cache
+        lruPut(cacheKey, results);
         return results;
     }
 
@@ -423,6 +473,40 @@ public:
     int nodeCount() const { return nodes.size(); }
     int edgeCount() const { return edges.size(); }
     int queryCount() const { return total_queries; }
+    int cacheHitCount() const { return cache_hits; }
+
+    // Fuzzy string matching using Levenshtein distance
+    static int levenshtein(const std::string& a, const std::string& b) {
+        int m = a.size(), n = b.size();
+        std::vector<int> prev(n + 1), curr(n + 1);
+        for (int j = 0; j <= n; j++) prev[j] = j;
+        for (int i = 1; i <= m; i++) {
+            curr[0] = i;
+            for (int j = 1; j <= n; j++) {
+                int cost = (a[i-1] == b[j-1]) ? 0 : 1;
+                curr[j] = std::min({prev[j] + 1, curr[j-1] + 1, prev[j-1] + cost});
+            }
+            std::swap(prev, curr);
+        }
+        return prev[n];
+    }
+
+    // Find nodes matching a query with typo tolerance (edit distance <= threshold)
+    std::vector<std::string> fuzzyMatch(const std::string& concept, int threshold = 2) {
+        std::string name = normalize(concept);
+        std::vector<std::string> matches;
+        for (const auto& pair : nodes) {
+            int dist = levenshtein(name, pair.first);
+            if (dist <= threshold && dist > 0) {
+                matches.push_back(pair.first);
+            }
+        }
+        // Sort by distance (closest first)
+        std::sort(matches.begin(), matches.end(), [&](const std::string& a, const std::string& b) {
+            return levenshtein(name, a) < levenshtein(name, b);
+        });
+        return matches;
+    }
 
     // Return a const reference to ALL edges in the graph (for bulk indexing)
     const std::vector<MKEdge>& getAllEdges() const { return edges; }
@@ -433,6 +517,7 @@ public:
         std::cout << "  Edges (facts): " << edges.size() << "\n";
         std::cout << "  Relations: " << relation_index.size() << "\n";
         std::cout << "  Queries served: " << total_queries << "\n";
+        std::cout << "  Cache hits: " << cache_hits << "\n";
         std::cout << "-----------------------\n";
     }
 
