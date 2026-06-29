@@ -80,20 +80,102 @@ private:
     }
 
     // Assemble response from clusters of droplets
-    std::string assembleFromClusters(const std::vector<std::vector<int>>& clusters) const {
-        std::string response;
+    // Enhanced: try multiple arrangements and pick most coherent
+    std::string assembleFromClusters(const std::vector<std::vector<int>>& clusters) {
+        if (clusters.empty()) return "";
+
+        // Strategy 1: Normal order (emotion -> logic -> code)
+        std::string response1;
         for (const auto& cluster : clusters) {
             for (int id : cluster) {
                 const auto& d = pool_.get(id);
                 if (!d.content.empty()) {
-                    if (!response.empty() && response.back() != '\n' && response.back() != ' ') {
-                        response += " ";
+                    if (!response1.empty() && response1.back() != '\n' && response1.back() != ' ') {
+                        response1 += " ";
                     }
-                    response += d.content;
+                    response1 += d.content;
                 }
             }
         }
-        return response;
+
+        // Strategy 2: Reversed cluster order (code context first)
+        std::string response2;
+        for (int ci = (int)clusters.size() - 1; ci >= 0; ci--) {
+            for (int id : clusters[ci]) {
+                const auto& d = pool_.get(id);
+                if (!d.content.empty()) {
+                    if (!response2.empty() && response2.back() != '\n' && response2.back() != ' ') {
+                        response2 += " ";
+                    }
+                    response2 += d.content;
+                }
+            }
+        }
+
+        // Strategy 3: Highest fitness first across all clusters
+        std::vector<std::pair<int, float>> allDroplets;
+        for (const auto& cluster : clusters) {
+            for (int id : cluster) {
+                allDroplets.push_back({id, pool_.get(id).fitness});
+            }
+        }
+        std::sort(allDroplets.begin(), allDroplets.end(),
+                  [](const auto& a, const auto& b) { return a.second > b.second; });
+        std::string response3;
+        for (const auto& [id, fit] : allDroplets) {
+            const auto& d = pool_.get(id);
+            if (!d.content.empty()) {
+                if (!response3.empty() && response3.back() != '\n' && response3.back() != ' ') {
+                    response3 += " ";
+                }
+                response3 += d.content;
+            }
+        }
+
+        // Score each arrangement and pick best
+        float score1 = scoreResponse(response1);
+        float score2 = scoreResponse(response2);
+        float score3 = scoreResponse(response3);
+
+        if (score1 >= score2 && score1 >= score3) return response1;
+        if (score2 >= score1 && score2 >= score3) return response2;
+        return response3;
+    }
+
+    // Quality scoring for response before output
+    // Checks length, coherence, repetition
+    float scoreResponse(const std::string& response) const {
+        if (response.empty()) return 0.0f;
+
+        float score = 0.5f;  // Base score
+
+        // Length score: not too short, not too long
+        size_t len = response.size();
+        if (len >= 20 && len <= 500) score += 0.2f;
+        else if (len >= 10 && len <= 1000) score += 0.1f;
+        else if (len < 5) score -= 0.3f;
+
+        // Word variety: count unique words / total words
+        std::unordered_set<std::string> uniqueWords;
+        std::istringstream ss(response);
+        std::string word;
+        int totalWords = 0;
+        while (ss >> word) {
+            std::transform(word.begin(), word.end(), word.begin(), ::tolower);
+            uniqueWords.insert(word);
+            totalWords++;
+        }
+        if (totalWords > 0) {
+            float variety = (float)uniqueWords.size() / (float)totalWords;
+            score += variety * 0.3f;  // Higher variety = better
+        }
+
+        // Penalize excessive repetition
+        if (totalWords > 0 && uniqueWords.size() < (size_t)(totalWords / 3)) {
+            score -= 0.2f;  // Too repetitive
+        }
+
+        return std::max(0.0f, std::min(1.0f, score));
     }
 
     // Apply temperature-based mutations to output text
@@ -260,16 +342,33 @@ public:
             // Step 4b: Apply IDENTITY to select/trim
             clusters = dynamics_.applyIdentity(clusters, identity_, pool_);
 
-            // Step 4c: ASSEMBLE — stitch cluster contents in coherence order
+            // Step 4c: ASSEMBLE — try multiple arrangements, pick most coherent
             output = assembleFromClusters(clusters);
 
-            // Step 4d: Temperature adjust — if hot, allow mutations
+            // Step 4d: Quality check — if score too low, try with different selection
+            float quality = scoreResponse(output);
+            if (quality < 0.3f && vibrating.size() > 5) {
+                // Re-try with top-5 only for a more focused response
+                std::vector<std::pair<int, float>> topVibrating(vibrating.begin(),
+                    vibrating.begin() + std::min((size_t)5, vibrating.size()));
+                auto retryClusters = dynamics_.cohere(topVibrating, pool_);
+                retryClusters = dynamics_.applyIdentity(retryClusters, identity_, pool_);
+                std::string retryOutput = assembleFromClusters(retryClusters);
+                float retryQuality = scoreResponse(retryOutput);
+                if (retryQuality > quality) {
+                    output = retryOutput;
+                    clusters = retryClusters;
+                }
+            }
+
+            // Step 4e: Temperature adjust — if hot, allow mutations
             output = temperatureAdjust(output);
 
-            // Track used droplets
+            // Track used droplets and mark them for anti-repetition
             for (const auto& cluster : clusters) {
                 for (int id : cluster) lastUsedDroplets_.push_back(id);
             }
+            dynamics_.markUsed(lastUsedDroplets_);
         }
 
         // Build trace for debugging
@@ -285,7 +384,7 @@ public:
     void absorb(const std::string& input, const std::string& response, bool userContinued) {
         if (!initialized_) return;
 
-        // Feed input as new droplets (medium precision — they're user thought)
+        // Feed input as new droplets (medium precision -- they're user thought)
         if (!input.empty() && input.size() > 5) {
             std::vector<std::string> triggers;
             std::istringstream ss(input);
@@ -320,14 +419,38 @@ public:
         // Run EVOLUTION force on used droplets
         dynamics_.evolve(lastUsedDroplets_, userContinued, pool_);
 
+        // Learning from successful conversations: boost fitness of droplets that worked
+        if (userContinued && !lastUsedDroplets_.empty()) {
+            for (int id : lastUsedDroplets_) {
+                if (id >= 0 && id < pool_.size() && pool_.get(id).isAlive()) {
+                    auto& d = pool_.getMut(id);
+                    // Successful conversation boost: compound fitness increase
+                    d.fitness = std::min(1.0f, d.fitness + 0.08f);
+                    d.user_resonance = std::min(1.0f, d.user_resonance + 0.12f);
+                    // Create bonds between successful droplets (they work well together)
+                    for (int otherId : lastUsedDroplets_) {
+                        if (otherId != id && otherId >= 0 && otherId < pool_.size()) {
+                            if (std::find(d.bonds.begin(), d.bonds.end(), otherId) == d.bonds.end()) {
+                                if (d.bonds.size() < 10) {
+                                    d.bonds.push_back(otherId);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Update identity based on interaction patterns
         if (userContinued) {
-            // User engaged — reinforce current identity
+            // User engaged -- reinforce current identity
             identity_.energy = std::min(1.0f, identity_.energy + 0.01f);
         } else {
-            // User changed topic — cool down, become more adaptive
+            // User changed topic -- cool down, become more adaptive
             identity_.energy = std::max(0.0f, identity_.energy - 0.02f);
             identity_.precision_preference = std::max(0.0f, identity_.precision_preference - 0.05f);
+            // Reset temperature on topic change (new exploration)
+            dynamics_.resetTemperature();
         }
 
         // Periodic aging

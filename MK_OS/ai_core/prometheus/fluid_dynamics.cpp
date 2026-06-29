@@ -51,6 +51,11 @@ class MKFluidDynamics {
 private:
     std::mt19937 rng_;
     std::vector<std::pair<int, float>> lastResonance_;  // Last resonance trace for debug
+    std::vector<int> recentlyUsed_;  // Anti-repetition: recently used droplet IDs
+    static const size_t MAX_RECENT = 50;  // Track last 50 used droplets
+    float currentTemperature_ = 0.7f;  // Temperature scheduling: starts warm
+    int generationCount_ = 0;  // Track generations for temperature scheduling
+    std::unordered_map<int, float> momentumMap_;  // Momentum tracking per droplet
 
     // Tokenize input into lowercase words
     std::vector<std::string> tokenize(const std::string& input) const {
@@ -82,6 +87,7 @@ public:
     // FORCE 1: RESONANCE — What wants to be said
     // Find droplets that vibrate in response to input
     // Returns: vector of (droplet_id, vibration_strength) sorted by strength
+    // Enhanced with momentum-based resonance and anti-repetition force
     // =======================================================================
     std::vector<std::pair<int, float>> resonate(const std::string& input, MKDropletPool& pool) {
         std::vector<std::pair<int, float>> vibrating;
@@ -107,8 +113,30 @@ public:
                 float vitalityFactor = d.vitality;
                 float resonanceBonus = d.user_resonance * 0.2f;
 
-                float score = (triggerScore + fitnessBonus + recencyBonus + resonanceBonus)
+                // Momentum boost: recently activated droplets get continuity bonus
+                float momentumBonus = 0.0f;
+                auto momIt = momentumMap_.find(id);
+                if (momIt != momentumMap_.end()) {
+                    momentumBonus = momIt->second * 0.25f;
+                }
+
+                float score = (triggerScore + fitnessBonus + recencyBonus + resonanceBonus + momentumBonus)
                               * vitalityFactor;
+
+                // Anti-repetition penalty: penalize recently used droplets
+                for (int recentId : recentlyUsed_) {
+                    if (recentId == id) {
+                        score *= 0.4f;  // Heavy penalty for recently used
+                        break;
+                    }
+                }
+
+                // Temperature modulation: high temp = more randomness in scoring
+                if (currentTemperature_ > 0.7f) {
+                    std::uniform_real_distribution<float> noise(-0.1f, 0.1f);
+                    score += noise(rng_) * currentTemperature_;
+                }
+
                 scores[id] += score;
             }
         }
@@ -117,7 +145,8 @@ public:
         std::vector<std::string> domainKeywords = {
             "python", "cpp", "c++", "bash", "javascript", "code", "program",
             "function", "class", "loop", "file", "sort", "search", "network",
-            "error", "bug", "fix", "help", "explain", "how"
+            "error", "bug", "fix", "help", "explain", "how", "async", "test",
+            "deploy", "docker", "database", "web", "api", "server", "framework"
         };
         std::string domain;
         for (const auto& token : tokens) {
@@ -131,6 +160,19 @@ public:
             for (int id : domainDroplets) {
                 if (pool.get(id).isAlive()) {
                     scores[id] += 0.3f;
+                }
+            }
+        }
+
+        // Multi-word trigger matching bonus (consecutive words from input match trigger phrases)
+        if (tokens.size() >= 2) {
+            for (size_t i = 0; i < tokens.size() - 1; i++) {
+                std::string bigram = tokens[i] + " " + tokens[i + 1];
+                auto matches = pool.findByTrigger(bigram);
+                for (int id : matches) {
+                    if (pool.get(id).isAlive()) {
+                        scores[id] += 0.5f;  // Bigram match is stronger signal
+                    }
                 }
             }
         }
@@ -150,7 +192,17 @@ public:
             pool.getMut(id).last_alive = now();
         }
 
+        // Update momentum map: boost vibrating droplets, decay others
+        for (auto& [id, momentum] : momentumMap_) {
+            momentum *= 0.8f;  // Decay existing momentum
+        }
+        for (const auto& [id, score] : vibrating) {
+            momentumMap_[id] = std::min(1.0f, momentumMap_[id] + score * 0.3f);
+        }
+
         lastResonance_ = vibrating;
+        generationCount_++;
+        updateTemperatureSchedule();
         return vibrating;
     }
 
@@ -377,6 +429,8 @@ public:
 
         std::ostringstream ss;
         ss << "Last resonance (" << lastResonance_.size() << " vibrating):\n";
+        ss << "Temperature: " << currentTemperature_ << " | Generation: " << generationCount_ << "\n";
+        ss << "Recently used buffer: " << recentlyUsed_.size() << "/" << MAX_RECENT << "\n";
         int shown = 0;
         for (const auto& [id, strength] : lastResonance_) {
             if (shown >= 10) { ss << "  ... and " << (lastResonance_.size() - 10) << " more\n"; break; }
@@ -389,6 +443,91 @@ public:
             shown++;
         }
         return ss.str();
+    }
+
+    // =======================================================================
+    // COHERENCE SCORING — Rate how well a cluster fits together
+    // Uses word overlap and semantic proximity between droplets
+    // =======================================================================
+    float scoreCoherence(const std::vector<int>& cluster, MKDropletPool& pool) const {
+        if (cluster.size() <= 1) return 1.0f;
+
+        float totalOverlap = 0.0f;
+        int comparisons = 0;
+
+        for (size_t i = 0; i < cluster.size() && i < 5; i++) {
+            auto wordsA = tokenize(pool.get(cluster[i]).content);
+            std::unordered_set<std::string> setA(wordsA.begin(), wordsA.end());
+
+            for (size_t j = i + 1; j < cluster.size() && j < 5; j++) {
+                auto wordsB = tokenize(pool.get(cluster[j]).content);
+                int overlap = 0;
+                for (const auto& w : wordsB) {
+                    if (setA.count(w)) overlap++;
+                }
+                float overlapRatio = (float)overlap / std::max(1.0f, (float)std::min(wordsA.size(), wordsB.size()));
+                totalOverlap += overlapRatio;
+                comparisons++;
+            }
+        }
+
+        if (comparisons == 0) return 0.5f;
+
+        // Also check domain consistency
+        std::unordered_map<std::string, int> domainCounts;
+        for (int id : cluster) {
+            domainCounts[pool.get(id).domain]++;
+        }
+        float domainConsistency = 0.0f;
+        for (const auto& [dom, count] : domainCounts) {
+            float ratio = (float)count / (float)cluster.size();
+            domainConsistency = std::max(domainConsistency, ratio);
+        }
+
+        float wordCoherence = totalOverlap / (float)comparisons;
+        return wordCoherence * 0.5f + domainConsistency * 0.5f;
+    }
+
+    // =======================================================================
+    // TEMPERATURE SCHEDULING
+    // Start hot (creative/exploratory), cool down over time (precise/focused)
+    // Resets to warm on new topics
+    // =======================================================================
+    void updateTemperatureSchedule() {
+        // Gradually cool down over generations
+        if (generationCount_ < 5) {
+            currentTemperature_ = 0.9f;  // Hot: exploring
+        } else if (generationCount_ < 15) {
+            currentTemperature_ = 0.7f;  // Warm: balanced
+        } else if (generationCount_ < 30) {
+            currentTemperature_ = 0.5f;  // Cool: focused
+        } else {
+            currentTemperature_ = 0.3f;  // Cold: precise
+        }
+    }
+
+    void resetTemperature() {
+        currentTemperature_ = 0.9f;
+        generationCount_ = 0;
+    }
+
+    float getTemperature() const { return currentTemperature_; }
+
+    // =======================================================================
+    // ANTI-REPETITION: Track used droplets
+    // =======================================================================
+    void markUsed(const std::vector<int>& usedIds) {
+        for (int id : usedIds) {
+            recentlyUsed_.push_back(id);
+        }
+        // Trim to max size
+        while (recentlyUsed_.size() > MAX_RECENT) {
+            recentlyUsed_.erase(recentlyUsed_.begin());
+        }
+    }
+
+    void clearRecentlyUsed() {
+        recentlyUsed_.clear();
     }
 };
 

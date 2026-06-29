@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Massive upgrade to conversation mode, casual responses, and Prometheus engine. Add more personality variety, better fluid dynamics, more code fragments, and richer conversation patterns.",
+  "status": "in_progress",
+  "steps": [
+    "Upgrade mk_brain/personality/casual_responses.cpp: Add 30+ new responses per category (greetings, goodbyes, acknowledgments, reactions_positive, reactions_negative, encouragements, follow_ups). Add new categories: 'compliments' (15+), 'roasts_friendly' (15+ playful teasing), 'wisdom' (15+ deep/philosophical one-liners), 'hype_up' (15+ motivational), 'curiosity' (15+ when MK is curious about something the user said). Add topic-aware response selection (responses that reference the topic being discussed).",
+    "Upgrade ai_core/conversation_mode.cpp: Add 'story mode' detection (when user is telling a long story, respond with follow-up questions and reactions rather than short acknowledgments). Add 'debate mode' (when user shares an opinion, sometimes respectfully disagree to keep things interesting). Add emotion intensity detection (not just mood type but how STRONG the emotion is). Add conversation memory across sessions (remember what topics were discussed). Add time-of-day awareness in responses (good morning vs whats up at night). Add more vague response patterns for natural flow.",
+    "Upgrade ai_core/prometheus/prometheus_engine.cpp: Increase droplet pool diversity. Add more sophisticated cluster assembly (try multiple arrangements and pick the most coherent). Add response quality scoring before output (if score too low, try again). Add learning from successful conversations (boost fitness of droplets that led to good responses).",
+    "Upgrade ai_core/prometheus/fluid_dynamics.cpp: Add momentum-based resonance (droplets that were recently activated get a boost for continuity). Add anti-repetition force (penalize recently-used content). Add coherence scoring using word overlap and semantic proximity. Add temperature scheduling (start hot for brainstorming, cool down for precision).",
+    "Upgrade ai_core/prometheus/code_fragments.cpp: Add 30+ more code fragments covering: async/await patterns, testing patterns (pytest, jest), deployment (Docker, CI/CD), database operations (SQLite, PostgreSQL queries), web frameworks (Flask, FastAPI, Express), type hints/generics, design patterns (singleton, factory, observer). Total should reach 130+ fragments."
+  ],
+  "acceptance_criteria": [
+    "Build succeeds with zero errors",
+    "make test passes all tests",
+    "casual_responses.cpp has 500+ total response strings across all categories",
+    "code_fragments.cpp has 130+ fragments",
+    "conversation_mode has story mode, debate mode, and time-of-day awareness"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && clang++ -std=c++17 -O2 -Wall -Wextra -DLINUX -o mk_os system/mk_entry.cpp -lcurl -lsqlite3 2>&1 | grep -c error",
+    "cd /projects/sandbox/MK_os-2/MK_OS && make test 2>&1 | tail -5"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

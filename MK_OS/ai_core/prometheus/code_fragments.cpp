@@ -238,6 +238,108 @@ static std::vector<MKCodeFragment> getBootstrapFragments() {
     frags.push_back({"export PATH=\"$HOME/.local/bin:$PATH\"\nexport EDITOR=vim", "bash", "system",
         {"export", "path", "environment", "setup", "config"}});
 
+    // ===== ASYNC/AWAIT PATTERNS (8) =====
+    frags.push_back({"import asyncio\n\nasync def fetch_data(url):\n    await asyncio.sleep(1)\n    return f'Data from {url}'\n\nasync def main():\n    results = await asyncio.gather(\n        fetch_data('url1'),\n        fetch_data('url2'),\n        fetch_data('url3')\n    )\n    print(results)\n\nasyncio.run(main())", "python", "async",
+        {"async", "await", "gather", "concurrent", "parallel"}});
+    frags.push_back({"import asyncio\nfrom asyncio import Queue\n\nasync def producer(queue):\n    for i in range(10):\n        await queue.put(i)\n    await queue.put(None)\n\nasync def consumer(queue):\n    while True:\n        item = await queue.get()\n        if item is None: break\n        print(f'Got: {item}')", "python", "async",
+        {"async", "queue", "producer", "consumer", "pattern"}});
+    frags.push_back({"import asyncio\n\nasync def with_timeout(coro, timeout=5.0):\n    try:\n        return await asyncio.wait_for(coro, timeout=timeout)\n    except asyncio.TimeoutError:\n        print('Operation timed out')\n        return None", "python", "async",
+        {"async", "timeout", "wait_for", "cancel", "deadline"}});
+    frags.push_back({"import asyncio\nimport aiofiles\n\nasync def read_file_async(path):\n    async with aiofiles.open(path, 'r') as f:\n        content = await f.read()\n    return content", "python", "async",
+        {"async", "file", "aiofiles", "read", "nonblocking"}});
+    frags.push_back({"import asyncio\n\nasync def retry(coro_fn, max_retries=3, delay=1.0):\n    for attempt in range(max_retries):\n        try:\n            return await coro_fn()\n        except Exception as e:\n            if attempt == max_retries - 1: raise\n            await asyncio.sleep(delay * (attempt + 1))", "python", "async",
+        {"async", "retry", "backoff", "resilient", "fault"}});
+    frags.push_back({"import asyncio\n\nasync def semaphore_limited(urls, max_concurrent=5):\n    sem = asyncio.Semaphore(max_concurrent)\n    async def fetch(url):\n        async with sem:\n            await asyncio.sleep(0.1)\n            return url\n    return await asyncio.gather(*[fetch(u) for u in urls])", "python", "async",
+        {"semaphore", "rate", "limit", "concurrent", "throttle"}});
+    frags.push_back({"const fetchData = async (url) => {\n  try {\n    const response = await fetch(url);\n    const data = await response.json();\n    return data;\n  } catch (error) {\n    console.error('Fetch failed:', error);\n    throw error;\n  }\n};", "javascript", "async",
+        {"async", "await", "fetch", "javascript", "api"}});
+    frags.push_back({"const parallel = async (tasks) => {\n  const results = await Promise.allSettled(tasks);\n  return results.map(r => r.status === 'fulfilled' ? r.value : r.reason);\n};", "javascript", "async",
+        {"promise", "allSettled", "parallel", "javascript", "batch"}});
+
+    // ===== TESTING PATTERNS (8) =====
+    frags.push_back({"import pytest\n\ndef test_addition():\n    assert 1 + 1 == 2\n\ndef test_string_upper():\n    assert 'hello'.upper() == 'HELLO'\n\n@pytest.mark.parametrize('input,expected', [(1,1), (2,4), (3,9)])\ndef test_square(input, expected):\n    assert input ** 2 == expected", "python", "testing",
+        {"test", "pytest", "assert", "parametrize", "unit"}});
+    frags.push_back({"import pytest\nfrom unittest.mock import Mock, patch\n\n@patch('module.external_api')\ndef test_with_mock(mock_api):\n    mock_api.return_value = {'status': 'ok'}\n    result = function_under_test()\n    assert result == 'ok'\n    mock_api.assert_called_once()", "python", "testing",
+        {"mock", "patch", "unittest", "test", "stub"}});
+    frags.push_back({"import pytest\n\n@pytest.fixture\ndef database():\n    db = create_test_db()\n    yield db\n    db.cleanup()\n\ndef test_insert(database):\n    database.insert({'key': 'value'})\n    assert database.count() == 1", "python", "testing",
+        {"fixture", "pytest", "setup", "teardown", "test"}});
+    frags.push_back({"describe('Calculator', () => {\n  let calc;\n  beforeEach(() => { calc = new Calculator(); });\n  \n  it('should add numbers', () => {\n    expect(calc.add(2, 3)).toBe(5);\n  });\n  \n  it('should handle negatives', () => {\n    expect(calc.add(-1, 1)).toBe(0);\n  });\n});", "javascript", "testing",
+        {"jest", "describe", "test", "expect", "javascript"}});
+    frags.push_back({"import pytest\nimport time\n\n@pytest.fixture(scope='session')\ndef slow_resource():\n    resource = expensive_setup()\n    yield resource\n    expensive_teardown(resource)\n\ndef test_performance():\n    start = time.time()\n    result = heavy_computation()\n    assert time.time() - start < 2.0", "python", "testing",
+        {"performance", "benchmark", "fixture", "session", "test"}});
+    frags.push_back({"from hypothesis import given, strategies as st\n\n@given(st.lists(st.integers()))\ndef test_sort_is_idempotent(lst):\n    sorted_once = sorted(lst)\n    sorted_twice = sorted(sorted_once)\n    assert sorted_once == sorted_twice", "python", "testing",
+        {"property", "hypothesis", "fuzz", "generative", "test"}});
+    frags.push_back({"import requests_mock\n\ndef test_api_client():\n    with requests_mock.Mocker() as m:\n        m.get('http://api.example.com/data', json={'result': 42})\n        response = my_client.get_data()\n        assert response['result'] == 42", "python", "testing",
+        {"mock", "requests", "api", "integration", "test"}});
+    frags.push_back({"#[cfg(test)]\nmod tests {\n    use super::*;\n    \n    #[test]\n    fn test_basic() {\n        assert_eq!(add(2, 3), 5);\n    }\n    \n    #[test]\n    #[should_panic]\n    fn test_divide_by_zero() {\n        divide(1, 0);\n    }\n}", "rust", "testing",
+        {"rust", "test", "assert", "cfg", "mod"}});
+
+    // ===== DEPLOYMENT / DOCKER / CI-CD (7) =====
+    frags.push_back({"FROM python:3.11-slim\nWORKDIR /app\nCOPY requirements.txt .\nRUN pip install --no-cache-dir -r requirements.txt\nCOPY . .\nEXPOSE 8000\nCMD [\"uvicorn\", \"main:app\", \"--host\", \"0.0.0.0\", \"--port\", \"8000\"]", "docker", "deployment",
+        {"docker", "dockerfile", "container", "deploy", "image"}});
+    frags.push_back({"version: '3.8'\nservices:\n  web:\n    build: .\n    ports:\n      - '8000:8000'\n    environment:\n      - DATABASE_URL=postgresql://db:5432/app\n    depends_on:\n      - db\n  db:\n    image: postgres:15\n    environment:\n      - POSTGRES_PASSWORD=secret", "docker", "deployment",
+        {"docker-compose", "services", "postgres", "deploy", "stack"}});
+    frags.push_back({"name: CI\non: [push, pull_request]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      - uses: actions/setup-python@v4\n        with:\n          python-version: '3.11'\n      - run: pip install -r requirements.txt\n      - run: pytest --cov=src tests/", "yaml", "deployment",
+        {"github", "actions", "ci", "pipeline", "workflow"}});
+    frags.push_back({"stages:\n  - test\n  - build\n  - deploy\n\ntest:\n  stage: test\n  script:\n    - pip install -r requirements.txt\n    - pytest\n\ndeploy:\n  stage: deploy\n  script:\n    - docker build -t app .\n    - docker push registry/app:latest\n  only:\n    - main", "yaml", "deployment",
+        {"gitlab", "ci", "pipeline", "deploy", "stages"}});
+    frags.push_back({"#!/bin/bash\nset -euo pipefail\necho 'Building...'\ndocker build -t myapp:$(git rev-parse --short HEAD) .\necho 'Pushing...'\ndocker push myapp:$(git rev-parse --short HEAD)\necho 'Deploying...'\nkubectl set image deployment/myapp myapp=myapp:$(git rev-parse --short HEAD)", "bash", "deployment",
+        {"deploy", "script", "docker", "kubernetes", "push"}});
+    frags.push_back({"apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: myapp\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: myapp\n  template:\n    spec:\n      containers:\n      - name: myapp\n        image: myapp:latest\n        ports:\n        - containerPort: 8000", "yaml", "deployment",
+        {"kubernetes", "k8s", "deployment", "pod", "replicas"}});
+    frags.push_back({"terraform {\n  required_providers {\n    aws = { source = \"hashicorp/aws\" }\n  }\n}\n\nresource \"aws_instance\" \"web\" {\n  ami           = \"ami-0c55b159cbfafe1f0\"\n  instance_type = \"t2.micro\"\n  tags = { Name = \"WebServer\" }\n}", "hcl", "deployment",
+        {"terraform", "infrastructure", "aws", "cloud", "provision"}});
+
+    // ===== DATABASE OPERATIONS (7) =====
+    frags.push_back({"import sqlite3\n\nconn = sqlite3.connect('app.db')\ncursor = conn.cursor()\ncursor.execute('''CREATE TABLE IF NOT EXISTS users\n    (id INTEGER PRIMARY KEY, name TEXT, email TEXT)''')\ncursor.execute('INSERT INTO users (name, email) VALUES (?, ?)', ('Alice', 'alice@example.com'))\nconn.commit()\nconn.close()", "python", "database",
+        {"sqlite", "database", "create", "insert", "table"}});
+    frags.push_back({"import sqlite3\n\ndef query_users(search):\n    conn = sqlite3.connect('app.db')\n    cursor = conn.cursor()\n    cursor.execute('SELECT * FROM users WHERE name LIKE ?', (f'%{search}%',))\n    results = cursor.fetchall()\n    conn.close()\n    return results", "python", "database",
+        {"sqlite", "query", "select", "search", "database"}});
+    frags.push_back({"import psycopg2\n\nconn = psycopg2.connect(\n    host='localhost', dbname='mydb',\n    user='user', password='pass'\n)\ncur = conn.cursor()\ncur.execute('SELECT * FROM users WHERE active = %s', (True,))\nrows = cur.fetchall()\nconn.close()", "python", "database",
+        {"postgres", "postgresql", "query", "connect", "database"}});
+    frags.push_back({"from sqlalchemy import create_engine, Column, Integer, String\nfrom sqlalchemy.orm import declarative_base, Session\n\nBase = declarative_base()\n\nclass User(Base):\n    __tablename__ = 'users'\n    id = Column(Integer, primary_key=True)\n    name = Column(String(50))\n    email = Column(String(100))\n\nengine = create_engine('sqlite:///app.db')\nBase.metadata.create_all(engine)", "python", "database",
+        {"sqlalchemy", "orm", "model", "database", "schema"}});
+    frags.push_back({"import redis\n\nr = redis.Redis(host='localhost', port=6379, db=0)\nr.set('key', 'value')\nr.expire('key', 3600)\nvalue = r.get('key')\nr.hset('user:1', mapping={'name': 'Alice', 'age': '30'})\nuser = r.hgetall('user:1')", "python", "database",
+        {"redis", "cache", "key", "value", "store"}});
+    frags.push_back({"from pymongo import MongoClient\n\nclient = MongoClient('mongodb://localhost:27017/')\ndb = client['mydb']\ncollection = db['users']\ncollection.insert_one({'name': 'Alice', 'age': 30})\nresults = collection.find({'age': {'$gt': 25}})\nfor doc in results:\n    print(doc)", "python", "database",
+        {"mongodb", "nosql", "document", "collection", "query"}});
+    frags.push_back({"-- Common SQL patterns\nSELECT u.name, COUNT(o.id) as order_count\nFROM users u\nLEFT JOIN orders o ON u.id = o.user_id\nWHERE u.active = true\nGROUP BY u.name\nHAVING COUNT(o.id) > 5\nORDER BY order_count DESC\nLIMIT 10;", "sql", "database",
+        {"sql", "join", "group", "aggregate", "query"}});
+
+    // ===== WEB FRAMEWORKS (7) =====
+    frags.push_back({"from flask import Flask, request, jsonify\n\napp = Flask(__name__)\n\n@app.route('/api/users', methods=['GET'])\ndef get_users():\n    return jsonify({'users': []})\n\n@app.route('/api/users', methods=['POST'])\ndef create_user():\n    data = request.json\n    return jsonify(data), 201\n\nif __name__ == '__main__':\n    app.run(debug=True)", "python", "web",
+        {"flask", "api", "route", "web", "server"}});
+    frags.push_back({"from fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\nclass User(BaseModel):\n    name: str\n    email: str\n\n@app.get('/users/{user_id}')\nasync def get_user(user_id: int):\n    return {'user_id': user_id}\n\n@app.post('/users')\nasync def create_user(user: User):\n    return user", "python", "web",
+        {"fastapi", "api", "pydantic", "async", "rest"}});
+    frags.push_back({"const express = require('express');\nconst app = express();\napp.use(express.json());\n\napp.get('/api/items', (req, res) => {\n  res.json({ items: [] });\n});\n\napp.post('/api/items', (req, res) => {\n  const item = req.body;\n  res.status(201).json(item);\n});\n\napp.listen(3000, () => console.log('Server on port 3000'));", "javascript", "web",
+        {"express", "nodejs", "api", "rest", "server"}});
+    frags.push_back({"from flask import Flask, render_template, redirect, url_for, flash\nfrom flask_login import LoginManager, login_user, login_required\n\napp = Flask(__name__)\nlogin_manager = LoginManager(app)\n\n@app.route('/login', methods=['GET', 'POST'])\ndef login():\n    if request.method == 'POST':\n        user = User.query.filter_by(email=request.form['email']).first()\n        if user and user.check_password(request.form['password']):\n            login_user(user)\n            return redirect(url_for('dashboard'))\n    return render_template('login.html')", "python", "web",
+        {"flask", "login", "auth", "session", "security"}});
+    frags.push_back({"from fastapi import Depends, HTTPException, status\nfrom fastapi.security import OAuth2PasswordBearer\nimport jwt\n\noauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')\n\nasync def get_current_user(token: str = Depends(oauth2_scheme)):\n    try:\n        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])\n        return payload['sub']\n    except jwt.InvalidTokenError:\n        raise HTTPException(status_code=401, detail='Invalid token')", "python", "web",
+        {"jwt", "auth", "token", "oauth", "security"}});
+    frags.push_back({"from fastapi import WebSocket\n\n@app.websocket('/ws')\nasync def websocket_endpoint(websocket: WebSocket):\n    await websocket.accept()\n    while True:\n        data = await websocket.receive_text()\n        await websocket.send_text(f'Echo: {data}')", "python", "web",
+        {"websocket", "realtime", "socket", "stream", "bidirectional"}});
+    frags.push_back({"import React, { useState, useEffect } from 'react';\n\nfunction App() {\n  const [data, setData] = useState([]);\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    fetch('/api/items')\n      .then(res => res.json())\n      .then(json => { setData(json.items); setLoading(false); });\n  }, []);\n\n  if (loading) return <div>Loading...</div>;\n  return <ul>{data.map(item => <li key={item.id}>{item.name}</li>)}</ul>;\n}", "javascript", "web",
+        {"react", "hooks", "useEffect", "useState", "frontend"}});
+
+    // ===== DESIGN PATTERNS (8) =====
+    frags.push_back({"class Singleton:\n    _instance = None\n    \n    def __new__(cls):\n        if cls._instance is None:\n            cls._instance = super().__new__(cls)\n        return cls._instance\n    \n    def __init__(self):\n        if not hasattr(self, '_initialized'):\n            self._initialized = True\n            self.data = {}", "python", "patterns",
+        {"singleton", "pattern", "instance", "global", "one"}});
+    frags.push_back({"from abc import ABC, abstractmethod\n\nclass Animal(ABC):\n    @abstractmethod\n    def speak(self): pass\n\nclass Dog(Animal):\n    def speak(self): return 'Woof!'\n\nclass Cat(Animal):\n    def speak(self): return 'Meow!'\n\ndef animal_factory(animal_type):\n    factories = {'dog': Dog, 'cat': Cat}\n    return factories[animal_type]()", "python", "patterns",
+        {"factory", "pattern", "abstract", "create", "polymorphism"}});
+    frags.push_back({"class EventEmitter:\n    def __init__(self):\n        self._listeners = {}\n    \n    def on(self, event, callback):\n        self._listeners.setdefault(event, []).append(callback)\n    \n    def emit(self, event, *args):\n        for callback in self._listeners.get(event, []):\n            callback(*args)\n    \n    def off(self, event, callback):\n        if event in self._listeners:\n            self._listeners[event].remove(callback)", "python", "patterns",
+        {"observer", "event", "listener", "publish", "subscribe"}});
+    frags.push_back({"class Command:\n    def execute(self): pass\n    def undo(self): pass\n\nclass UndoStack:\n    def __init__(self):\n        self._history = []\n    \n    def execute(self, command):\n        command.execute()\n        self._history.append(command)\n    \n    def undo(self):\n        if self._history:\n            cmd = self._history.pop()\n            cmd.undo()", "python", "patterns",
+        {"command", "undo", "history", "action", "pattern"}});
+    frags.push_back({"from functools import wraps\n\ndef decorator(func):\n    @wraps(func)\n    def wrapper(*args, **kwargs):\n        print(f'Before {func.__name__}')\n        result = func(*args, **kwargs)\n        print(f'After {func.__name__}')\n        return result\n    return wrapper\n\n@decorator\ndef greet(name):\n    return f'Hello, {name}!'", "python", "patterns",
+        {"decorator", "wrapper", "pattern", "aspect", "middleware"}});
+    frags.push_back({"class Builder:\n    def __init__(self):\n        self._config = {}\n    \n    def set_host(self, host):\n        self._config['host'] = host\n        return self\n    \n    def set_port(self, port):\n        self._config['port'] = port\n        return self\n    \n    def set_debug(self, debug):\n        self._config['debug'] = debug\n        return self\n    \n    def build(self):\n        return Server(**self._config)\n\nserver = Builder().set_host('0.0.0.0').set_port(8080).set_debug(True).build()", "python", "patterns",
+        {"builder", "pattern", "fluent", "chain", "config"}});
+    frags.push_back({"class Strategy:\n    def execute(self, data): pass\n\nclass QuickSort(Strategy):\n    def execute(self, data): return sorted(data)\n\nclass BubbleSort(Strategy):\n    def execute(self, data):\n        arr = list(data)\n        for i in range(len(arr)):\n            for j in range(len(arr)-1-i):\n                if arr[j] > arr[j+1]: arr[j], arr[j+1] = arr[j+1], arr[j]\n        return arr\n\nclass Sorter:\n    def __init__(self, strategy): self._strategy = strategy\n    def sort(self, data): return self._strategy.execute(data)", "python", "patterns",
+        {"strategy", "pattern", "algorithm", "interchangeable", "policy"}});
+    frags.push_back({"from typing import TypeVar, Generic, List\n\nT = TypeVar('T')\n\nclass Repository(Generic[T]):\n    def __init__(self):\n        self._items: List[T] = []\n    \n    def add(self, item: T) -> None:\n        self._items.append(item)\n    \n    def get(self, index: int) -> T:\n        return self._items[index]\n    \n    def find(self, predicate) -> List[T]:\n        return [item for item in self._items if predicate(item)]", "python", "patterns",
+        {"generic", "repository", "type", "hint", "typed"}});
+
     return frags;
 }
 
