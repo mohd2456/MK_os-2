@@ -358,7 +358,7 @@ public:
     std::string pick(const std::vector<std::string>& options) {
         if (options.empty()) return "...";
         std::uniform_int_distribution<size_t> dist(0, options.size() - 1);
-        return options[const_cast<std::mt19937&>(rng_)];
+        return options[dist(const_cast<std::mt19937&>(rng_))];
     }
 };
 
