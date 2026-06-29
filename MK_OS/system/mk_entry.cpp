@@ -1065,6 +1065,70 @@ int main(int argc, char* argv[]) {
     }
 
     // ============================================================
+    // First-boot: offer LLM model download
+    // ============================================================
+    {
+        const std::string modelPath = "llm/models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf";
+        const std::string dismissPath = ".model_prompt_dismissed";
+        bool modelExists = false;
+        bool dismissed = false;
+
+        {
+            std::ifstream mf(modelPath);
+            modelExists = mf.good();
+        }
+        {
+            std::ifstream df(dismissPath);
+            dismissed = df.good();
+        }
+
+        if (!modelExists && !dismissed) {
+            std::cout << "\n"
+                << Color::BOLD << Color::BCYAN
+                << "  ╭─────────────────────────────────────────────╮\n"
+                << "  │  Want MK to be better at understanding you? │\n"
+                << "  │                                             │\n"
+                << "  │  Download a small AI model (638MB) that     │\n"
+                << "  │  helps MK understand messy text and slang.  │\n"
+                << "  │  MK works fine without it, just less smart  │\n"
+                << "  │  at parsing casual language.                │\n"
+                << "  │                                             │\n"
+                << "  │  [y] Yes, download now                      │\n"
+                << "  │  [n] No thanks                              │\n"
+                << "  │  [l] Ask me later                           │\n"
+                << "  ╰─────────────────────────────────────────────╯\n"
+                << Color::RESET << "\n"
+                << "  Your choice: ";
+            std::cout.flush();
+
+            std::string choice;
+            std::getline(std::cin, choice);
+            choice = trim(choice);
+            std::transform(choice.begin(), choice.end(), choice.begin(), ::tolower);
+
+            if (choice == "y" || choice == "yes") {
+                std::cout << "\n  " << Color::DIM << "Downloading model..." << Color::RESET << "\n";
+                system("bash llm/download_model.sh");
+                std::cout << "  " << Color::BGREEN << "✓" << Color::RESET
+                          << " Model downloaded! MK is now smarter at understanding you.\n";
+            } else if (choice == "n" || choice == "no") {
+                {
+                    std::ofstream df(dismissPath);
+                    df << "dismissed" << std::endl;
+                }
+                std::cout << "  " << Color::DIM
+                          << "Got it. You can always run ./llm/download_model.sh later."
+                          << Color::RESET << "\n";
+            } else {
+                // "l", "later", empty, or anything else
+                std::cout << "  " << Color::DIM
+                          << "No problem. I'll ask again next time."
+                          << Color::RESET << "\n";
+            }
+        }
+    }
+
+    // ============================================================
     // Main REPL Loop
     // ============================================================
     unsigned int interaction_count = 0;
