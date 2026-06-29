@@ -86,6 +86,7 @@ namespace Color {
 #include "../ai_core/mce/mce_engine.cpp"
 #include "../ai_core/cxn/cxn_engine.cpp"
 #include "../ai_core/prometheus/prometheus_engine.cpp"
+#include "../ai_core/idea_engine.cpp"
 
 // ============================================================
 // Global state
@@ -150,6 +151,7 @@ struct MKSystem {
     MKConsciousnessEngine consciousnessEngine;
     MKCrystalNetwork crystalNetwork;
     MKPrometheus prometheus;
+    MKIdeaEngine ideaEngine;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -236,6 +238,11 @@ static void cmd_help() {
         << "    " << Color::GREEN << "/identity" << Color::RESET << "          Show MK's evolved identity state\n"
         << "    " << Color::GREEN << "/fluid" << Color::RESET << "             Show last fluid resonance trace\n"
         << "\n"
+        << Color::BOLD << Color::YELLOW << "  💡 IDEAS" << Color::RESET << "\n"
+        << "    " << Color::GREEN << "/idea" << Color::RESET << "              Generate a random creative idea\n"
+        << "    " << Color::GREEN << "/brainstorm" << Color::RESET << " <topic> Brainstorm 5 ideas about a topic\n"
+        << "    " << Color::GREEN << "/invent" << Color::RESET << " <problem>  Invent solutions for a problem\n"
+        << "\n"
         << Color::BOLD << Color::YELLOW << "  🖥️  SYSTEM" << Color::RESET << "\n"
         << "    " << Color::GREEN << "/status" << Color::RESET << "            Full system diagnostics\n"
         << "    " << Color::GREEN << "/briefing" << Color::RESET << "          Daily system briefing report\n"
@@ -271,6 +278,9 @@ static void show_slash_suggestions(const std::string& partial) {
         {"/identity", "MK evolved identity state"},
         {"/fluid",    "Fluid resonance trace"},
         {"/help",     "Show all commands"},
+        {"/idea",     "Generate a creative idea"},
+        {"/brainstorm","Brainstorm ideas on a topic"},
+        {"/invent",   "Invent solutions for a problem"},
         {"/quit",     "Save and exit"},
     };
 
@@ -557,6 +567,29 @@ static void cmd_briefing(MKSystem& sys) {
 // Natural Language Routing
 // ============================================================
 static void handle_natural_query(MKSystem& sys, const std::string& input) {
+    // ---- IDEA ENGINE: Check for creative requests ----
+    {
+        std::string lower = input;
+        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+        bool isIdeaReq = (lower.find("give me an idea") != std::string::npos ||
+                          lower.find("brainstorm") != std::string::npos ||
+                          lower.find("what if") != std::string::npos ||
+                          lower.find("invent something") != std::string::npos ||
+                          lower.find("idea for") != std::string::npos);
+        if (isIdeaReq) {
+            auto ideas = sys.ideaEngine.brainstorm(sys.graph, input, 3);
+            if (!ideas.empty()) {
+                std::cout << "\n  " << Color::BOLD << Color::BYELLOW << "💡 Ideas:" << Color::RESET << "\n";
+                for (const auto& idea : ideas) {
+                    std::cout << "  " << Color::BGREEN << "→" << Color::RESET << " " << idea.idea << "\n";
+                }
+                std::cout << "\n";
+                sys.memory.recordInteraction("idea_generation", input);
+                return;
+            }
+        }
+    }
+
     // ---- FRIEND MODE: Check if this is casual conversation ----
     // Before routing through smart router, catch conversational inputs
     if (sys.conversationMode.isConversation(input)) {
@@ -1416,6 +1449,69 @@ int main(int argc, char* argv[]) {
                         std::cout << "\n  " << Color::BOLD << "Thought trace:" << Color::RESET << "\n";
                         std::cout << "  " << Color::DIM << thought << Color::RESET << "\n";
                     }
+                    commandFound = true;
+                } else if (input == "/idea") {
+                    auto idea = sys.ideaEngine.generateIdea(sys.graph);
+                    std::cout << "\n  " << Color::BOLD << Color::BYELLOW << "💡 IDEA #" << sys.ideaEngine.getHistory().size() << Color::RESET << "\n";
+                    std::cout << "  " << Color::DIM << "─────────────────────────────────" << Color::RESET << "\n";
+                    std::cout << "  Concept A: " << Color::BOLD << idea.conceptA << Color::RESET << "\n";
+                    std::cout << "  Concept B: " << Color::BOLD << idea.conceptB << Color::RESET << "\n";
+                    std::cout << "  Bridge: " << Color::CYAN << idea.bridge << Color::RESET << "\n\n";
+                    std::cout << "  " << Color::BGREEN << "→" << Color::RESET << " \"" << idea.idea << "\"\n\n";
+                    int fBar = (int)(idea.feasibility * 10);
+                    int nBar = (int)(idea.novelty * 10);
+                    std::cout << "  Feasibility: " << Color::GREEN;
+                    for (int i = 0; i < 10; i++) std::cout << (i < fBar ? "\xe2\x96\x88" : "\xe2\x96\x91");
+                    std::cout << Color::RESET << " " << (int)(idea.feasibility * 100) << "%\n";
+                    std::cout << "  Novelty:     " << Color::CYAN;
+                    for (int i = 0; i < 10; i++) std::cout << (i < nBar ? "\xe2\x96\x88" : "\xe2\x96\x91");
+                    std::cout << Color::RESET << " " << (int)(idea.novelty * 100) << "%\n";
+                    std::cout << "  Category:    " << Color::MAGENTA << idea.category << Color::RESET << "\n";
+                    std::cout << "  " << Color::DIM << "─────────────────────────────────" << Color::RESET << "\n";
+                    commandFound = true;
+                } else if (input.size() > 12 && input.substr(0, 12) == "/brainstorm ") {
+                    std::string topic = trim(input.substr(12));
+                    if (topic.empty()) {
+                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET << " /brainstorm <topic>\n";
+                    } else {
+                        auto ideas = sys.ideaEngine.brainstorm(sys.graph, topic, 5);
+                        std::cout << "\n  " << Color::BOLD << Color::BYELLOW << "💡 BRAINSTORM: " << topic << Color::RESET << "\n";
+                        std::cout << "  " << Color::DIM << "═════════════════════════════════" << Color::RESET << "\n";
+                        int n = 1;
+                        for (const auto& idea : ideas) {
+                            std::cout << "\n  " << Color::BOLD << n++ << "." << Color::RESET << " " << idea.idea << "\n";
+                            std::cout << "     " << Color::DIM << "[" << idea.category << " | feasibility: "
+                                      << (int)(idea.feasibility * 100) << "% | novelty: "
+                                      << (int)(idea.novelty * 100) << "%]" << Color::RESET << "\n";
+                        }
+                        std::cout << "\n  " << Color::DIM << "═════════════════════════════════" << Color::RESET << "\n";
+                    }
+                    commandFound = true;
+                } else if (input == "/brainstorm") {
+                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET << " /brainstorm <topic>\n"
+                              << "  " << Color::DIM << "Example: /brainstorm renewable energy" << Color::RESET << "\n";
+                    commandFound = true;
+                } else if (input.size() > 8 && input.substr(0, 8) == "/invent ") {
+                    std::string problem = trim(input.substr(8));
+                    if (problem.empty()) {
+                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET << " /invent <problem>\n";
+                    } else {
+                        auto ideas = sys.ideaEngine.inventFor(sys.graph, problem);
+                        std::cout << "\n  " << Color::BOLD << Color::BYELLOW << "🔧 INVENTIONS for: " << problem << Color::RESET << "\n";
+                        std::cout << "  " << Color::DIM << "═════════════════════════════════" << Color::RESET << "\n";
+                        int n = 1;
+                        for (const auto& idea : ideas) {
+                            std::cout << "\n  " << Color::BOLD << n++ << "." << Color::RESET << " " << idea.idea << "\n";
+                            std::cout << "     " << Color::DIM << "[feasibility: "
+                                      << (int)(idea.feasibility * 100) << "% | novelty: "
+                                      << (int)(idea.novelty * 100) << "%]" << Color::RESET << "\n";
+                        }
+                        std::cout << "\n  " << Color::DIM << "═════════════════════════════════" << Color::RESET << "\n";
+                    }
+                    commandFound = true;
+                } else if (input == "/invent") {
+                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET << " /invent <problem>\n"
+                              << "  " << Color::DIM << "Example: /invent I need to stay cool in summer" << Color::RESET << "\n";
                     commandFound = true;
                 } else if (input.size() > 7 && input.substr(0, 7) == "/shell ") {
                     std::string shellCmd = trim(input.substr(7));
