@@ -86,6 +86,7 @@ namespace Color {
 #include "../ai_core/mce/mce_engine.cpp"
 #include "../ai_core/cxn/cxn_engine.cpp"
 #include "../ai_core/prometheus/prometheus_engine.cpp"
+#include "../ai_core/genesis/genesis_engine.cpp"
 #include "../ai_core/idea_engine.cpp"
 #include "../plugins/pc_helper.cpp"
 
@@ -225,6 +226,7 @@ struct MKSystem {
     MKPrometheus prometheus;
     MKIdeaEngine ideaEngine;
     MKPCHelper pcHelper;
+    MKGenesisEngine genesis;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -311,6 +313,10 @@ static void cmd_help() {
         << "    " << Color::GREEN << "/identity" << Color::RESET << "          Show MK's evolved identity state\n"
         << "    " << Color::GREEN << "/fluid" << Color::RESET << "             Show last fluid resonance trace\n"
         << "\n"
+        << Color::BOLD << Color::YELLOW << "  🧬 GENESIS" << Color::RESET << "\n"
+        << "    " << Color::GREEN << "/genesis" << Color::RESET << "           Show Genesis engine stats\n"
+        << "    " << Color::GREEN << "/dream" << Color::RESET << "             Show dream insights from idle time\n"
+        << "\n"
         << Color::BOLD << Color::YELLOW << "  💡 IDEAS" << Color::RESET << "\n"
         << "    " << Color::GREEN << "/idea" << Color::RESET << "              Generate a random creative idea\n"
         << "    " << Color::GREEN << "/brainstorm" << Color::RESET << " <topic> Brainstorm 5 ideas about a topic\n"
@@ -349,6 +355,8 @@ static void show_slash_suggestions(const std::string& partial) {
         {"/services", "Show service status"},
         {"/sync",     "Sync knowledge with GitHub"},
         {"/prometheus", "Prometheus engine stats"},
+        {"/genesis",  "Genesis engine stats"},
+        {"/dream",    "Show dream insights"},
         {"/identity", "MK evolved identity state"},
         {"/fluid",    "Fluid resonance trace"},
         {"/help",     "Show all commands"},
@@ -691,9 +699,13 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
         }
 
         // Generate casual response based on input type and mood
-        // Priority: Prometheus -> CXN Crystal Network -> MCE Consciousness -> template fallback
+        // Priority: GENESIS -> Prometheus -> CXN Crystal Network -> MCE Consciousness -> template fallback
         std::string response;
-        if (sys.prometheus.isInitialized()) {
+        if (sys.genesis.isInitialized()) {
+            response = sys.genesis.generate(input);
+        }
+        // Fall back to Prometheus if Genesis returns empty
+        if (response.empty() && sys.prometheus.isInitialized()) {
             response = sys.prometheus.generate(input);
         }
         // Fall back to CXN if Prometheus returns empty
@@ -719,6 +731,9 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             
             // Absorb into Prometheus for evolution
             sys.prometheus.absorb(input, response, true);
+            
+            // Absorb into Genesis for evolution
+            sys.genesis.absorb(input, response, true);
             
             // Absorb into consciousness engine for learning
             sys.consciousnessEngine.absorb(input, response);
@@ -942,8 +957,10 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
         sys.memory.recordQA(input, response, confidence);
         // Absorb into Prometheus for evolution
         sys.prometheus.absorb(input, response, true);
+        sys.genesis.absorb(input, response, true);
     } else {
         sys.prometheus.absorb(input, "", false);
+        sys.genesis.absorb(input, "", false);
     }
 
     // Passively extract biographical facts from user input
@@ -1254,6 +1271,17 @@ int main(int argc, char* argv[]) {
         sys.prometheus.load();  // Restore identity state if saved
     }
 
+    // Step 4f: Initialize Genesis Engine (next-gen AI)
+    {
+        std::vector<std::string> genesisKnowledge;
+        const auto& genesisEdges = sys.graph.getAllEdges();
+        for (const auto& e : genesisEdges) {
+            genesisKnowledge.push_back(e.source + " " + e.relation + " " + e.target);
+            if (genesisKnowledge.size() > 3000) break;
+        }
+        sys.genesis.initialize(sharedCasualTexts, genesisKnowledge);
+    }
+
     // Step 4c: Check if daily briefing should be generated
     if (sys.dailyBriefing.shouldGenerate()) {
         std::cout << "\n  " << Color::BMAGENTA << "📋" << Color::RESET 
@@ -1305,6 +1333,9 @@ int main(int argc, char* argv[]) {
     // Register telegram polling as a daemon job for monitoring
     sys.daemon.addJob("health_check", 30, [&sys]() {
         sys.serviceManager.run_health_checks();
+    });
+    sys.daemon.addJob("genesis_dream", 10, [&sys]() {
+        sys.genesis.dreamTick();
     });
     if (sys.telegram) {
         sys.daemon.addJob("telegram_poll_monitor", 60, []() {
@@ -1522,6 +1553,20 @@ int main(int argc, char* argv[]) {
                     std::cout << "\n  " << Color::BOLD << Color::BRED << "🔥 Prometheus Engine" << Color::RESET << "\n";
                     std::cout << "  " << Color::DIM << stats << Color::RESET << "\n";
                     commandFound = true;
+                } else if (input == "/genesis") {
+                    std::string stats = sys.genesis.getStats();
+                    std::cout << "\n  " << Color::BOLD << Color::BGREEN << "🧬 Genesis Engine" << Color::RESET << "\n";
+                    std::cout << "  " << Color::DIM << stats << Color::RESET << "\n";
+                    commandFound = true;
+                } else if (input == "/dream") {
+                    std::string insight = sys.genesis.getUndeliveredInsight();
+                    if (!insight.empty()) {
+                        std::cout << "\n  " << Color::BOLD << Color::BMAGENTA << "💭 Dream Insight" << Color::RESET << "\n";
+                        std::cout << "  " << Color::BCYAN << "→" << Color::RESET << " " << insight << "\n";
+                    } else {
+                        std::cout << "\n  " << Color::DIM << "No new dream insights yet. MK dreams during idle time." << Color::RESET << "\n";
+                    }
+                    commandFound = true;
                 } else if (input == "/identity") {
                     std::string id = sys.prometheus.getIdentity();
                     std::cout << "\n  " << Color::BOLD << Color::BMAGENTA << "🪞 Evolved Identity" << Color::RESET << "\n";
@@ -1720,7 +1765,8 @@ int main(int argc, char* argv[]) {
     sys.consciousnessEngine.save();
     sys.crystalNetwork.save("cxn_crystals.dat");
     sys.prometheus.save();
-    std::cout << "  " << Color::GREEN << "✓" << Color::RESET << " Memory saved. Improvement log saved. Knowledge persisted. Prometheus state saved.\n";
+    sys.genesis.save();
+    std::cout << "  " << Color::GREEN << "✓" << Color::RESET << " Memory saved. Improvement log saved. Knowledge persisted. Genesis state saved.\n";
     std::cout << "  " << Color::BOLD << Color::CYAN << "MK OS shut down cleanly. Goodbye." 
               << Color::RESET << "\n\n";
 
