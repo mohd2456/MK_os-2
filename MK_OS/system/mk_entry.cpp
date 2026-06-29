@@ -85,6 +85,7 @@ namespace Color {
 #include "../ai_core/conversation_mode.cpp"
 #include "../ai_core/mce/mce_engine.cpp"
 #include "../ai_core/cxn/cxn_engine.cpp"
+#include "../ai_core/prometheus/prometheus_engine.cpp"
 
 // ============================================================
 // Global state
@@ -148,6 +149,7 @@ struct MKSystem {
     MKConversationMode conversationMode;
     MKConsciousnessEngine consciousnessEngine;
     MKCrystalNetwork crystalNetwork;
+    MKPrometheus prometheus;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -229,6 +231,11 @@ static void cmd_help() {
         << "    " << Color::GREEN << "/time" << Color::RESET << " [timezone]   Current time in any timezone\n"
         << "    " << Color::GREEN << "/news" << Color::RESET << "              Latest tech headlines\n"
         << "\n"
+        << Color::BOLD << Color::YELLOW << "  🔥 PROMETHEUS" << Color::RESET << "\n"
+        << "    " << Color::GREEN << "/prometheus" << Color::RESET << "        Show Prometheus engine stats\n"
+        << "    " << Color::GREEN << "/identity" << Color::RESET << "          Show MK's evolved identity state\n"
+        << "    " << Color::GREEN << "/fluid" << Color::RESET << "             Show last fluid resonance trace\n"
+        << "\n"
         << Color::BOLD << Color::YELLOW << "  🖥️  SYSTEM" << Color::RESET << "\n"
         << "    " << Color::GREEN << "/status" << Color::RESET << "            Full system diagnostics\n"
         << "    " << Color::GREEN << "/briefing" << Color::RESET << "          Daily system briefing report\n"
@@ -260,6 +267,9 @@ static void show_slash_suggestions(const std::string& partial) {
         {"/shell",    "Run MK shell command"},
         {"/services", "Show service status"},
         {"/sync",     "Sync knowledge with GitHub"},
+        {"/prometheus", "Prometheus engine stats"},
+        {"/identity", "MK evolved identity state"},
+        {"/fluid",    "Fluid resonance trace"},
         {"/help",     "Show all commands"},
         {"/quit",     "Save and exit"},
     };
@@ -573,16 +583,20 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
         }
 
         // Generate casual response based on input type and mood
-        // Priority: CXN Crystal Network -> MCE Consciousness -> template fallback
+        // Priority: Prometheus -> CXN Crystal Network -> MCE Consciousness -> template fallback
         std::string response;
-        if (sys.crystalNetwork.isInitialized()) {
+        if (sys.prometheus.isInitialized()) {
+            response = sys.prometheus.generate(input);
+        }
+        // Fall back to CXN if Prometheus returns empty
+        if (response.empty() && sys.crystalNetwork.isInitialized()) {
             response = sys.crystalNetwork.generate(input);
         }
         // Fall back to MCE if CXN returns empty
         if (response.empty() && sys.consciousnessEngine.isInitialized()) {
             response = sys.consciousnessEngine.generate(input, sys.graph);
         }
-        // Fall back to template system if both return empty
+        // Fall back to template system if all return empty
         if (response.empty()) {
             response = sys.conversationMode.generateResponse(input, sys.casualResponses);
         }
@@ -594,6 +608,9 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             sys.brainMemory.commitToShortTerm("user", input);
             sys.brainMemory.commitToShortTerm("mk", response);
             sys.memory.recordInteraction("conversation", input);
+            
+            // Absorb into Prometheus for evolution
+            sys.prometheus.absorb(input, response, true);
             
             // Absorb into consciousness engine for learning
             sys.consciousnessEngine.absorb(input, response);
@@ -815,6 +832,10 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
     sys.memory.recordInteraction("query", input);
     if (answered) {
         sys.memory.recordQA(input, response, confidence);
+        // Absorb into Prometheus for evolution
+        sys.prometheus.absorb(input, response, true);
+    } else {
+        sys.prometheus.absorb(input, "", false);
     }
 
     // Passively extract biographical facts from user input
@@ -1102,6 +1123,40 @@ int main(int argc, char* argv[]) {
         sys.crystalNetwork.initialize(casualTexts, knowledgeFacts);
     }
 
+    // Step 4e: Initialize Prometheus Engine
+    {
+        // Collect casual response texts for bootstrap
+        std::vector<std::string> casualTexts;
+        auto addCasualP = [&](const std::vector<std::string>& v) {
+            for (const auto& s : v) casualTexts.push_back(s);
+        };
+        addCasualP(sys.casualResponses.greetings);
+        addCasualP(sys.casualResponses.goodbyes);
+        addCasualP(sys.casualResponses.acknowledgments);
+        addCasualP(sys.casualResponses.reactions_positive);
+        addCasualP(sys.casualResponses.reactions_negative);
+        addCasualP(sys.casualResponses.encouragements);
+        addCasualP(sys.casualResponses.follow_ups);
+        addCasualP(sys.casualResponses.mood_happy);
+        addCasualP(sys.casualResponses.mood_sad);
+        addCasualP(sys.casualResponses.mood_angry);
+        addCasualP(sys.casualResponses.mood_chill);
+
+        // Collect knowledge facts
+        std::vector<std::string> knowledgeFacts;
+        const auto& prometheusEdges = sys.graph.getAllEdges();
+        for (const auto& e : prometheusEdges) {
+            knowledgeFacts.push_back(e.source + " " + e.relation + " " + e.target);
+            if (knowledgeFacts.size() > 500) break;
+        }
+
+        // Get code fragments from bootstrap
+        std::vector<std::string> codeFrags = getCodeFragmentStrings();
+
+        sys.prometheus.initialize(casualTexts, knowledgeFacts, codeFrags);
+        sys.prometheus.load();  // Restore identity state if saved
+    }
+
     // Step 4c: Check if daily briefing should be generated
     if (sys.dailyBriefing.shouldGenerate()) {
         std::cout << "\n  " << Color::BMAGENTA << "📋" << Color::RESET 
@@ -1342,6 +1397,26 @@ int main(int argc, char* argv[]) {
                         std::cout << "  " << Color::DIM << trace << Color::RESET << "\n";
                     }
                     commandFound = true;
+                } else if (input == "/prometheus") {
+                    std::string stats = sys.prometheus.getStats();
+                    std::cout << "\n  " << Color::BOLD << Color::BRED << "🔥 Prometheus Engine" << Color::RESET << "\n";
+                    std::cout << "  " << Color::DIM << stats << Color::RESET << "\n";
+                    commandFound = true;
+                } else if (input == "/identity") {
+                    std::string id = sys.prometheus.getIdentity();
+                    std::cout << "\n  " << Color::BOLD << Color::BMAGENTA << "🪞 Evolved Identity" << Color::RESET << "\n";
+                    std::cout << "  " << Color::DIM << id << Color::RESET << "\n";
+                    commandFound = true;
+                } else if (input == "/fluid") {
+                    std::string trace = sys.prometheus.getFluidTrace();
+                    std::cout << "\n  " << Color::BOLD << Color::BCYAN << "💧 Fluid Resonance Trace" << Color::RESET << "\n";
+                    std::cout << "  " << Color::DIM << trace << Color::RESET << "\n";
+                    std::string thought = sys.prometheus.explain();
+                    if (!thought.empty()) {
+                        std::cout << "\n  " << Color::BOLD << "Thought trace:" << Color::RESET << "\n";
+                        std::cout << "  " << Color::DIM << thought << Color::RESET << "\n";
+                    }
+                    commandFound = true;
                 } else if (input.size() > 7 && input.substr(0, 7) == "/shell ") {
                     std::string shellCmd = trim(input.substr(7));
                     if (shellCmd.empty()) {
@@ -1459,7 +1534,8 @@ int main(int argc, char* argv[]) {
     sys.learningEngine.persist();
     sys.consciousnessEngine.save();
     sys.crystalNetwork.save("cxn_crystals.dat");
-    std::cout << "  " << Color::GREEN << "✓" << Color::RESET << " Memory saved. Improvement log saved. Knowledge persisted.\n";
+    sys.prometheus.save();
+    std::cout << "  " << Color::GREEN << "✓" << Color::RESET << " Memory saved. Improvement log saved. Knowledge persisted. Prometheus state saved.\n";
     std::cout << "  " << Color::BOLD << Color::CYAN << "MK OS shut down cleanly. Goodbye." 
               << Color::RESET << "\n\n";
 
