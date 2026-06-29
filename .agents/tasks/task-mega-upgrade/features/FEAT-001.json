@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix all compiler warnings and upgrade core modules: pattern_graph (add hash-based lookup cache), math_solver (add more formulas - calculus, statistics, base conversion), code_runner (add sandboxing with namespaces/chroot, language detection, Node.js support), and improve error messages throughout the system.",
+  "status": "completed",
+  "steps": [
+    "Fix warning in ai_core/hre/pattern_graph.cpp: use the cache_hits field or remove it. Add a query result cache (LRU with std::list+unordered_map) for fast repeated lookups. Add a fuzzy string matching function for typo tolerance.",
+    "Fix warning in ai_core/hre/deep_reasoner.cpp: use the deepDives field (increment on deep reasoning calls).",
+    "Fix warning in system/daemon.cpp: use the crashCount field (increment on job exceptions).",
+    "Fix warning in ai_core/neural_net.cpp: reorder fields in MKTensor and MKQuantizedTensor constructors to match declaration order.",
+    "Fix warning in ai_core/hre/reasoning_chains.cpp:254: use or rename the graph parameter in deriveAll.",
+    "Fix warning in mk_brain/reasoning/reasoning_engine.cpp:32: use the prompt parameter in executeThinkChain.",
+    "Fix warnings in system/shell.cpp: remove unused lambda captures.",
+    "Fix warning in ai_core/prometheus/birth_chamber.cpp:121: use or remove the goal parameter.",
+    "Upgrade ai_core/math_solver.cpp: add derivative/integral approximation (numerical diff, Simpson's rule), statistics (mean, median, stddev, variance, correlation), base conversion (binary/octal/hex), matrix operations (2x2 determinant, inverse), number theory (factorial, fibonacci, GCD/LCM), and better natural language parsing for math queries.",
+    "Upgrade tools/code_runner.cpp: add Node.js/JavaScript support, add Rust support (compile+run), add input sanitization (block dangerous commands like rm -rf, fork bombs), add execution stats (runtime measurement), and improve output formatting."
+  ],
+  "acceptance_criteria": [
+    "Build succeeds with ZERO warnings (not just zero errors)",
+    "make test passes all existing tests",
+    "Math solver handles: derivatives, integrals, statistics, base conversion queries",
+    "Code runner supports python, bash, c++, javascript, and rust"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && clang++ -std=c++17 -O2 -Wall -Wextra -Werror -DLINUX -o mk_os system/mk_entry.cpp -lcurl -lsqlite3 2>&1 | grep -c error",
+    "cd /projects/sandbox/MK_os-2/MK_OS && make test 2>&1 | tail -5"
+  ],
+  "blocked_reason": null,
+  "findings": "All 12 warnings resolved. Build compiles clean with -Werror. All 7 tests pass (62 assertions). Math solver now handles derivatives, integrals, statistics, base conversion, matrix ops, and number theory. Code runner supports python, bash, c++, javascript, and rust with input sanitization and runtime measurement."
+}

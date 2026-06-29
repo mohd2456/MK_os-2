@@ -86,6 +86,8 @@ namespace Color {
 #include "../ai_core/mce/mce_engine.cpp"
 #include "../ai_core/cxn/cxn_engine.cpp"
 #include "../ai_core/prometheus/prometheus_engine.cpp"
+#include "../ai_core/idea_engine.cpp"
+#include "../plugins/pc_helper.cpp"
 
 // ============================================================
 // Global state
@@ -99,22 +101,93 @@ static void mk_signal_handler(int sig) {
 }
 
 // ============================================================
+// REPL UI Animation Helpers
+// ============================================================
+
+// Typewriter effect: prints each character with a small delay
+static void typewriter(const std::string& text, int delayMs = 8) {
+    for (char c : text) {
+        std::cout << c;
+        std::cout.flush();
+        std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
+    }
+}
+
+// Gradient color array for banner (ANSI 256-color codes)
+static const char* gradient_colors[] = {
+    "\033[38;5;51m",  // bright cyan
+    "\033[38;5;45m",  // medium cyan
+    "\033[38;5;39m",  // blue-cyan
+    "\033[38;5;33m",  // medium blue
+    "\033[38;5;27m",  // deep blue
+    "\033[38;5;33m",  // medium blue
+    "\033[38;5;39m",  // blue-cyan
+    "\033[38;5;45m",  // medium cyan
+    "\033[38;5;51m",  // bright cyan
+    "\033[38;5;87m",  // light cyan
+};
+static constexpr int NUM_GRADIENT_COLORS = 10;
+
+// Print a colored separator line
+static void print_separator() {
+    std::cout << "  " << Color::DIM;
+    for (int i = 0; i < 50; i++) {
+        std::cout << gradient_colors[i % NUM_GRADIENT_COLORS] << "\xe2\x94\x80";
+    }
+    std::cout << Color::RESET << "\n";
+}
+
+// Thinking spinner - runs briefly to give visual feedback
+static void show_thinking_spinner(int durationMs = 300) {
+    const char* frames[] = {"\xe2\xa0\x8b", "\xe2\xa0\x99", "\xe2\xa0\xb9", "\xe2\xa0\xb8",
+                            "\xe2\xa0\xbc", "\xe2\xa0\xb4", "\xe2\xa0\xa6", "\xe2\xa0\xa7",
+                            "\xe2\xa0\x87", "\xe2\xa0\x8f"};
+    int numFrames = 10;
+    int elapsed = 0;
+    int frameDelay = 60;
+    int i = 0;
+    std::cout << "  " << Color::CYAN;
+    while (elapsed < durationMs) {
+        std::cout << "\r  " << Color::CYAN << frames[i % numFrames] << " thinking..." << Color::RESET << "   ";
+        std::cout.flush();
+        std::this_thread::sleep_for(std::chrono::milliseconds(frameDelay));
+        elapsed += frameDelay;
+        i++;
+    }
+    std::cout << "\r                         \r";
+    std::cout.flush();
+}
+
+// ============================================================
 // MK Banner
 // ============================================================
 static void print_banner() {
-    std::cout << Color::BCYAN << Color::BOLD << R"(
-    ╔══════════════════════════════════════════════════════════╗
-    ║)" << Color::BWHITE << "   ███╗   ███╗██╗  ██╗     ██████╗ ███████╗             " << Color::BCYAN << R"(║
-    ║)" << Color::BWHITE << "   ████╗ ████║██║ ██╔╝    ██╔═══██╗██╔════╝             " << Color::BCYAN << R"(║
-    ║)" << Color::BWHITE << "   ██╔████╔██║█████╔╝     ██║   ██║███████╗             " << Color::BCYAN << R"(║
-    ║)" << Color::BWHITE << "   ██║╚██╔╝██║██╔═██╗     ██║   ██║╚════██║             " << Color::BCYAN << R"(║
-    ║)" << Color::BWHITE << "   ██║ ╚═╝ ██║██║  ██╗    ╚██████╔╝███████║             " << Color::BCYAN << R"(║
-    ║)" << Color::BWHITE << "   ╚═╝     ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚══════╝             " << Color::BCYAN << R"(║
-    ║                                                          ║
-    ║)" << Color::GREEN << "   Hybrid Reasoning Engine v2.0                          " << Color::BCYAN << R"( ║
-    ║)" << Color::DIM << Color::WHITE << "   Accuracy-First AI • Runs Locally • Never Hallucin" << Color::BCYAN << R"(ates  ║
-    ╚══════════════════════════════════════════════════════════╝
-)" << Color::RESET << std::endl;
+    // Banner lines for typewriter-style gradient printing
+    static const char* bannerLines[] = {
+        "    \xe2\x95\x94\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x90\xe2\x95\x97",
+    };
+    (void)bannerLines; // used for reference, actual print below
+
+    std::cout << "\n";
+    // Print banner with gradient colors per line
+    std::string lines[] = {
+        "    +----------------------------------------------------------+",
+        "    |   ###   ###  # #  #  #     ###   ###                    |",
+        "    |   ## ## ##   # # #        #   #  #                      |",
+        "    |   #  #  #    ###          #   #  ###                    |",
+        "    |   #     #    # # #        #   #    #                    |",
+        "    |   #     #    #  # #        ###   ###                    |",
+        "    |                                                          |",
+        "    |   Hybrid Reasoning Engine v2.0                           |",
+        "    |   Accuracy-First AI - Runs Locally - Never Hallucinates  |",
+        "    +----------------------------------------------------------+",
+    };
+    for (int i = 0; i < 10; i++) {
+        std::cout << gradient_colors[i % NUM_GRADIENT_COLORS] << Color::BOLD;
+        typewriter(lines[i], 3);
+        std::cout << Color::RESET << "\n";
+    }
+    std::cout << Color::RESET << "\n";
 }
 
 // ============================================================
@@ -150,6 +223,8 @@ struct MKSystem {
     MKConsciousnessEngine consciousnessEngine;
     MKCrystalNetwork crystalNetwork;
     MKPrometheus prometheus;
+    MKIdeaEngine ideaEngine;
+    MKPCHelper pcHelper;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -236,12 +311,18 @@ static void cmd_help() {
         << "    " << Color::GREEN << "/identity" << Color::RESET << "          Show MK's evolved identity state\n"
         << "    " << Color::GREEN << "/fluid" << Color::RESET << "             Show last fluid resonance trace\n"
         << "\n"
+        << Color::BOLD << Color::YELLOW << "  💡 IDEAS" << Color::RESET << "\n"
+        << "    " << Color::GREEN << "/idea" << Color::RESET << "              Generate a random creative idea\n"
+        << "    " << Color::GREEN << "/brainstorm" << Color::RESET << " <topic> Brainstorm 5 ideas about a topic\n"
+        << "    " << Color::GREEN << "/invent" << Color::RESET << " <problem>  Invent solutions for a problem\n"
+        << "\n"
         << Color::BOLD << Color::YELLOW << "  🖥️  SYSTEM" << Color::RESET << "\n"
         << "    " << Color::GREEN << "/status" << Color::RESET << "            Full system diagnostics\n"
         << "    " << Color::GREEN << "/briefing" << Color::RESET << "          Daily system briefing report\n"
         << "    " << Color::GREEN << "/shell" << Color::RESET << " <cmd>       Run a command in the MK shell\n"
         << "    " << Color::GREEN << "/services" << Color::RESET << "          List registered services & status\n"
         << "    " << Color::GREEN << "/sync" << Color::RESET << "              Sync knowledge with GitHub\n"
+        << "    " << Color::GREEN << "/clear" << Color::RESET << "             Clear the screen\n"
         << "    " << Color::GREEN << "/quit" << Color::RESET << "              Save and exit\n"
         << "\n"
         << Color::DIM << "  Or just type naturally — MK will figure out what you mean.\n"
@@ -271,6 +352,10 @@ static void show_slash_suggestions(const std::string& partial) {
         {"/identity", "MK evolved identity state"},
         {"/fluid",    "Fluid resonance trace"},
         {"/help",     "Show all commands"},
+        {"/clear",    "Clear the screen"},
+        {"/idea",     "Generate a creative idea"},
+        {"/brainstorm","Brainstorm ideas on a topic"},
+        {"/invent",   "Invent solutions for a problem"},
         {"/quit",     "Save and exit"},
     };
 
@@ -557,6 +642,29 @@ static void cmd_briefing(MKSystem& sys) {
 // Natural Language Routing
 // ============================================================
 static void handle_natural_query(MKSystem& sys, const std::string& input) {
+    // ---- IDEA ENGINE: Check for creative requests ----
+    {
+        std::string lower = input;
+        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+        bool isIdeaReq = (lower.find("give me an idea") != std::string::npos ||
+                          lower.find("brainstorm") != std::string::npos ||
+                          lower.find("what if") != std::string::npos ||
+                          lower.find("invent something") != std::string::npos ||
+                          lower.find("idea for") != std::string::npos);
+        if (isIdeaReq) {
+            auto ideas = sys.ideaEngine.brainstorm(sys.graph, input, 3);
+            if (!ideas.empty()) {
+                std::cout << "\n  " << Color::BOLD << Color::BYELLOW << "💡 Ideas:" << Color::RESET << "\n";
+                for (const auto& idea : ideas) {
+                    std::cout << "  " << Color::BGREEN << "→" << Color::RESET << " " << idea.idea << "\n";
+                }
+                std::cout << "\n";
+                sys.memory.recordInteraction("idea_generation", input);
+                return;
+            }
+        }
+    }
+
     // ---- FRIEND MODE: Check if this is casual conversation ----
     // Before routing through smart router, catch conversational inputs
     if (sys.conversationMode.isConversation(input)) {
@@ -1094,25 +1202,31 @@ int main(int argc, char* argv[]) {
     // Step 4b: Restore learning engine knowledge
     sys.learningEngine.restore();
 
+    // Step 4b-shared: Collect casual response texts once (shared across engine bootstraps)
+    std::vector<std::string> sharedCasualTexts;
+    {
+        auto appendVec = [&](const std::vector<std::string>& v) {
+            sharedCasualTexts.insert(sharedCasualTexts.end(), v.begin(), v.end());
+        };
+        appendVec(sys.casualResponses.greetings);
+        appendVec(sys.casualResponses.goodbyes);
+        appendVec(sys.casualResponses.acknowledgments);
+        appendVec(sys.casualResponses.reactions_positive);
+        appendVec(sys.casualResponses.reactions_negative);
+        appendVec(sys.casualResponses.encouragements);
+        appendVec(sys.casualResponses.follow_ups);
+        appendVec(sys.casualResponses.mood_happy);
+        appendVec(sys.casualResponses.mood_sad);
+        appendVec(sys.casualResponses.mood_angry);
+        appendVec(sys.casualResponses.mood_chill);
+    }
+
     // Step 4c: Initialize MK Consciousness Engine
     sys.consciousnessEngine.initialize(sys.graph, sys.casualResponses);
 
     // Step 4d: Initialize CXN Crystal Network
     {
-        // Collect casual response texts for bootstrap
-        std::vector<std::string> casualTexts;
-        auto addCasual = [&](const std::vector<std::string>& v) {
-            for (const auto& s : v) casualTexts.push_back(s);
-        };
-        addCasual(sys.casualResponses.greetings);
-        addCasual(sys.casualResponses.goodbyes);
-        addCasual(sys.casualResponses.acknowledgments);
-        addCasual(sys.casualResponses.reactions_positive);
-        addCasual(sys.casualResponses.reactions_negative);
-        addCasual(sys.casualResponses.encouragements);
-        addCasual(sys.casualResponses.follow_ups);
-
-        // Collect knowledge facts
+        // CXN uses fewer knowledge facts (cap at 300)
         std::vector<std::string> knowledgeFacts;
         const auto& edges = sys.graph.getAllEdges();
         for (const auto& e : edges) {
@@ -1120,29 +1234,12 @@ int main(int argc, char* argv[]) {
             if (knowledgeFacts.size() > 300) break;
         }
 
-        sys.crystalNetwork.initialize(casualTexts, knowledgeFacts);
+        sys.crystalNetwork.initialize(sharedCasualTexts, knowledgeFacts);
     }
 
     // Step 4e: Initialize Prometheus Engine
     {
-        // Collect casual response texts for bootstrap
-        std::vector<std::string> casualTexts;
-        auto addCasualP = [&](const std::vector<std::string>& v) {
-            for (const auto& s : v) casualTexts.push_back(s);
-        };
-        addCasualP(sys.casualResponses.greetings);
-        addCasualP(sys.casualResponses.goodbyes);
-        addCasualP(sys.casualResponses.acknowledgments);
-        addCasualP(sys.casualResponses.reactions_positive);
-        addCasualP(sys.casualResponses.reactions_negative);
-        addCasualP(sys.casualResponses.encouragements);
-        addCasualP(sys.casualResponses.follow_ups);
-        addCasualP(sys.casualResponses.mood_happy);
-        addCasualP(sys.casualResponses.mood_sad);
-        addCasualP(sys.casualResponses.mood_angry);
-        addCasualP(sys.casualResponses.mood_chill);
-
-        // Collect knowledge facts
+        // Prometheus uses more knowledge facts (cap at 500)
         std::vector<std::string> knowledgeFacts;
         const auto& prometheusEdges = sys.graph.getAllEdges();
         for (const auto& e : prometheusEdges) {
@@ -1153,7 +1250,7 @@ int main(int argc, char* argv[]) {
         // Get code fragments from bootstrap
         std::vector<std::string> codeFrags = getCodeFragmentStrings();
 
-        sys.prometheus.initialize(casualTexts, knowledgeFacts, codeFrags);
+        sys.prometheus.initialize(sharedCasualTexts, knowledgeFacts, codeFrags);
         sys.prometheus.load();  // Restore identity state if saved
     }
 
@@ -1284,6 +1381,9 @@ int main(int argc, char* argv[]) {
     // ============================================================
     unsigned int interaction_count = 0;
     const unsigned int AUTO_SAVE_INTERVAL = 50;
+    auto sessionStartTime = std::chrono::steady_clock::now();
+    unsigned int queryCount = 0;
+    unsigned int factsLearned = 0;
 
     while (g_running) {
         std::cout << "\n  " << Color::BOLD << Color::BCYAN << "MK" 
@@ -1310,7 +1410,26 @@ int main(int argc, char* argv[]) {
             bool commandFound = false;
 
             if (input == "/quit" || input == "/exit" || input == "/shutdown") {
+                // Show session statistics before quitting
+                auto sessionEndTime = std::chrono::steady_clock::now();
+                auto durationSec = std::chrono::duration_cast<std::chrono::seconds>(
+                    sessionEndTime - sessionStartTime).count();
+                int minutes = static_cast<int>(durationSec / 60);
+                int seconds = static_cast<int>(durationSec % 60);
+                std::cout << "\n";
+                print_separator();
+                std::cout << "  " << Color::BOLD << Color::BCYAN << "Session Stats" << Color::RESET << "\n";
+                std::cout << "  " << Color::DIM << "Duration:       " << Color::RESET << minutes << "m " << seconds << "s\n";
+                std::cout << "  " << Color::DIM << "Total queries:  " << Color::RESET << queryCount << "\n";
+                std::cout << "  " << Color::DIM << "Facts learned:  " << Color::RESET << factsLearned << "\n";
+                std::cout << "  " << Color::DIM << "Interactions:   " << Color::RESET << interaction_count << "\n";
+                print_separator();
                 g_running = false; commandFound = true;
+            } else if (input == "/clear") {
+                // Clear screen with ANSI escape code
+                std::cout << "\033[2J\033[H";
+                std::cout.flush();
+                commandFound = true;
             } else if (input == "/help") {
                 cmd_help(); commandFound = true;
             } else {
@@ -1360,7 +1479,7 @@ int main(int argc, char* argv[]) {
                 } else if (input == "/search") {
                     cmd_search(sys, ""); commandFound = true;
                 } else if (input.size() > 7 && input.substr(0, 7) == "/learn ") {
-                    cmd_learn(sys, trim(input.substr(7))); commandFound = true;
+                    cmd_learn(sys, trim(input.substr(7))); factsLearned++; commandFound = true;
                 } else if (input == "/learn") {
                     cmd_learn(sys, ""); commandFound = true;
                 } else if (input.size() > 9 && input.substr(0, 9) == "/weather ") {
@@ -1372,7 +1491,8 @@ int main(int argc, char* argv[]) {
                 } else if (input == "/time") {
                     cmd_time(sys, ""); commandFound = true;
                 } else if (input.size() > 7 && input.substr(0, 7) == "/think ") {
-                    cmd_think(sys, trim(input.substr(7))); commandFound = true;
+                    show_thinking_spinner(300);
+                    cmd_think(sys, trim(input.substr(7))); queryCount++; commandFound = true;
                 } else if (input == "/think") {
                     cmd_think(sys, ""); commandFound = true;
                 } else if (input == "/briefing") {
@@ -1416,6 +1536,69 @@ int main(int argc, char* argv[]) {
                         std::cout << "\n  " << Color::BOLD << "Thought trace:" << Color::RESET << "\n";
                         std::cout << "  " << Color::DIM << thought << Color::RESET << "\n";
                     }
+                    commandFound = true;
+                } else if (input == "/idea") {
+                    auto idea = sys.ideaEngine.generateIdea(sys.graph);
+                    std::cout << "\n  " << Color::BOLD << Color::BYELLOW << "💡 IDEA #" << sys.ideaEngine.getHistory().size() << Color::RESET << "\n";
+                    std::cout << "  " << Color::DIM << "─────────────────────────────────" << Color::RESET << "\n";
+                    std::cout << "  Concept A: " << Color::BOLD << idea.conceptA << Color::RESET << "\n";
+                    std::cout << "  Concept B: " << Color::BOLD << idea.conceptB << Color::RESET << "\n";
+                    std::cout << "  Bridge: " << Color::CYAN << idea.bridge << Color::RESET << "\n\n";
+                    std::cout << "  " << Color::BGREEN << "→" << Color::RESET << " \"" << idea.idea << "\"\n\n";
+                    int fBar = (int)(idea.feasibility * 10);
+                    int nBar = (int)(idea.novelty * 10);
+                    std::cout << "  Feasibility: " << Color::GREEN;
+                    for (int i = 0; i < 10; i++) std::cout << (i < fBar ? "\xe2\x96\x88" : "\xe2\x96\x91");
+                    std::cout << Color::RESET << " " << (int)(idea.feasibility * 100) << "%\n";
+                    std::cout << "  Novelty:     " << Color::CYAN;
+                    for (int i = 0; i < 10; i++) std::cout << (i < nBar ? "\xe2\x96\x88" : "\xe2\x96\x91");
+                    std::cout << Color::RESET << " " << (int)(idea.novelty * 100) << "%\n";
+                    std::cout << "  Category:    " << Color::MAGENTA << idea.category << Color::RESET << "\n";
+                    std::cout << "  " << Color::DIM << "─────────────────────────────────" << Color::RESET << "\n";
+                    commandFound = true;
+                } else if (input.size() > 12 && input.substr(0, 12) == "/brainstorm ") {
+                    std::string topic = trim(input.substr(12));
+                    if (topic.empty()) {
+                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET << " /brainstorm <topic>\n";
+                    } else {
+                        auto ideas = sys.ideaEngine.brainstorm(sys.graph, topic, 5);
+                        std::cout << "\n  " << Color::BOLD << Color::BYELLOW << "💡 BRAINSTORM: " << topic << Color::RESET << "\n";
+                        std::cout << "  " << Color::DIM << "═════════════════════════════════" << Color::RESET << "\n";
+                        int n = 1;
+                        for (const auto& idea : ideas) {
+                            std::cout << "\n  " << Color::BOLD << n++ << "." << Color::RESET << " " << idea.idea << "\n";
+                            std::cout << "     " << Color::DIM << "[" << idea.category << " | feasibility: "
+                                      << (int)(idea.feasibility * 100) << "% | novelty: "
+                                      << (int)(idea.novelty * 100) << "%]" << Color::RESET << "\n";
+                        }
+                        std::cout << "\n  " << Color::DIM << "═════════════════════════════════" << Color::RESET << "\n";
+                    }
+                    commandFound = true;
+                } else if (input == "/brainstorm") {
+                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET << " /brainstorm <topic>\n"
+                              << "  " << Color::DIM << "Example: /brainstorm renewable energy" << Color::RESET << "\n";
+                    commandFound = true;
+                } else if (input.size() > 8 && input.substr(0, 8) == "/invent ") {
+                    std::string problem = trim(input.substr(8));
+                    if (problem.empty()) {
+                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET << " /invent <problem>\n";
+                    } else {
+                        auto ideas = sys.ideaEngine.inventFor(sys.graph, problem);
+                        std::cout << "\n  " << Color::BOLD << Color::BYELLOW << "🔧 INVENTIONS for: " << problem << Color::RESET << "\n";
+                        std::cout << "  " << Color::DIM << "═════════════════════════════════" << Color::RESET << "\n";
+                        int n = 1;
+                        for (const auto& idea : ideas) {
+                            std::cout << "\n  " << Color::BOLD << n++ << "." << Color::RESET << " " << idea.idea << "\n";
+                            std::cout << "     " << Color::DIM << "[feasibility: "
+                                      << (int)(idea.feasibility * 100) << "% | novelty: "
+                                      << (int)(idea.novelty * 100) << "%]" << Color::RESET << "\n";
+                        }
+                        std::cout << "\n  " << Color::DIM << "═════════════════════════════════" << Color::RESET << "\n";
+                    }
+                    commandFound = true;
+                } else if (input == "/invent") {
+                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET << " /invent <problem>\n"
+                              << "  " << Color::DIM << "Example: /invent I need to stay cool in summer" << Color::RESET << "\n";
                     commandFound = true;
                 } else if (input.size() > 7 && input.substr(0, 7) == "/shell ") {
                     std::string shellCmd = trim(input.substr(7));
@@ -1495,7 +1678,9 @@ int main(int argc, char* argv[]) {
         } else {
             // Natural language routing (acquire lock for thread safety)
             std::lock_guard<std::mutex> lock(sys.systemMutex);
+            show_thinking_spinner(200);
             handle_natural_query(sys, input);
+            queryCount++;
         }
 
         // Track dialog context for all interactions (lock for thread safety)

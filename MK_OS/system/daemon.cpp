@@ -104,7 +104,12 @@ public:
             if (job.requiresCool && currentTemp > 60.0f) continue;
             if (state == MKDaemonState::COOLDOWN && job.requiresCool) continue;
             
-            job.execute();
+            try {
+                job.execute();
+            } catch (...) {
+                crashCount++;
+                std::cerr << "[DAEMON] Job \"" << job.name << "\" crashed (total crashes: " << crashCount << ")\n";
+            }
             job.lastRun = uptime;
         }
     }

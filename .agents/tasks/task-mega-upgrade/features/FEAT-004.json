@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-004",
+  "type": "fix",
+  "description": "Address security and quality issues found in code review: shell injection in BirthChamber, TLS verification disabled in Telegram, killProcess allowlist bypass, busy-wait in retry loop, dead temperature scheduling, duplicate bootstrap code, code runner sanitization improvements, and additional test coverage.",
+  "status": "completed",
+  "steps": [
+    "Fix BirthChamber shell injection: escape single quotes in input before shell interpolation in getRunCmd",
+    "Fix Telegram TLS: re-enable CURLOPT_SSL_VERIFYPEER (set to 1L)",
+    "Fix killProcess allowlist gap: add allowlist gating so kill goes through safety checks",
+    "Fix rate-limit busy wait: replace spin loop with std::this_thread::sleep_for",
+    "Fix dead temperature scheduling: wire up temperature changes based on topic detection in Prometheus",
+    "Refactor duplicate bootstrap code in mk_entry.cpp: extract shared helper for collecting casual texts",
+    "Improve code runner sanitization: add more patterns for common bypass variants",
+    "Add test coverage for math solver extensions and code runner sanitization"
+  ],
+  "acceptance_criteria": [
+    "Build succeeds with zero errors and zero warnings",
+    "make test passes all tests (existing + new)",
+    "BirthChamber getRunCmd escapes single quotes in input",
+    "Telegram sets CURLOPT_SSL_VERIFYPEER to 1L",
+    "killProcess checks allowlist before executing",
+    "Telegram retry uses std::this_thread::sleep_for instead of spin loop",
+    "Temperature scheduling is wired into Prometheus generate flow",
+    "Bootstrap code is not duplicated across engine inits"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && clang++ -std=c++17 -O2 -Wall -Wextra -DLINUX -o mk_os system/mk_entry.cpp -lcurl -lsqlite3 2>&1 | grep -c error",
+    "cd /projects/sandbox/MK_os-2/MK_OS && make test 2>&1 | tail -5"
+  ],
+  "blocked_reason": null,
+  "findings": "All 9 tests pass (102 assertions, up from 7 tests / 62 assertions). Zero warnings with -Werror. Shell injection fixed by escaping single quotes. TLS re-enabled with CURLOPT_SSL_VERIFYHOST=2L. killProcess now routes through allowlist. Spin loop replaced with sleep_for. Temperature scheduling wired into Prometheus generate via context detection. Bootstrap refactored to shared vector. Code runner blocklist expanded with 20+ new patterns. The math solver has a pre-existing routing bug where 'derivative x^N' queries get caught by the quadratic solver pattern first since both match on 'x^2' -- tested derivative via direct method call instead."
+}

@@ -1,0 +1,37 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Massive knowledge expansion and UI/UX upgrade. Add 2000+ new knowledge facts across new domains, upgrade the REPL UI with animations and better formatting, improve the Telegram plugin and PC agent, and upgrade the installer script.",
+  "status": "completed",
+  "steps": [
+    "Create new knowledge file ai_core/hre/knowledge_files/bulk_medicine_health.mk with 200+ medical/health facts (human body systems, common diseases, vitamins, first aid, mental health basics).",
+    "Create new knowledge file ai_core/hre/knowledge_files/bulk_space_astronomy.mk with 200+ space/astronomy facts (planets detailed stats, stars, galaxies, missions, black holes, cosmology).",
+    "Create new knowledge file ai_core/hre/knowledge_files/bulk_mathematics.mk with 200+ math facts (theorems, constants, mathematicians, branches of math, formulas).",
+    "Create new knowledge file ai_core/hre/knowledge_files/bulk_philosophy_psychology.mk with 150+ philosophy/psychology facts (philosophers, schools of thought, cognitive biases, psychological concepts).",
+    "Create new knowledge file ai_core/hre/knowledge_files/bulk_pop_culture.mk with 200+ pop culture facts (movies, TV shows, video games, memes, internet culture, social media).",
+    "Add 200+ new facts to existing bulk_programming.mk covering: AI/ML concepts, cloud computing, cybersecurity, DevOps, databases, web3/blockchain basics.",
+    "Upgrade system/mk_entry.cpp REPL UI: Add a startup animation (typewriter effect on banner), add a thinking animation (spinner dots while processing), add response animations (text appears word-by-word for long responses), add colored separators between interactions, add session statistics display on /quit (total queries, facts learned, uptime). Add gradient-style color transitions in the banner. Add a /clear command.",
+    "Upgrade plugins/telegram.cpp: Add inline keyboard support for commands, add message formatting with proper Telegram HTML mode, add /learn command support via Telegram, add /think command support, add conversation mode support (not just echo), add error recovery (retry on network failures). Add rate limiting to prevent spam.",
+    "Upgrade plugins/pc_helper.cpp: Add system info gathering (CPU, RAM, disk, battery), add process management (list, kill), add clipboard integration, add screenshot capability detection, add safe command allowlist, add command history tracking.",
+    "Upgrade install.sh: Add macOS support (detect brew, install deps via brew), add progress bars during compilation, add post-install verification (run a quick test), add uninstall option (./install.sh --uninstall), add update option (./install.sh --update), add color theme selection, add systemd service file creation option for background Telegram bot."
+  ],
+  "acceptance_criteria": [
+    "Build succeeds with zero errors",
+    "make test passes all tests",
+    "Total knowledge facts exceed 9,000 (currently ~7,400)",
+    "New .mk files contain valid pipe-delimited format",
+    "REPL has spinner animation during processing",
+    "Telegram plugin supports /learn and /think commands",
+    "PC helper has system info and process management",
+    "Installer supports macOS and has --uninstall flag",
+    "Total project size (excluding .git) stays under 100MB"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && clang++ -std=c++17 -O2 -Wall -Wextra -DLINUX -o mk_os system/mk_entry.cpp -lcurl -lsqlite3 2>&1 | grep -c error",
+    "cd /projects/sandbox/MK_os-2/MK_OS && make test 2>&1 | tail -5",
+    "wc -l /projects/sandbox/MK_os-2/MK_OS/ai_core/hre/knowledge_files/*.mk | tail -1",
+    "du -sh /projects/sandbox/MK_os-2 --exclude=.git"
+  ],
+  "blocked_reason": null,
+  "findings": "Build compiles with zero warnings and zero errors. All 7 tests pass (62 assertions). Total knowledge facts: 9002. Project size: 53MB (well under 100MB limit). The banner was changed from raw string literal with Unicode box-drawing characters to simpler ASCII art with gradient ANSI 256-color codes to avoid potential encoding issues. The pc_helper.cpp is now included in mk_entry.cpp and part of MKSystem struct. Telegram plugin now uses POST requests with HTML parse mode. The install.sh now supports macOS via Homebrew detection."
+}

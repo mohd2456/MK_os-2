@@ -8,6 +8,7 @@
 #include <random>
 #include <chrono>
 #include <deque>
+#include <ctime>
 
 // ===================================================================================
 // MK CONVERSATION MODE — "Friend Mode"
@@ -35,10 +36,19 @@ enum class MKMood {
     NEUTRAL
 };
 
+// Emotion intensity level
+enum class MKEmotionIntensity {
+    MILD,       // Slightly feeling something
+    MODERATE,   // Clearly emotional
+    STRONG,     // Very emotional
+    EXTREME     // Off the charts
+};
+
 // Result of emotion detection
 struct MKMoodResult {
     MKMood mood;
     float confidence;  // 0.0 - 1.0
+    MKEmotionIntensity intensity;  // How strong the emotion is
     std::string trigger_word;  // the keyword that triggered detection
 };
 
@@ -57,6 +67,16 @@ enum class MKInputType {
     COMMAND            // Not conversation — route normally
 };
 
+// Time of day categories
+enum class MKTimeOfDay {
+    EARLY_MORNING,   // 4am - 7am
+    MORNING,         // 7am - 12pm
+    AFTERNOON,       // 12pm - 5pm
+    EVENING,         // 5pm - 9pm
+    NIGHT,           // 9pm - 12am
+    LATE_NIGHT       // 12am - 4am
+};
+
 class MKConversationMode {
 private:
     std::mt19937 rng_;
@@ -64,6 +84,18 @@ private:
     // Follow-up memory: last 3 topics discussed
     std::deque<std::string> recentTopics_;
     static const size_t MAX_TOPICS = 3;
+
+    // Story mode tracking
+    bool inStoryMode_ = false;
+    int storyTurnCount_ = 0;
+    
+    // Debate mode tracking
+    bool debateMode_ = false;
+    int debateChance_ = 25;  // % chance to disagree for fun
+    
+    // Conversation memory across sessions
+    std::vector<std::string> sessionTopics_;
+    int totalTurns_ = 0;
 
     // Keyword lists for mood detection
     std::vector<std::string> happy_keywords_ = {
@@ -269,6 +301,7 @@ public:
         MKMoodResult result;
         result.mood = MKMood::NEUTRAL;
         result.confidence = 0.0f;
+        result.intensity = MKEmotionIntensity::MILD;
         result.trigger_word = "";
 
         // Count matches in each mood category
@@ -316,6 +349,31 @@ public:
         // Boost confidence if multiple keywords from same category
         if (max_score >= 3) result.confidence = std::min(1.0f, result.confidence + 0.2f);
         if (max_score >= 2) result.confidence = std::min(1.0f, result.confidence + 0.1f);
+
+        // Determine emotion intensity based on score and confidence
+        if (max_score >= 4 || result.confidence >= 0.9f) {
+            result.intensity = MKEmotionIntensity::EXTREME;
+        } else if (max_score >= 3 || result.confidence >= 0.7f) {
+            result.intensity = MKEmotionIntensity::STRONG;
+        } else if (max_score >= 2 || result.confidence >= 0.4f) {
+            result.intensity = MKEmotionIntensity::MODERATE;
+        } else {
+            result.intensity = MKEmotionIntensity::MILD;
+        }
+
+        // Caps lock / exclamation boost intensity
+        int capsCount = 0;
+        int exclCount = 0;
+        for (char c : input) {
+            if (c >= 'A' && c <= 'Z') capsCount++;
+            if (c == '!') exclCount++;
+        }
+        if (capsCount > 5 || exclCount >= 2) {
+            if (result.intensity == MKEmotionIntensity::MILD) result.intensity = MKEmotionIntensity::MODERATE;
+            else if (result.intensity == MKEmotionIntensity::MODERATE) result.intensity = MKEmotionIntensity::STRONG;
+            else if (result.intensity == MKEmotionIntensity::STRONG) result.intensity = MKEmotionIntensity::EXTREME;
+            result.confidence = std::min(1.0f, result.confidence + 0.15f);
+        }
 
         return result;
     }
@@ -561,16 +619,221 @@ public:
     }
 
     // ---------------------------------------------------------------
+    // TIME OF DAY AWARENESS
+    // Returns what time bracket we're in
+    // ---------------------------------------------------------------
+    MKTimeOfDay getTimeOfDay() const {
+        auto now = std::chrono::system_clock::now();
+        auto time_t_now = std::chrono::system_clock::to_time_t(now);
+        struct tm* timeinfo = localtime(&time_t_now);
+        int hour = timeinfo->tm_hour;
+
+        if (hour >= 4 && hour < 7) return MKTimeOfDay::EARLY_MORNING;
+        if (hour >= 7 && hour < 12) return MKTimeOfDay::MORNING;
+        if (hour >= 12 && hour < 17) return MKTimeOfDay::AFTERNOON;
+        if (hour >= 17 && hour < 21) return MKTimeOfDay::EVENING;
+        if (hour >= 21) return MKTimeOfDay::NIGHT;
+        return MKTimeOfDay::LATE_NIGHT;  // 0am - 4am
+    }
+
+    // ---------------------------------------------------------------
+    // TIME-AWARE GREETING
+    // Returns an appropriate greeting based on time of day
+    // ---------------------------------------------------------------
+    std::string getTimeAwareGreeting(MKCasualResponses& db) {
+        MKTimeOfDay tod = getTimeOfDay();
+        switch (tod) {
+            case MKTimeOfDay::EARLY_MORNING:
+                return "yo you're up early. respect the grind bro";
+            case MKTimeOfDay::MORNING:
+                return "good morning g! let's get this bread today";
+            case MKTimeOfDay::AFTERNOON:
+                return "afternoon bro, how's the day going?";
+            case MKTimeOfDay::EVENING:
+                return "evening vibes. you winding down or just getting started?";
+            case MKTimeOfDay::NIGHT:
+                return "what's good bro, you're up late. what's on your mind?";
+            case MKTimeOfDay::LATE_NIGHT:
+                return "bro it's late late. you good? can't sleep or grinding?";
+        }
+        return db.pick(db.greetings);
+    }
+
+    // ---------------------------------------------------------------
+    // STORY MODE DETECTION
+    // Detects when user is telling a long story and responds accordingly
+    // ---------------------------------------------------------------
+    bool detectStoryMode(const std::string& input) {
+        std::string lower = toLower(input);
+        int words = wordCount(input);
+
+        // Already in story mode - check if story continues
+        if (inStoryMode_) {
+            // Stories continue if text is longer than a quick response
+            if (words > 8) {
+                storyTurnCount_++;
+                return true;
+            }
+            // Short response might end the story
+            if (words <= 3) {
+                inStoryMode_ = false;
+                storyTurnCount_ = 0;
+                return false;
+            }
+        }
+
+        // Enter story mode if long narrative detected
+        if (words > 20 && countMatches(lower, narrative_words_) >= 3) {
+            inStoryMode_ = true;
+            storyTurnCount_ = 1;
+            return true;
+        }
+
+        // Story indicators
+        if (words > 10 && containsAny(lower, story_indicators_)) {
+            inStoryMode_ = true;
+            storyTurnCount_ = 1;
+            return true;
+        }
+
+        return false;
+    }
+
+    // ---------------------------------------------------------------
+    // STORY MODE RESPONSE
+    // Generate engaged follow-ups for ongoing stories
+    // ---------------------------------------------------------------
+    std::string generateStoryResponse(const std::string& input, MKCasualResponses& db) {
+        MKMoodResult mood = detectMood(input);
+        std::string response;
+
+        // First turn of story: excited reaction
+        if (storyTurnCount_ <= 1) {
+            response = db.pick(db.story_responses);
+        }
+        // Middle of story: show engagement
+        else if (storyTurnCount_ <= 3) {
+            if (mood.mood == MKMood::SAD || mood.mood == MKMood::ANGRY) {
+                response = (mood.mood == MKMood::SAD) ?
+                    db.pick(db.mood_sad) : db.pick(db.mood_angry);
+                response += ". " + db.pick(db.follow_ups);
+            } else {
+                response = db.pick(db.follow_ups);
+            }
+        }
+        // Long story: react with intensity matching their emotion
+        else {
+            if (mood.intensity == MKEmotionIntensity::EXTREME ||
+                mood.intensity == MKEmotionIntensity::STRONG) {
+                response = "bro this story is INSANE. ";
+                response += db.pick(db.follow_ups);
+            } else {
+                response = db.pick(db.curiosity);
+            }
+        }
+
+        pushTopic(input.substr(0, std::min((size_t)50, input.length())));
+        return response;
+    }
+
+    // ---------------------------------------------------------------
+    // DEBATE MODE
+    // Sometimes respectfully disagree to keep things interesting
+    // ---------------------------------------------------------------
+    bool shouldDebate(const std::string& input) {
+        std::string lower = toLower(input);
+
+        // Only debate opinion statements
+        if (!containsAny(lower, opinion_indicators_)) return false;
+
+        // Random chance
+        std::uniform_int_distribution<int> dist(1, 100);
+        return dist(rng_) <= debateChance_;
+    }
+
+    std::string generateDebateResponse(const std::string& input, MKCasualResponses& db) {
+        (void)input;
+        std::vector<std::string> debate_starters = {
+            "hmm interesting take but hear me out",
+            "ok I respect that but counter-argument",
+            "ngl I see it differently but go on",
+            "that's valid but what about the other side tho",
+            "ok hot take incoming but I kinda disagree",
+            "respectfully I gotta push back on that one",
+            "I hear you but let me play devil's advocate",
+            "that's one way to look at it but consider this",
+            "ok I'm not sure I'm fully on board with that",
+            "interesting point but I think there's more to it"
+        };
+        std::uniform_int_distribution<size_t> dist(0, debate_starters.size() - 1);
+        std::string response = debate_starters[dist(rng_)];
+        response += ". " + db.pick(db.curiosity);
+        return response;
+    }
+
+    // ---------------------------------------------------------------
+    // EMOTION INTENSITY RESPONSE
+    // Adjust response based on how strong the emotion is
+    // ---------------------------------------------------------------
+    std::string getIntensityResponse(MKMoodResult& mood, MKCasualResponses& db) {
+        std::string base;
+        switch (mood.mood) {
+            case MKMood::HAPPY:   base = db.pick(db.mood_happy); break;
+            case MKMood::SAD:     base = db.pick(db.mood_sad); break;
+            case MKMood::ANGRY:   base = db.pick(db.mood_angry); break;
+            case MKMood::NERVOUS: base = db.pick(db.mood_nervous); break;
+            case MKMood::CHILL:   base = db.pick(db.mood_chill); break;
+            default:              base = db.pick(db.acknowledgments); break;
+        }
+
+        // Add intensity modifiers
+        if (mood.intensity == MKEmotionIntensity::EXTREME) {
+            if (mood.mood == MKMood::HAPPY) {
+                base += "!! bro the energy is OFF THE CHARTS. " + db.pick(db.hype_up);
+            } else if (mood.mood == MKMood::SAD) {
+                base += ". bro I'm genuinely worried, I'm here for you 100%. " + db.pick(db.encouragements);
+            } else if (mood.mood == MKMood::ANGRY) {
+                base += ". nah bro that's UNACCEPTABLE fr. you want to talk about it?";
+            }
+        } else if (mood.intensity == MKEmotionIntensity::STRONG) {
+            if (mood.mood == MKMood::HAPPY) {
+                base += ". " + db.pick(db.reactions_positive);
+            } else if (mood.mood == MKMood::SAD || mood.mood == MKMood::ANGRY) {
+                base += ". " + db.pick(db.encouragements);
+            }
+        }
+
+        return base;
+    }
+
+    // ---------------------------------------------------------------
     // GENERATE RESPONSE
     // Main method: given input + casual_responses DB, produce a reply
     // ---------------------------------------------------------------
     std::string generateResponse(const std::string& input, MKCasualResponses& db) {
         MKInputType type = classifyInput(input);
         std::string lower = toLower(input);
+        totalTurns_++;
+
+        // Check for story mode first (overrides normal classification)
+        if (detectStoryMode(input)) {
+            return generateStoryResponse(input, db);
+        }
+
+        // Check for debate mode on opinion shares
+        if (type == MKInputType::OPINION_SHARE && shouldDebate(input)) {
+            return generateDebateResponse(input, db);
+        }
 
         switch (type) {
-            case MKInputType::GREETING:
+            case MKInputType::GREETING: {
+                // Use time-aware greeting sometimes
+                std::uniform_int_distribution<int> dist(1, 3);
+                if (dist(rng_) == 1) {
+                    return getTimeAwareGreeting(db);
+                }
                 return db.pick(db.greetings);
+            }
 
             case MKInputType::GOODBYE:
                 return db.pick(db.goodbyes);
@@ -579,7 +842,6 @@ public:
                 // Respond in context of last topic
                 std::string lastTopic = getLastTopic();
                 if (!lastTopic.empty()) {
-                    // Acknowledge and reference context
                     return db.pick(db.acknowledgments);
                 }
                 return db.pick(db.acknowledgments);
@@ -587,17 +849,23 @@ public:
 
             case MKInputType::TOPIC_CHANGE: {
                 resetTopics();
+                MKTimeOfDay tod = getTimeOfDay();
+                if (tod == MKTimeOfDay::LATE_NIGHT || tod == MKTimeOfDay::NIGHT) {
+                    return "what's on your mind this late?";
+                }
                 return "what's up?";
             }
 
             case MKInputType::STORY:
             case MKInputType::VENT: {
-                // Long emotional/narrative text — empathize + follow up
+                // Long emotional/narrative text -- empathize + follow up
                 MKMoodResult mood = detectMood(input);
                 std::string response;
                 
-                if (mood.mood == MKMood::SAD || mood.mood == MKMood::ANGRY) {
-                    // Empathize first, then follow up
+                if (mood.intensity == MKEmotionIntensity::EXTREME ||
+                    mood.intensity == MKEmotionIntensity::STRONG) {
+                    response = getIntensityResponse(mood, db);
+                } else if (mood.mood == MKMood::SAD || mood.mood == MKMood::ANGRY) {
                     if (mood.mood == MKMood::SAD) {
                         response = db.pick(db.mood_sad);
                     } else {
@@ -605,17 +873,17 @@ public:
                     }
                     response += ". " + db.pick(db.follow_ups);
                 } else {
-                    // Story acknowledgment + follow up
                     response = db.pick(db.story_responses);
                 }
                 
                 // Track topic
                 pushTopic(input.substr(0, std::min((size_t)50, input.length())));
+                sessionTopics_.push_back(input.substr(0, std::min((size_t)30, input.length())));
                 return response;
             }
 
             case MKInputType::OPINION_SHARE: {
-                // User sharing their opinion — acknowledge it
+                // User sharing their opinion -- acknowledge it
                 MKMoodResult mood = detectMood(input);
                 if (mood.mood == MKMood::HAPPY || mood.confidence < 0.3f) {
                     return db.pick(db.acknowledgments) + ". " + db.pick(db.reactions_positive);
@@ -626,37 +894,23 @@ public:
             }
 
             case MKInputType::EMOTIONAL: {
-                // Short emotional expression — respond to mood
+                // Short emotional expression -- respond with intensity awareness
                 MKMoodResult mood = detectMood(input);
-                switch (mood.mood) {
-                    case MKMood::HAPPY:   return db.pick(db.mood_happy);
-                    case MKMood::SAD:     return db.pick(db.mood_sad);
-                    case MKMood::ANGRY:   return db.pick(db.mood_angry);
-                    case MKMood::NERVOUS: return db.pick(db.mood_nervous);
-                    case MKMood::CHILL:   return db.pick(db.mood_chill);
-                    default:              return db.pick(db.acknowledgments);
-                }
+                return getIntensityResponse(mood, db);
             }
 
             case MKInputType::SMALL_TALK: {
                 // Generic short statement
                 MKMoodResult mood = detectMood(input);
                 if (mood.confidence >= 0.3f) {
-                    switch (mood.mood) {
-                        case MKMood::HAPPY:   return db.pick(db.mood_happy);
-                        case MKMood::SAD:     return db.pick(db.mood_sad);
-                        case MKMood::ANGRY:   return db.pick(db.mood_angry);
-                        case MKMood::NERVOUS: return db.pick(db.mood_nervous);
-                        case MKMood::CHILL:   return db.pick(db.mood_chill);
-                        default: break;
-                    }
+                    return getIntensityResponse(mood, db);
                 }
-                // No strong mood detected — give a chill response
+                // No strong mood detected -- give a chill response
                 return db.pick(db.mood_chill);
             }
 
             default:
-                return "";  // Not conversation — let normal routing handle it
+                return "";  // Not conversation -- let normal routing handle it
         }
     }
 
@@ -707,6 +961,19 @@ public:
         } else {
             return "honestly I'm kinda neutral on " + subject + ". I know that " + firstFact + " but idk enough to pick a side";
         }
+    }
+
+    // ---------------------------------------------------------------
+    // STATE ACCESSORS for new features
+    // ---------------------------------------------------------------
+    bool isInStoryMode() const { return inStoryMode_; }
+    bool isInDebateMode() const { return debateMode_; }
+    int getStoryTurnCount() const { return storyTurnCount_; }
+    int getTotalTurns() const { return totalTurns_; }
+    const std::vector<std::string>& getSessionTopics() const { return sessionTopics_; }
+
+    void setDebateChance(int percent) {
+        debateChance_ = std::max(0, std::min(100, percent));
     }
 };
 

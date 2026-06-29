@@ -296,7 +296,7 @@ private:
     std::map<std::string, BuiltinFunc> builtins_;
 
     void register_builtins() {
-        builtins_["echo"] = [this](const std::vector<std::string>& args) -> std::string {
+        builtins_["echo"] = [](const std::vector<std::string>& args) -> std::string {
             std::string result;
             for (size_t i = 0; i < args.size(); ++i) {
                 result += args[i];
@@ -328,7 +328,7 @@ private:
             return "[listing of " + dir + "]\n";
         };
 
-        builtins_["cat"] = [this](const std::vector<std::string>& args) -> std::string {
+        builtins_["cat"] = [](const std::vector<std::string>& args) -> std::string {
             if (args.empty()) return "cat: missing operand\n";
             return "[contents of " + args[0] + "]\n";
         };
@@ -346,7 +346,7 @@ private:
             return result;
         };
 
-        builtins_["help"] = [this](const std::vector<std::string>&) -> std::string {
+        builtins_["help"] = [](const std::vector<std::string>&) -> std::string {
             std::string result = "MK Shell Built-in Commands:\n";
             result += "  ls       - List directory contents\n";
             result += "  cd       - Change directory\n";
@@ -450,7 +450,7 @@ public:
         return final_output;
     }
 
-    std::string execute_command(const Command& cmd, const std::string& stdin_data = "") {
+    std::string execute_command(const Command& cmd, const std::string& /*stdin_data*/ = "") {
         auto it = builtins_.find(cmd.name);
         if (it != builtins_.end()) {
             return it->second(cmd.args);

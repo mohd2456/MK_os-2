@@ -168,6 +168,7 @@ public:
 
     MKThoughtChain think(const std::string& query, MKPatternGraph& graph) {
         totalThoughts++;
+        deepDives++;
         MKThoughtChain chain;
         chain.originalQuery = query;
         chain.overallConfidence = 0.0f;
@@ -429,6 +430,7 @@ public:
     void printStats() const {
         std::cout << "\n--- [DEEP REASONER] ---\n";
         std::cout << "  Total thoughts: " << totalThoughts << "\n";
+        std::cout << "  Deep dives: " << deepDives << "\n";
         std::cout << "  Causal links: " << causalDB.size() << "\n";
         std::cout << "  Contradictions found: " << contradictionsFound << "\n";
         std::cout << "  Max search depth: " << maxDepth << "\n";

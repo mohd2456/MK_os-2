@@ -87,17 +87,33 @@ private:
         return "";
     }
 
+    // Escape a string for safe use inside single quotes in shell commands.
+    // Replaces every ' with '\'' (end quote, escaped quote, restart quote).
+    std::string shellEscape(const std::string& s) const {
+        std::string escaped;
+        escaped.reserve(s.size() + 16);
+        for (char c : s) {
+            if (c == '\'') {
+                escaped += "'\\''";
+            } else {
+                escaped += c;
+            }
+        }
+        return escaped;
+    }
+
     // Get run command for language
     std::string getRunCmd(const std::string& lang, const std::string& srcPath,
                           const std::string& outPath, const std::string& input) const {
+        std::string safeInput = shellEscape(input);
         if (lang == "cpp") {
-            return "echo '" + input + "' | timeout 5 " + outPath + " 2>/dev/null";
+            return "echo '" + safeInput + "' | timeout 5 " + outPath + " 2>/dev/null";
         }
         if (lang == "python") {
-            return "echo '" + input + "' | timeout 5 python3 " + srcPath + " 2>/dev/null";
+            return "echo '" + safeInput + "' | timeout 5 python3 " + srcPath + " 2>/dev/null";
         }
         if (lang == "bash") {
-            return "echo '" + input + "' | timeout 5 bash " + srcPath + " 2>/dev/null";
+            return "echo '" + safeInput + "' | timeout 5 bash " + srcPath + " 2>/dev/null";
         }
         return "";
     }
@@ -126,6 +142,7 @@ private:
         // Different assembly strategies based on variation number
         switch (variation % 5) {
             case 0:  // Sequential: all fragments in order
+                code += "# Goal: " + goal.substr(0, 80) + "\n";
                 for (const auto& f : fragments) {
                     code += f + "\n";
                 }
@@ -223,6 +240,39 @@ public:
     }
 
     // =======================================================================
+    // SAFETY: Check if assembled code contains dangerous patterns.
+    // Mirrors the blocklist from MKCodeRunner::isDangerous() to prevent
+    // the BirthChamber feedback loop from executing harmful code.
+    // =======================================================================
+    bool containsDangerousPattern(const std::string& code) const {
+        std::string lower = code;
+        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+
+        static const std::vector<std::string> patterns = {
+            "rm -rf /", "rm -rf /*", "rm -r -f", "rm --recursive",
+            "rm -rf ~", "rm -rf $home",
+            ":(){ :|:& };:",
+            "dd if=/dev/", "mkfs.", "chmod -r 777 /",
+            "> /dev/sda", "shutdown", "reboot", "halt",
+            "$(rm ", "$(dd ", "$(mkfs", "$(shutdown",
+            "`rm ", "`dd ", "`mkfs", "`shutdown",
+            "os.system(", "os.popen(", "subprocess.call(",
+            "subprocess.run(", "subprocess.popen(",
+            "__import__('os')", "__import__(\"os\")",
+            "import socket", "import http", "import urllib",
+            "require('child_process')", "require(\"child_process\")",
+            "child_process", "shutil.rmtree",
+            "fs.rmdirsync", "fs.unlinksync",
+            "std::filesystem::remove_all"
+        };
+
+        for (const auto& p : patterns) {
+            if (lower.find(p) != std::string::npos) return true;
+        }
+        return false;
+    }
+
+    // =======================================================================
     // TOURNAMENT — Compile, test, and select the best candidate
     // =======================================================================
     MKCodeCandidate tournament(std::vector<MKCodeCandidate>& candidates,
@@ -231,6 +281,15 @@ public:
 
         for (auto& candidate : candidates) {
             if (candidate.code.empty()) continue;
+
+            // Safety gate: skip candidates that contain dangerous patterns.
+            // This prevents the absorb() feedback loop from promoting MK's own
+            // response text into code that could execute harmful commands.
+            if (containsDangerousPattern(candidate.code)) {
+                candidate.compiled = false;
+                candidate.score = 0.0f;
+                continue;
+            }
 
             std::string ext = getExtension(candidate.language);
             std::string srcPath = tempDir_ + "/candidate" + ext;
