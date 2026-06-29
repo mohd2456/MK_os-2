@@ -220,3 +220,562 @@ numpy|is_a|numerical computing library|1.0
 numpy|written_in|python|1.0
 numpy|created_by|travis oliphant|0.95
 numpy|used_for|software development|0.9
+
+# ============================================================
+# AI/ML Concepts
+# ============================================================
+machine_learning|is_a|subset of artificial intelligence|1.0
+machine_learning|types|supervised unsupervised reinforcement|1.0
+supervised_learning|uses|labeled training data|0.95
+unsupervised_learning|finds|patterns in unlabeled data|0.95
+reinforcement_learning|learns_from|rewards and penalties|0.95
+neural_network|inspired_by|biological neurons|0.95
+neural_network|has_layers|input hidden output|1.0
+deep_learning|uses|many layer neural networks|1.0
+convolutional_neural_network|used_for|image recognition|0.95
+recurrent_neural_network|used_for|sequential data|0.95
+transformer|architecture_introduced|2017 attention is all you need|1.0
+transformer|used_in|GPT BERT T5|0.95
+gpt|stands_for|generative pre trained transformer|1.0
+gpt|created_by|openai|1.0
+bert|created_by|google|0.95
+llm|stands_for|large language model|1.0
+llm|trained_on|massive text corpora|0.95
+attention_mechanism|allows|focusing on relevant input parts|0.95
+backpropagation|is|algorithm for training neural networks|0.95
+gradient_descent|optimizes|model parameters|0.95
+overfitting|happens_when|model memorizes training data|0.95
+underfitting|happens_when|model too simple for data|0.9
+regularization|prevents|overfitting|0.95
+dropout|is_a|regularization technique|0.9
+batch_normalization|stabilizes|neural network training|0.9
+transfer_learning|reuses|pretrained model knowledge|0.95
+fine_tuning|adapts|pretrained model to new task|0.95
+embedding|maps|discrete items to continuous vectors|0.95
+tokenization|splits|text into tokens|0.95
+diffusion_model|used_for|image generation|0.95
+stable_diffusion|is_a|open source image generator|0.9
+midjourney|is_a|AI image generator|0.9
+dall_e|created_by|openai|0.9
+rag|stands_for|retrieval augmented generation|0.9
+vector_database|stores|embeddings for similarity search|0.9
+hallucination|is_when|AI generates false information|0.9
+prompt_engineering|is|crafting inputs for better AI output|0.9
+ai_alignment|ensures|AI goals match human values|0.9
+agi|stands_for|artificial general intelligence|0.95
+natural_language_processing|is_a|AI subfield|0.95
+computer_vision|is_a|AI subfield|0.95
+generative_ai|creates|new content from training patterns|0.95
+
+# ============================================================
+# Cloud Computing
+# ============================================================
+cloud_computing|is|delivery of computing services over internet|1.0
+cloud_computing|types|IaaS PaaS SaaS|1.0
+iaas|stands_for|infrastructure as a service|1.0
+paas|stands_for|platform as a service|1.0
+saas|stands_for|software as a service|1.0
+aws|stands_for|amazon web services|1.0
+aws|market_share|largest cloud provider|0.95
+azure|owned_by|microsoft|1.0
+gcp|stands_for|google cloud platform|1.0
+ec2|is_a|AWS virtual server service|0.95
+s3|is_a|AWS object storage service|0.95
+lambda|is_a|AWS serverless compute|0.95
+serverless|means|no server management needed|0.9
+containers|provide|lightweight isolated environments|0.95
+docker|is_a|container platform|1.0
+docker|uses|containerization|1.0
+kubernetes|is_a|container orchestration platform|1.0
+kubernetes|created_by|google|0.95
+kubernetes|abbreviated_as|k8s|0.95
+microservices|is_a|architecture pattern|0.95
+microservices|alternative_to|monolithic architecture|0.9
+load_balancer|distributes|traffic across servers|0.95
+cdn|stands_for|content delivery network|0.95
+cdn|caches|content at edge locations|0.9
+auto_scaling|adjusts|resources based on demand|0.9
+multi_cloud|uses|multiple cloud providers|0.85
+hybrid_cloud|combines|public and private cloud|0.9
+terraform|is_a|infrastructure as code tool|0.95
+terraform|created_by|hashicorp|0.95
+cloudflare|is_a|CDN and security service|0.9
+
+# ============================================================
+# Cybersecurity
+# ============================================================
+cybersecurity|protects|systems from digital attacks|1.0
+encryption|converts|plaintext to ciphertext|1.0
+aes|stands_for|advanced encryption standard|0.95
+rsa|is_a|public key cryptosystem|0.95
+hashing|creates|fixed size digest of data|0.95
+sha256|is_a|secure hash algorithm|0.95
+firewall|filters|network traffic|0.95
+vpn|stands_for|virtual private network|1.0
+vpn|encrypts|internet connection|0.95
+phishing|is_a|social engineering attack|0.95
+ransomware|encrypts|victim files for ransom|0.95
+malware|types|virus worm trojan spyware|0.95
+ddos|stands_for|distributed denial of service|1.0
+sql_injection|exploits|unsanitized database queries|0.95
+xss|stands_for|cross site scripting|0.95
+zero_day|is_a|unknown vulnerability exploit|0.95
+penetration_testing|simulates|attacks to find vulnerabilities|0.95
+bug_bounty|rewards|security researchers for finding bugs|0.9
+two_factor_auth|adds|extra security layer beyond password|0.95
+oauth|is_a|authorization framework|0.95
+jwt|stands_for|json web token|0.95
+ssl_tls|encrypts|web traffic via HTTPS|0.95
+certificate_authority|issues|digital certificates|0.9
+zero_trust|assumes|no implicit trust in network|0.9
+soc|stands_for|security operations center|0.9
+siem|stands_for|security info and event management|0.85
+endpoint_detection|monitors|devices for threats|0.9
+
+# ============================================================
+# DevOps
+# ============================================================
+devops|combines|development and operations|1.0
+ci_cd|stands_for|continuous integration and deployment|1.0
+github_actions|is_a|CI CD platform|0.95
+jenkins|is_a|CI CD automation server|0.95
+gitlab_ci|is_a|CI CD platform|0.9
+continuous_integration|merges|code changes frequently|0.95
+continuous_deployment|deploys|code automatically to production|0.95
+infrastructure_as_code|manages|infra through config files|0.95
+ansible|is_a|configuration management tool|0.95
+prometheus_monitoring|is_a|monitoring and alerting toolkit|0.9
+grafana|is_a|data visualization platform|0.9
+elk_stack|stands_for|elasticsearch logstash kibana|0.9
+git|is_a|version control system|1.0
+git|created_by|linus torvalds|1.0
+git_branch|isolates|feature development|0.95
+pull_request|enables|code review before merge|0.95
+gitops|manages|infrastructure via git repositories|0.9
+helm|is_a|kubernetes package manager|0.9
+service_mesh|manages|service to service communication|0.85
+istio|is_a|service mesh implementation|0.85
+site_reliability_engineering|focuses_on|system reliability|0.9
+observability|includes|metrics logs and traces|0.9
+canary_deployment|releases|to subset of users first|0.9
+blue_green_deployment|switches|between two production environments|0.9
+feature_flags|enable|toggling features without deploy|0.9
+
+# ============================================================
+# Databases
+# ============================================================
+database|stores|structured data|1.0
+sql|stands_for|structured query language|1.0
+relational_database|uses|tables with relations|1.0
+postgresql|is_a|relational database|1.0
+mysql|is_a|relational database|1.0
+sqlite|is_a|embedded relational database|1.0
+nosql|stands_for|not only SQL|0.95
+mongodb|is_a|document database|1.0
+redis|is_a|in memory key value store|1.0
+redis|used_for|caching and pub sub|0.95
+cassandra|is_a|wide column database|0.9
+elasticsearch|is_a|search and analytics engine|0.95
+acid|stands_for|atomicity consistency isolation durability|0.95
+cap_theorem|states|choose two of consistency availability partition tolerance|0.95
+index|speeds_up|database queries|0.95
+normalization|reduces|data redundancy|0.9
+orm|stands_for|object relational mapping|0.95
+sharding|distributes|data across multiple servers|0.9
+replication|copies|data for redundancy|0.9
+transaction|is|atomic unit of database work|0.95
+graph_database|uses|nodes and edges|0.9
+neo4j|is_a|graph database|0.9
+time_series_database|optimized_for|timestamped data|0.85
+data_warehouse|stores|historical analytical data|0.9
+etl|stands_for|extract transform load|0.9
+data_lake|stores|raw unstructured data|0.85
+supabase|is_a|open source firebase alternative|0.85
+planetscale|is_a|serverless mysql platform|0.85
+
+# ============================================================
+# Web3 and Blockchain
+# ============================================================
+blockchain|is_a|distributed ledger technology|1.0
+blockchain|is|immutable chain of blocks|0.95
+bitcoin|is_a|cryptocurrency|1.0
+bitcoin|created_by|satoshi nakamoto|1.0
+bitcoin|created_in|2009|1.0
+ethereum|is_a|programmable blockchain|1.0
+ethereum|created_by|vitalik buterin|1.0
+smart_contract|is|self executing code on blockchain|0.95
+smart_contract|written_in|solidity for ethereum|0.9
+nft|stands_for|non fungible token|1.0
+nft|represents|unique digital ownership|0.9
+defi|stands_for|decentralized finance|0.95
+dao|stands_for|decentralized autonomous organization|0.9
+proof_of_work|uses|computational puzzles for consensus|0.95
+proof_of_stake|uses|token staking for consensus|0.95
+gas_fees|are|transaction costs on ethereum|0.9
+web3|is|decentralized internet vision|0.9
+wallet|stores|cryptocurrency private keys|0.9
+metamask|is_a|crypto wallet browser extension|0.85
+dapp|stands_for|decentralized application|0.9
+layer2|scales|blockchain by processing off chain|0.9
+polygon|is_a|ethereum layer 2 solution|0.85
+solana|is_a|high speed blockchain|0.9
+rust|used_in|solana smart contracts|0.85
+ipfs|stands_for|interplanetary file system|0.85
+ipfs|provides|decentralized file storage|0.85
+
+# Additional Programming Facts
+api|stands_for|application programming interface|1.0
+rest|stands_for|representational state transfer|1.0
+graphql|is_a|query language for APIs|0.95
+graphql|created_by|facebook meta|0.95
+grpc|is_a|remote procedure call framework|0.9
+websocket|enables|bidirectional realtime communication|0.95
+http|stands_for|hypertext transfer protocol|1.0
+http_methods|include|GET POST PUT DELETE PATCH|0.95
+status_code_200|means|OK success|0.95
+status_code_404|means|not found|0.95
+status_code_500|means|internal server error|0.95
+cors|stands_for|cross origin resource sharing|0.9
+tcp|stands_for|transmission control protocol|1.0
+udp|stands_for|user datagram protocol|1.0
+dns|stands_for|domain name system|1.0
+ip_address|types|IPv4 and IPv6|0.95
+localhost|ip_address|127.0.0.1|1.0
+port_80|used_for|HTTP|0.95
+port_443|used_for|HTTPS|0.95
+port_22|used_for|SSH|0.95
+ssh|stands_for|secure shell|1.0
+agile|is_a|software development methodology|0.95
+scrum|is_a|agile framework|0.95
+kanban|is_a|visual workflow management|0.9
+sprint|is_a|scrum time boxed iteration|0.9
+user_story|format|as a user I want so that|0.9
+technical_debt|is|shortcuts that need future fixing|0.9
+code_review|improves|code quality and knowledge sharing|0.9
+pair_programming|is|two programmers at one workstation|0.9
+test_driven_development|writes|tests before code|0.95
+unit_test|tests|individual components|0.95
+integration_test|tests|component interactions|0.95
+end_to_end_test|tests|complete user workflow|0.9
+mocking|simulates|dependencies in tests|0.9
+code_coverage|measures|percentage of code tested|0.9
+linting|detects|code style and potential errors|0.9
+prettier|is_a|code formatter|0.85
+eslint|is_a|javascript linter|0.9
+black|is_a|python code formatter|0.85
+mypy|is_a|python type checker|0.85
+typescript|adds|static types to javascript|0.95
+rust_borrow_checker|ensures|memory safety at compile time|0.95
+garbage_collection|languages|java python go javascript|0.9
+manual_memory|languages|c c++ rust|0.9
+stack_overflow|founded_in|2008|0.9
+github|owned_by|microsoft|0.95
+github|founded_in|2008|0.9
+gitlab|is_a|devops platform|0.9
+bitbucket|owned_by|atlassian|0.85
+npm|stands_for|node package manager|0.95
+pip|is_a|python package installer|0.95
+cargo|is_a|rust package manager|0.95
+maven|is_a|java build tool|0.9
+gradle|is_a|java build tool|0.9
+webpack|is_a|javascript bundler|0.9
+vite|is_a|fast javascript build tool|0.9
+babel|is_a|javascript compiler|0.85
+design_pattern|types|creational structural behavioral|0.95
+singleton|ensures|only one instance exists|0.95
+factory_pattern|creates|objects without specifying class|0.9
+observer_pattern|notifies|dependents of state changes|0.9
+strategy_pattern|encapsulates|interchangeable algorithms|0.9
+decorator_pattern|adds|behavior dynamically|0.9
+solid_principles|are|five object oriented design principles|0.95
+dry|stands_for|dont repeat yourself|0.95
+kiss|stands_for|keep it simple stupid|0.9
+yagni|stands_for|you aint gonna need it|0.9
+separation_of_concerns|is|dividing program into distinct sections|0.95
+dependency_injection|provides|dependencies externally|0.9
+inversion_of_control|inverts|traditional control flow|0.85
+twelve_factor_app|is_a|methodology for SaaS apps|0.85
+monorepo|is|single repo for multiple projects|0.9
+polyrepo|is|separate repos for each project|0.85
+semantic_versioning|format|major dot minor dot patch|0.95
+open_source|licenses_include|MIT Apache GPL BSD|0.9
+mit_license|is|permissive open source license|0.95
+copyleft|requires|derivative works use same license|0.9
+
+# Systems Programming and Architecture
+cpu_architecture|types|x86 ARM RISC-V MIPS|0.95
+x86|created_by|intel|0.95
+arm|used_in|mobile devices and apple silicon|0.95
+risc_v|is_a|open source instruction set|0.9
+cache_levels|are|L1 L2 L3|0.95
+cache_hit|is|data found in cache|0.95
+cache_miss|is|data not in cache must fetch|0.95
+virtual_memory|maps|virtual addresses to physical|0.95
+page_fault|occurs_when|page not in physical memory|0.9
+context_switch|is|saving and loading process state|0.95
+thread|is|lightweight unit of execution|0.95
+process|is|independent program execution|0.95
+deadlock|occurs_when|processes wait for each other|0.95
+race_condition|occurs_when|outcome depends on timing|0.95
+mutex|is|mutual exclusion lock|0.95
+semaphore|is|signaling mechanism for threads|0.9
+memory_leak|is|unreleased allocated memory|0.95
+buffer_overflow|is|writing beyond allocated memory|0.95
+stack_overflow|is|exceeding call stack size|0.95
+heap_fragmentation|reduces|usable memory|0.85
+kernel|is|core of operating system|1.0
+system_call|is|interface between user and kernel|0.95
+file_system|types|ext4 NTFS APFS btrfs|0.9
+inode|stores|file metadata on unix|0.9
+symbolic_link|points_to|another file path|0.9
+hard_link|points_to|same inode|0.85
+pipe|enables|inter process communication|0.9
+socket|enables|network communication|0.95
+epoll|is|linux scalable IO event notification|0.85
+kqueue|is|bsd scalable IO event notification|0.85
+io_uring|is|linux async IO interface|0.85
+memory_mapped_io|maps|file to virtual memory|0.85
+dma|stands_for|direct memory access|0.9
+interrupt|signals|cpu to handle event|0.95
+bootloader|loads|operating system into memory|0.95
+bios|stands_for|basic input output system|0.95
+uefi|replaced|bios for modern systems|0.9
+compiler|translates|source code to machine code|1.0
+interpreter|executes|code line by line|0.95
+jit|stands_for|just in time compilation|0.95
+llvm|is_a|compiler infrastructure|0.95
+gcc|stands_for|gnu compiler collection|0.95
+abstract_syntax_tree|represents|code structure|0.9
+lexer|breaks|source into tokens|0.9
+parser|builds|syntax tree from tokens|0.9
+linker|combines|object files into executable|0.9
+static_linking|includes|library in binary|0.9
+dynamic_linking|loads|library at runtime|0.9
+elf|stands_for|executable and linkable format|0.85
+container_runtime|examples|containerd cri-o|0.85
+oci|stands_for|open container initiative|0.85
+cgroup|limits|resource usage per process group|0.85
+namespace|isolates|process view of system|0.85
+ebpf|allows|programmable kernel extensions|0.8
+wasm|stands_for|webassembly|0.95
+wasm|enables|near native performance in browser|0.9
+
+# Mobile Development
+ios|developed_by|apple|1.0
+android|developed_by|google|1.0
+swift|is_a|ios programming language|0.95
+kotlin|is_a|android programming language|0.95
+react_native|enables|cross platform mobile apps|0.95
+flutter|created_by|google|0.95
+flutter|uses|dart language|0.95
+xamarin|created_by|microsoft|0.85
+jetpack_compose|is|android declarative ui|0.9
+swiftui|is|ios declarative ui|0.9
+app_store|owned_by|apple|0.95
+google_play|is|android app store|0.95
+push_notification|delivered_via|APNs or FCM|0.9
+deep_linking|navigates|to specific app content|0.85
+progressive_web_app|works|offline with service workers|0.9
+responsive_design|adapts|to different screen sizes|0.95
+material_design|created_by|google|0.9
+human_interface_guidelines|by|apple|0.9
+
+# Data Science and Analytics
+pandas_dataframe|is|tabular data structure|0.95
+numpy_array|is|n dimensional array|0.95
+matplotlib|is_a|python plotting library|0.95
+seaborn|is_a|statistical visualization library|0.9
+scikit_learn|is_a|python ml library|0.95
+jupyter_notebook|is_a|interactive computing environment|0.95
+data_cleaning|removes|errors and inconsistencies|0.95
+feature_engineering|creates|useful input variables|0.9
+dimensionality_reduction|techniques|PCA t-SNE UMAP|0.9
+clustering|algorithms|k-means DBSCAN hierarchical|0.95
+classification|algorithms|logistic regression random forest SVM|0.95
+random_forest|is_a|ensemble of decision trees|0.95
+xgboost|is_a|gradient boosting library|0.9
+decision_tree|splits|data on feature thresholds|0.95
+cross_validation|estimates|model generalization|0.95
+hyperparameter_tuning|methods|grid search random search bayesian|0.9
+bias_variance_tradeoff|balances|underfitting and overfitting|0.95
+precision|is|true positives over predicted positives|0.95
+recall|is|true positives over actual positives|0.95
+f1_score|is|harmonic mean of precision and recall|0.95
+roc_curve|plots|true positive vs false positive rate|0.9
+auc|measures|area under roc curve|0.9
+confusion_matrix|shows|prediction outcomes|0.95
+a_b_testing|compares|two variants statistically|0.9
+etl_pipeline|extracts_transforms_loads|data|0.9
+data_governance|ensures|data quality and compliance|0.85
+gdpr|is|european data protection regulation|0.95
+data_anonymization|removes|personally identifiable information|0.9
+apache_spark|is_a|distributed data processing|0.95
+apache_kafka|is_a|event streaming platform|0.95
+hadoop|is_a|distributed storage and processing|0.9
+airflow|is_a|workflow orchestration tool|0.9
+dbt|stands_for|data build tool|0.85
+snowflake|is_a|cloud data warehouse|0.9
+bigquery|is_a|google cloud data warehouse|0.9
+redshift|is_a|aws data warehouse|0.9
+power_bi|is_a|microsoft visualization tool|0.9
+tableau|is_a|data visualization platform|0.95
+looker|is_a|google cloud analytics tool|0.85
+
+# Web Development
+html|stands_for|hypertext markup language|1.0
+css|stands_for|cascading style sheets|1.0
+dom|stands_for|document object model|0.95
+shadow_dom|encapsulates|component styles and markup|0.9
+web_component|uses|custom elements and shadow dom|0.85
+flexbox|is_a|css layout model|0.95
+css_grid|is_a|two dimensional css layout|0.95
+tailwind_css|is_a|utility first css framework|0.9
+bootstrap|is_a|css component framework|0.95
+sass|is_a|css preprocessor|0.9
+spa|stands_for|single page application|0.95
+ssr|stands_for|server side rendering|0.95
+ssg|stands_for|static site generation|0.9
+hydration|is|making server html interactive|0.85
+virtual_dom|is|in memory dom representation|0.9
+web_accessibility|standard|WCAG|0.9
+aria|stands_for|accessible rich internet applications|0.9
+seo|stands_for|search engine optimization|0.95
+sitemap|helps|search engines index pages|0.85
+robots_txt|controls|search engine crawling|0.85
+cookie|stores|small data in browser|0.95
+session|maintains|user state on server|0.9
+local_storage|stores|data persistently in browser|0.9
+indexeddb|is_a|browser side database|0.85
+service_worker|enables|offline web app functionality|0.9
+web_socket|enables|full duplex communication|0.95
+server_sent_events|enable|one way server to client streaming|0.85
+fetch_api|replaces|XMLHttpRequest|0.9
+axios|is_a|popular http client library|0.9
+nextjs|is_a|react framework with ssr|0.95
+nuxtjs|is_a|vue framework with ssr|0.9
+remix|is_a|react full stack framework|0.85
+astro|is_a|static site framework|0.85
+htmx|is_a|hypermedia driven library|0.8
+web_vitals|metrics|LCP FID CLS|0.85
+lighthouse|measures|web page performance|0.9
+cdn_providers|include|cloudflare akamai fastly|0.9
+jamstack|stands_for|javascript apis markup|0.85
+headless_cms|examples|strapi contentful sanity|0.85
+vercel|is_a|frontend deployment platform|0.9
+netlify|is_a|frontend deployment platform|0.9
+
+# Testing and Quality
+jest|is_a|javascript testing framework|0.95
+mocha|is_a|javascript testing framework|0.9
+pytest|is_a|python testing framework|0.95
+junit|is_a|java testing framework|0.95
+cypress|is_a|end to end testing tool|0.9
+playwright|is_a|browser automation tool|0.9
+selenium|is_a|web browser automation|0.95
+test_pyramid|has|many unit few integration fewer e2e|0.9
+snapshot_testing|compares|output to saved baseline|0.85
+property_based_testing|generates|random test inputs|0.85
+mutation_testing|introduces|bugs to verify tests catch them|0.8
+fuzz_testing|sends|random data to find crashes|0.85
+load_testing|tools|jmeter k6 locust|0.85
+chaos_engineering|deliberately|breaks production to test resilience|0.85
+canary_release|tests|new version on small subset|0.9
+feature_toggle|enables|turning features on off|0.9
+test_double|types|mock stub spy fake dummy|0.9
+bdd|stands_for|behavior driven development|0.9
+gherkin|is_a|bdd specification language|0.85
+test_isolation|ensures|tests dont affect each other|0.9
+
+# Software Architecture
+microservices_vs_monolith|tradeoff|complexity vs simplicity|0.9
+event_driven_architecture|uses|events for communication|0.9
+cqrs|stands_for|command query responsibility segregation|0.85
+event_sourcing|stores|all state changes as events|0.85
+saga_pattern|manages|distributed transactions|0.8
+circuit_breaker|prevents|cascading failures|0.9
+bulkhead_pattern|isolates|components to limit failures|0.8
+api_gateway|is|single entry point for microservices|0.9
+service_discovery|locates|services dynamically|0.85
+sidecar_pattern|deploys|helper alongside main container|0.8
+domain_driven_design|models|software after business domain|0.9
+bounded_context|is|ddd boundary of a model|0.85
+aggregate|is|ddd cluster of entities|0.8
+hexagonal_architecture|separates|core from infrastructure|0.85
+clean_architecture|has|concentric dependency rings|0.85
+onion_architecture|similar_to|clean architecture|0.8
+mvc|stands_for|model view controller|0.95
+mvvm|stands_for|model view viewmodel|0.9
+repository_pattern|abstracts|data access layer|0.9
+unit_of_work|manages|transactions as single unit|0.85
+cap_theorem_choice|in_practice|AP or CP systems|0.85
+eventual_consistency|means|data converges over time|0.9
+strong_consistency|means|all reads return latest write|0.9
+distributed_consensus|algorithms|paxos raft|0.85
+two_phase_commit|coordinates|distributed transactions|0.85
+idempotency|means|same request same result|0.9
+rate_limiting|prevents|api abuse|0.9
+backpressure|slows|producer when consumer overwhelmed|0.85
+dead_letter_queue|stores|unprocessable messages|0.8
+message_broker|examples|rabbitmq kafka nats|0.9
+pub_sub|pattern|publish subscribe messaging|0.9
+
+# Emerging Technologies
+quantum_computing_languages|include|qiskit cirq|0.8
+quantum_gate|types|hadamard CNOT Pauli|0.8
+quantum_entanglement|enables|instant correlation|0.85
+quantum_supremacy|claimed_by|google 2019|0.85
+edge_computing|processes|data near source|0.9
+fog_computing|bridges|edge and cloud|0.8
+5g|enables|ultra low latency connectivity|0.9
+iot|stands_for|internet of things|1.0
+mqtt|is_a|lightweight iot messaging protocol|0.85
+digital_twin|is|virtual replica of physical system|0.85
+augmented_reality|overlays|digital on real world|0.95
+mixed_reality|blends|virtual and real seamlessly|0.85
+webxr|enables|vr ar in browser|0.8
+three_js|is_a|javascript 3d library|0.9
+unity_webgl|enables|games in browser|0.85
+web_gpu|is|next gen graphics api for web|0.8
+rust_wasm|compiles|rust to webassembly|0.85
+assembly_script|compiles|typescript like code to wasm|0.8
+deno|is_a|secure javascript runtime|0.9
+bun|is_a|fast javascript runtime|0.85
+zig|is_a|systems programming language|0.85
+nim|is_a|compiled programming language|0.8
+elixir|is_a|functional programming language|0.9
+elixir|runs_on|erlang beam vm|0.9
+erlang|designed_for|fault tolerant distributed systems|0.9
+haskell|is_a|pure functional language|0.95
+ocaml|is_a|functional language|0.9
+clojure|is_a|lisp on jvm|0.9
+scala|is_a|jvm functional language|0.9
+julia|is_a|scientific computing language|0.9
+r_language|is_a|statistical computing language|0.95
+matlab|is_a|numerical computing platform|0.95
+fortran|is_a|scientific computing language|0.9
+cobol|still_used_in|banking systems|0.9
+assembly_language|is|low level machine code|0.95
+brainfuck|is_a|esoteric programming language|0.8
+lisp|created_in|1958|0.95
+lisp|is_the|second oldest high level language|0.9
+fortran|created_in|1957|0.95
+fortran|is_the|oldest high level language|0.9
+c_language|created_in|1972|1.0
+c_language|created_by|dennis ritchie|1.0
+unix|written_in|c language|1.0
+linux_kernel|written_in|c language|1.0
+linux|created_by|linus torvalds|1.0
+linux|first_released|1991|0.95
+open_source_movement|started_with|gnu project 1983|0.9
+richard_stallman|founded|free software foundation|0.95
+eric_raymond|wrote|cathedral and bazaar|0.85
+stack_overflow_survey|annual|developer survey|0.85
+github_copilot|powered_by|openai codex|0.9
+cursor|is_a|ai code editor|0.85
+v0|is_a|ai ui generator by vercel|0.8
+devin|is_a|ai software engineer|0.8
+ai_pair_programming|improves|developer productivity|0.85
+technical_interview|formats|leetcode system design behavioral|0.9
+leetcode|is_a|coding practice platform|0.9
+hackerrank|is_a|coding assessment platform|0.9
+competitive_programming|platforms|codeforces topcoder|0.85
