@@ -1202,25 +1202,31 @@ int main(int argc, char* argv[]) {
     // Step 4b: Restore learning engine knowledge
     sys.learningEngine.restore();
 
+    // Step 4b-shared: Collect casual response texts once (shared across engine bootstraps)
+    std::vector<std::string> sharedCasualTexts;
+    {
+        auto appendVec = [&](const std::vector<std::string>& v) {
+            sharedCasualTexts.insert(sharedCasualTexts.end(), v.begin(), v.end());
+        };
+        appendVec(sys.casualResponses.greetings);
+        appendVec(sys.casualResponses.goodbyes);
+        appendVec(sys.casualResponses.acknowledgments);
+        appendVec(sys.casualResponses.reactions_positive);
+        appendVec(sys.casualResponses.reactions_negative);
+        appendVec(sys.casualResponses.encouragements);
+        appendVec(sys.casualResponses.follow_ups);
+        appendVec(sys.casualResponses.mood_happy);
+        appendVec(sys.casualResponses.mood_sad);
+        appendVec(sys.casualResponses.mood_angry);
+        appendVec(sys.casualResponses.mood_chill);
+    }
+
     // Step 4c: Initialize MK Consciousness Engine
     sys.consciousnessEngine.initialize(sys.graph, sys.casualResponses);
 
     // Step 4d: Initialize CXN Crystal Network
     {
-        // Collect casual response texts for bootstrap
-        std::vector<std::string> casualTexts;
-        auto addCasual = [&](const std::vector<std::string>& v) {
-            for (const auto& s : v) casualTexts.push_back(s);
-        };
-        addCasual(sys.casualResponses.greetings);
-        addCasual(sys.casualResponses.goodbyes);
-        addCasual(sys.casualResponses.acknowledgments);
-        addCasual(sys.casualResponses.reactions_positive);
-        addCasual(sys.casualResponses.reactions_negative);
-        addCasual(sys.casualResponses.encouragements);
-        addCasual(sys.casualResponses.follow_ups);
-
-        // Collect knowledge facts
+        // CXN uses fewer knowledge facts (cap at 300)
         std::vector<std::string> knowledgeFacts;
         const auto& edges = sys.graph.getAllEdges();
         for (const auto& e : edges) {
@@ -1228,29 +1234,12 @@ int main(int argc, char* argv[]) {
             if (knowledgeFacts.size() > 300) break;
         }
 
-        sys.crystalNetwork.initialize(casualTexts, knowledgeFacts);
+        sys.crystalNetwork.initialize(sharedCasualTexts, knowledgeFacts);
     }
 
     // Step 4e: Initialize Prometheus Engine
     {
-        // Collect casual response texts for bootstrap
-        std::vector<std::string> casualTexts;
-        auto addCasualP = [&](const std::vector<std::string>& v) {
-            for (const auto& s : v) casualTexts.push_back(s);
-        };
-        addCasualP(sys.casualResponses.greetings);
-        addCasualP(sys.casualResponses.goodbyes);
-        addCasualP(sys.casualResponses.acknowledgments);
-        addCasualP(sys.casualResponses.reactions_positive);
-        addCasualP(sys.casualResponses.reactions_negative);
-        addCasualP(sys.casualResponses.encouragements);
-        addCasualP(sys.casualResponses.follow_ups);
-        addCasualP(sys.casualResponses.mood_happy);
-        addCasualP(sys.casualResponses.mood_sad);
-        addCasualP(sys.casualResponses.mood_angry);
-        addCasualP(sys.casualResponses.mood_chill);
-
-        // Collect knowledge facts
+        // Prometheus uses more knowledge facts (cap at 500)
         std::vector<std::string> knowledgeFacts;
         const auto& prometheusEdges = sys.graph.getAllEdges();
         for (const auto& e : prometheusEdges) {
@@ -1261,7 +1250,7 @@ int main(int argc, char* argv[]) {
         // Get code fragments from bootstrap
         std::vector<std::string> codeFrags = getCodeFragmentStrings();
 
-        sys.prometheus.initialize(casualTexts, knowledgeFacts, codeFrags);
+        sys.prometheus.initialize(sharedCasualTexts, knowledgeFacts, codeFrags);
         sys.prometheus.load();  // Restore identity state if saved
     }
 

@@ -271,6 +271,31 @@ public:
         if (!initialized_) return "";
         if (input.empty()) return "";
 
+        // Temperature scheduling: detect if query needs precision or creativity
+        {
+            std::string lower = input;
+            std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+            bool needsPrecision = (lower.find("code") != std::string::npos ||
+                                   lower.find("function") != std::string::npos ||
+                                   lower.find("fix") != std::string::npos ||
+                                   lower.find("error") != std::string::npos ||
+                                   lower.find("how to") != std::string::npos ||
+                                   lower.find("explain") != std::string::npos);
+            bool needsCreativity = (lower.find("idea") != std::string::npos ||
+                                    lower.find("brainstorm") != std::string::npos ||
+                                    lower.find("creative") != std::string::npos ||
+                                    lower.find("imagine") != std::string::npos ||
+                                    lower.find("what if") != std::string::npos);
+            if (needsPrecision) {
+                // Cool temperature for precise responses
+                dynamics_.setTemperature(0.3f);
+            } else if (needsCreativity) {
+                // Hot temperature for creative exploration
+                dynamics_.setTemperature(0.9f);
+            }
+            // Otherwise let the automatic schedule handle it
+        }
+
         // Step 1: RESONATE — find vibrating droplets
         auto vibrating = dynamics_.resonate(input, pool_);
         if (vibrating.empty()) return "";  // Nothing resonated → let fallback handle

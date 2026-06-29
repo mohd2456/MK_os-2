@@ -8,6 +8,7 @@
 #include <sstream>
 #include <fstream>
 #include <chrono>
+#include <thread>
 #include <vector>
 #include <curl/curl.h>
 
@@ -42,7 +43,8 @@ private:
             curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
             curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);
             curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
 
@@ -62,12 +64,8 @@ private:
             if (attempt < MAX_RETRIES - 1) {
                 std::cerr << "[TELEGRAM] Request failed (attempt " << (attempt + 1)
                           << "/" << MAX_RETRIES << "): " << curl_easy_strerror(res) << "\n";
-                // Simple sleep via busy wait (no extra includes needed)
-                auto start = std::chrono::steady_clock::now();
-                while (std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::steady_clock::now() - start).count() < RETRY_DELAY_MS * (attempt + 1)) {
-                    // wait
-                }
+                std::this_thread::sleep_for(
+                    std::chrono::milliseconds(RETRY_DELAY_MS * (attempt + 1)));
             } else {
                 std::cerr << "[TELEGRAM ERROR] Request failed after " << MAX_RETRIES
                           << " attempts: " << curl_easy_strerror(res) << "\n";

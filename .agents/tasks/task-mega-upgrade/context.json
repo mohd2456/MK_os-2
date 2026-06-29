@@ -1,0 +1,33 @@
+{
+  "project_type": "C++17 single-compilation-unit AI system (local hybrid AI OS)",
+  "language": "C++17",
+  "build_system": "Makefile with single compilation unit (mk_entry.cpp includes all other .cpp files). clang++/g++, -std=c++17 -O2. Dependencies: libcurl, libsqlite3",
+  "test_framework": "Custom test framework in tests/test_main.cpp with TEST_ASSERT macros and RUN_TEST macro. 7 tests, 62 assertions currently.",
+  "build_command": "cd /projects/sandbox/MK_os-2/MK_OS && clang++ -std=c++17 -O2 -Wall -Wextra -DLINUX -o mk_os system/mk_entry.cpp -lcurl -lsqlite3",
+  "test_command": "cd /projects/sandbox/MK_os-2/MK_OS && make test",
+  "verification_instructions": "1. Run build command and verify zero errors (warnings OK). 2. Run make test and verify all tests pass. 3. Check du -sh for total size stays under 100MB.",
+  "snapshot_or_generated_files": "MK_OS/bootloader/build_work/ contains .iso and .qcow2 images (46MB). These are not regenerated in sandbox.",
+  "setup_instructions": "Dependencies (libcurl, libsqlite3) are already available. Just run make in MK_OS/ directory.",
+  "environment_constraints": "Open internet available. No Docker needed. Build is purely C++17 with libcurl and libsqlite3. The project compiles with 12 warnings but zero errors on current branch.",
+  "contribution_requirements": "All code changes must compile clean with the single-unit build. Tests must pass. Total project size must stay under 100MB.",
+  "key_patterns": "Single compilation unit via #include of .cpp files from mk_entry.cpp. Header guards with #ifndef. Modules are classes with init/load/save lifecycle. Knowledge stored in pipe-delimited .mk files (source|relation|target|weight). ANSI color codes for terminal UI. Gen-Z casual tone in personality responses.",
+  "relevant_files": [
+    "MK_OS/system/mk_entry.cpp",
+    "MK_OS/ai_core/hre/pattern_graph.cpp",
+    "MK_OS/ai_core/conversation_mode.cpp",
+    "MK_OS/mk_brain/personality/casual_responses.cpp",
+    "MK_OS/ai_core/prometheus/prometheus_engine.cpp",
+    "MK_OS/ai_core/prometheus/fluid_dynamics.cpp",
+    "MK_OS/ai_core/prometheus/code_fragments.cpp",
+    "MK_OS/ai_core/math_solver.cpp",
+    "MK_OS/tools/code_runner.cpp",
+    "MK_OS/plugins/telegram.cpp",
+    "MK_OS/plugins/pc_helper.cpp",
+    "MK_OS/ai_core/idea_engine.cpp",
+    "MK_OS/ai_core/hre/knowledge_files/*.mk",
+    "MK_OS/install.sh",
+    "MK_OS/tests/test_main.cpp",
+    "MK_OS/Makefile"
+  ],
+  "directory_structure": "MK_OS/ is the main source. ai_core/ has the AI engines (HRE, MCE, CXN, Prometheus, conversation). mk_brain/ has personality, learning, memory. plugins/ has telegram, pc_helper. tools/ has code_runner. system/ has the entry point, shell, services. bootloader/ has boot scripts. knowledge/ has data."
+}

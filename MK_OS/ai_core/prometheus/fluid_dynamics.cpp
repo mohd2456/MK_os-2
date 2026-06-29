@@ -511,6 +511,10 @@ public:
         generationCount_ = 0;
     }
 
+    void setTemperature(float t) {
+        currentTemperature_ = std::max(0.0f, std::min(1.0f, t));
+    }
+
     float getTemperature() const { return currentTemperature_; }
 
     // =======================================================================

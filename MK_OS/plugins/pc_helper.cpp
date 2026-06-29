@@ -25,7 +25,7 @@ private:
             "cat", "head", "tail", "wc", "echo", "uname", "hostname",
             "free", "top", "ps", "which", "file", "stat", "id",
             "lscpu", "lsblk", "ip", "ifconfig", "ping", "nslookup",
-            "env", "printenv", "cal", "bc", "expr"
+            "env", "printenv", "cal", "bc", "expr", "kill"
         };
         return allowed;
     }
@@ -298,8 +298,13 @@ public:
             std::cerr << "[PC HELPER] Refusing to kill system process (PID <= 1000)\n";
             return false;
         }
-        std::string cmd = "kill " + std::to_string(pid) + " 2>/dev/null";
-        return std::system(cmd.c_str()) == 0;
+        // Gate through the allowlist/blocked-pattern check: "kill <pid>" must pass safety
+        std::string cmd = "kill " + std::to_string(pid);
+        if (!isCommandSafe(cmd)) {
+            std::cerr << "[PC HELPER] kill command blocked by safety filter\n";
+            return false;
+        }
+        return std::system((cmd + " 2>/dev/null").c_str()) == 0;
     }
 
     // ============================================================

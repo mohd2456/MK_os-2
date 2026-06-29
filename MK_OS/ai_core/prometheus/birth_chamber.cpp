@@ -87,17 +87,33 @@ private:
         return "";
     }
 
+    // Escape a string for safe use inside single quotes in shell commands.
+    // Replaces every ' with '\'' (end quote, escaped quote, restart quote).
+    std::string shellEscape(const std::string& s) const {
+        std::string escaped;
+        escaped.reserve(s.size() + 16);
+        for (char c : s) {
+            if (c == '\'') {
+                escaped += "'\\''";
+            } else {
+                escaped += c;
+            }
+        }
+        return escaped;
+    }
+
     // Get run command for language
     std::string getRunCmd(const std::string& lang, const std::string& srcPath,
                           const std::string& outPath, const std::string& input) const {
+        std::string safeInput = shellEscape(input);
         if (lang == "cpp") {
-            return "echo '" + input + "' | timeout 5 " + outPath + " 2>/dev/null";
+            return "echo '" + safeInput + "' | timeout 5 " + outPath + " 2>/dev/null";
         }
         if (lang == "python") {
-            return "echo '" + input + "' | timeout 5 python3 " + srcPath + " 2>/dev/null";
+            return "echo '" + safeInput + "' | timeout 5 python3 " + srcPath + " 2>/dev/null";
         }
         if (lang == "bash") {
-            return "echo '" + input + "' | timeout 5 bash " + srcPath + " 2>/dev/null";
+            return "echo '" + safeInput + "' | timeout 5 bash " + srcPath + " 2>/dev/null";
         }
         return "";
     }

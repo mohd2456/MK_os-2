@@ -74,6 +74,8 @@ static int g_assertions_failed = 0;
 #include "../ai_core/smart_router.cpp"
 #include "../mk_brain/vector_search/ann_search.cpp"
 #include "../mk_brain/embeddings/embeddings_eng.cpp"
+#include "../ai_core/math_solver.cpp"
+#include "../tools/code_runner.cpp"
 
 // ============================================================
 // TEST: Pattern Graph
@@ -420,6 +422,136 @@ void test_embeddings_engine() {
 }
 
 // ============================================================
+// TEST: Math Solver Extensions (Calculus, Statistics, Base Conversion)
+// ============================================================
+void test_math_solver() {
+    MKMathSolver math;
+
+    // Test quadratic equation
+    auto quadResult = math.solveQuadratic(1, -3, 2);
+    TEST_ASSERT_TRUE(quadResult.success, "Quadratic x^2-3x+2=0 should solve");
+    TEST_ASSERT_TRUE(quadResult.answer.find("1") != std::string::npos, "Root x=1 should be in answer");
+    TEST_ASSERT_TRUE(quadResult.answer.find("2") != std::string::npos, "Root x=2 should be in answer");
+
+    // Test complex roots
+    auto complexResult = math.solveQuadratic(1, 0, 1);
+    TEST_ASSERT_TRUE(complexResult.success, "x^2+1=0 should solve with complex roots");
+    TEST_ASSERT_TRUE(complexResult.answer.find("i") != std::string::npos, "Should contain imaginary marker");
+
+    // Test unit conversion
+    auto convertResult = math.convert(1.0, "km", "m");
+    TEST_ASSERT_TRUE(convertResult.success, "1 km to m should succeed");
+    TEST_ASSERT_TRUE(convertResult.answer.find("1000") != std::string::npos, "1 km = 1000 m");
+
+    // Test temperature conversion
+    auto tempResult = math.convert(100.0, "c", "f");
+    TEST_ASSERT_TRUE(tempResult.success, "100 C to F should succeed");
+    TEST_ASSERT_TRUE(tempResult.answer.find("212") != std::string::npos, "100 C = 212 F");
+
+    // Test trigonometry
+    auto sinResult = math.trig("sin", 90.0);
+    TEST_ASSERT_TRUE(sinResult.success, "sin(90) should succeed");
+    TEST_ASSERT_TRUE(sinResult.answer.find("1") != std::string::npos, "sin(90) = 1");
+
+    auto cosResult = math.trig("cos", 0.0);
+    TEST_ASSERT_TRUE(cosResult.success, "cos(0) should succeed");
+    TEST_ASSERT_TRUE(cosResult.answer.find("1") != std::string::npos, "cos(0) = 1");
+
+    // Test percentage
+    auto pctResult = math.percentage(200.0, 15.0);
+    TEST_ASSERT_TRUE(pctResult.success, "15% of 200 should succeed");
+    TEST_ASSERT_TRUE(pctResult.answer.find("30") != std::string::npos, "15% of 200 = 30");
+
+    // Test natural language solve: derivative (use "diff" prefix to route to derivative)
+    auto derivResult = math.derivative("derivative x^2 at 3");
+    TEST_ASSERT_TRUE(derivResult.success, "Derivative of x^2 at x=3 should succeed");
+    TEST_ASSERT_TRUE(derivResult.answer.find("6") != std::string::npos, "d/dx(x^2) at 3 = 6");
+
+    // Test natural language solve: statistics mean
+    auto statsResult = math.solve("mean 2 4 6 8 10");
+    TEST_ASSERT_TRUE(statsResult.success, "Mean of 2,4,6,8,10 should succeed");
+    TEST_ASSERT_TRUE(statsResult.answer.find("6") != std::string::npos, "Mean of 2,4,6,8,10 = 6");
+
+    // Test natural language solve: factorial
+    auto factResult = math.solve("factorial 5");
+    TEST_ASSERT_TRUE(factResult.success, "Factorial of 5 should succeed");
+    TEST_ASSERT_TRUE(factResult.answer.find("120") != std::string::npos, "5! = 120");
+
+    // Test natural language solve: base conversion
+    auto binResult = math.solve("to binary 255");
+    TEST_ASSERT_TRUE(binResult.success, "Binary conversion of 255 should succeed");
+    TEST_ASSERT_TRUE(binResult.answer.find("11111111") != std::string::npos, "255 in binary = 11111111");
+
+    // Test natural language solve: GCD
+    auto gcdResult = math.solve("gcd 48 36");
+    TEST_ASSERT_TRUE(gcdResult.success, "GCD of 48 and 36 should succeed");
+    TEST_ASSERT_TRUE(gcdResult.answer.find("12") != std::string::npos, "GCD(48,36) = 12");
+
+    // Test physics
+    std::map<std::string, double> vars = {{"m", 10.0}, {"a", 9.8}};
+    auto physResult = math.physics("f=ma", vars);
+    TEST_ASSERT_TRUE(physResult.success, "F=ma should succeed");
+    TEST_ASSERT_TRUE(physResult.answer.find("98") != std::string::npos, "F = 10*9.8 = 98 N");
+}
+
+// ============================================================
+// TEST: Code Runner Sanitization
+// ============================================================
+void test_code_runner_sanitization() {
+    MKCodeRunner runner(5);
+
+    // Test that known dangerous patterns are blocked
+    auto result1 = runner.run("import os; os.system('rm -rf /')", "python");
+    TEST_ASSERT_FALSE(result1.success, "rm -rf / should be blocked");
+    TEST_ASSERT_TRUE(result1.stderrOutput.find("BLOCKED") != std::string::npos, "Should say BLOCKED");
+
+    // Test fork bomb detection
+    auto result2 = runner.run(":(){ :|:& };:", "bash");
+    TEST_ASSERT_FALSE(result2.success, "Fork bomb should be blocked");
+
+    // Test command substitution blocking
+    auto result3 = runner.run("echo $(rm -rf /)", "bash");
+    TEST_ASSERT_FALSE(result3.success, "Command substitution with rm should be blocked");
+
+    // Test backtick injection blocking
+    auto result4 = runner.run("echo `rm -rf /`", "bash");
+    TEST_ASSERT_FALSE(result4.success, "Backtick rm should be blocked");
+
+    // Test Python os.system blocking
+    auto result5 = runner.run("import os\nos.system('whoami')", "python");
+    TEST_ASSERT_FALSE(result5.success, "os.system() should be blocked");
+
+    // Test Python subprocess blocking
+    auto result6 = runner.run("import subprocess\nsubprocess.call(['ls'])", "python");
+    TEST_ASSERT_FALSE(result6.success, "subprocess.call() should be blocked");
+
+    // Test child_process blocking for JavaScript
+    auto result7 = runner.run("const { exec } = require('child_process'); exec('ls')", "javascript");
+    TEST_ASSERT_FALSE(result7.success, "child_process should be blocked");
+
+    // Test shutil.rmtree blocking
+    auto result8 = runner.run("import shutil\nshutil.rmtree('/tmp/test')", "python");
+    TEST_ASSERT_FALSE(result8.success, "shutil.rmtree should be blocked");
+
+    // Test that safe code is allowed through
+    auto resultSafe = runner.run("print('hello world')", "python");
+    // Note: this may fail if python3 is not installed, but the isDangerous check should NOT block it
+    TEST_ASSERT_TRUE(resultSafe.stderrOutput.find("BLOCKED") == std::string::npos, "Safe code should not be blocked");
+
+    // Test language detection
+    auto langs = MKCodeRunner::supportedLanguages();
+    TEST_ASSERT_EQ((int)langs.size(), 5, "Should support 5 languages");
+
+    // Test split-flag rm variant blocking
+    auto result9 = runner.run("rm -r -f /tmp/important", "bash");
+    TEST_ASSERT_FALSE(result9.success, "rm -r -f should be blocked");
+
+    // Test --recursive variant blocking
+    auto result10 = runner.run("rm --recursive /tmp", "bash");
+    TEST_ASSERT_FALSE(result10.success, "rm --recursive should be blocked");
+}
+
+// ============================================================
 // Main: Run all tests
 // ============================================================
 int main() {
@@ -436,6 +568,8 @@ int main() {
     RUN_TEST(test_composer);
     RUN_TEST(test_vector_search);
     RUN_TEST(test_embeddings_engine);
+    RUN_TEST(test_math_solver);
+    RUN_TEST(test_code_runner_sanitization);
 
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;

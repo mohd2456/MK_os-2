@@ -36,14 +36,30 @@ private:
         std::string lower = code;
         std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
 
-        // Block dangerous shell patterns
+        // Block dangerous shell patterns (including split-flag and long-flag variants)
         static const std::vector<std::string> patterns = {
-            "rm -rf /", "rm -rf /*", ":(){ :|:& };:",  // fork bomb
+            "rm -rf /", "rm -rf /*", "rm -r -f", "rm --recursive",
+            "rm -rf ~", "rm -rf $home",
+            ":(){ :|:& };:",  // fork bomb
             "dd if=/dev/", "mkfs.", "chmod -r 777 /",
             "wget http", "curl http",  // no arbitrary downloads during code execution
             "> /dev/sda", "shutdown", "reboot", "halt",
-            "mv /* ", "rm -rf ~", "rm -rf $HOME",
-            "/dev/null >", ">/dev/sda"
+            "mv /* ", "/dev/null >", ">/dev/sda",
+            // Command substitution / backtick injection
+            "$(rm ", "$(dd ", "$(mkfs", "$(shutdown", "$(reboot",
+            "`rm ", "`dd ", "`mkfs", "`shutdown", "`reboot",
+            // Python-specific dangerous calls
+            "os.system(", "os.popen(", "subprocess.call(", "subprocess.run(",
+            "subprocess.popen(", "__import__('os')", "__import__(\"os\")",
+            // Shell exec variants
+            "exec(", "eval(", "os.exec",
+            // Network exfiltration attempts
+            "import socket", "import http", "import urllib",
+            "require('child_process')", "require(\"child_process\")",
+            "child_process", "execsync(", "spawnsync(",
+            // Filesystem destruction via scripting
+            "shutil.rmtree", "fs.rmdirSync", "fs.unlinkSync",
+            "std::filesystem::remove_all"
         };
 
         for (const auto& p : patterns) {

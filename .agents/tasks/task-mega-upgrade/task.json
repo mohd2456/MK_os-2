@@ -1,0 +1,7 @@
+{
+  "task_id": "task-mega-upgrade",
+  "task_description": "Complete quality upgrade of every module in MK OS: fix all bugs/warnings, add more knowledge, improve UI/UX, upgrade conversation mode, enhance Prometheus engine, improve code runner, math solver, Telegram integration, PC agent, and installer. Goal: make everything that exists GREAT while staying under 100MB total.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}
