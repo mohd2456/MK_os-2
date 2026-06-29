@@ -83,6 +83,7 @@ namespace Color {
 #include "../ai_core/neural_net.cpp"
 #include "../mk_brain/personality/casual_responses.cpp"
 #include "../ai_core/conversation_mode.cpp"
+#include "../ai_core/mce/mce_engine.cpp"
 
 // ============================================================
 // Global state
@@ -144,6 +145,7 @@ struct MKSystem {
     MKNeuralNet neuralNet;
     MKCasualResponses casualResponses;
     MKConversationMode conversationMode;
+    MKConsciousnessEngine consciousnessEngine;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -569,7 +571,15 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
         }
 
         // Generate casual response based on input type and mood
-        std::string response = sys.conversationMode.generateResponse(input, sys.casualResponses);
+        // Use consciousness engine if initialized, otherwise fall back to templates
+        std::string response;
+        if (sys.consciousnessEngine.isInitialized()) {
+            response = sys.consciousnessEngine.generate(input, sys.graph);
+        }
+        // Fall back to template system if MCE returns empty
+        if (response.empty()) {
+            response = sys.conversationMode.generateResponse(input, sys.casualResponses);
+        }
         
         if (!response.empty()) {
             std::cout << "\n  " << Color::BCYAN << "~" << Color::RESET << " " << response << "\n";
@@ -578,6 +588,9 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             sys.brainMemory.commitToShortTerm("user", input);
             sys.brainMemory.commitToShortTerm("mk", response);
             sys.memory.recordInteraction("conversation", input);
+            
+            // Absorb into consciousness engine for learning
+            sys.consciousnessEngine.absorb(input, response);
             
             // Extract biographical facts passively
             sys.factExtractor.extractFromMessage(input);
@@ -1054,6 +1067,9 @@ int main(int argc, char* argv[]) {
     // Step 4b: Restore learning engine knowledge
     sys.learningEngine.restore();
 
+    // Step 4c: Initialize MK Consciousness Engine
+    sys.consciousnessEngine.initialize(sys.graph, sys.casualResponses);
+
     // Step 4c: Check if daily briefing should be generated
     if (sys.dailyBriefing.shouldGenerate()) {
         std::cout << "\n  " << Color::BMAGENTA << "📋" << Color::RESET 
@@ -1274,6 +1290,16 @@ int main(int argc, char* argv[]) {
                     cmd_think(sys, ""); commandFound = true;
                 } else if (input == "/briefing") {
                     cmd_briefing(sys); commandFound = true;
+                } else if (input == "/trace") {
+                    std::string trace = sys.consciousnessEngine.explain();
+                    std::cout << "\n  " << Color::BOLD << Color::BMAGENTA << "🧠 Thought Trace" << Color::RESET << "\n";
+                    std::cout << "  " << Color::DIM << trace << Color::RESET << "\n";
+                    commandFound = true;
+                } else if (input == "/echo") {
+                    std::string profile = sys.consciousnessEngine.getEchoProfile();
+                    std::cout << "\n  " << Color::BOLD << Color::BCYAN << "🪞 Echo Memory" << Color::RESET << "\n";
+                    std::cout << "  " << Color::DIM << profile << Color::RESET << "\n";
+                    commandFound = true;
                 } else if (input.size() > 7 && input.substr(0, 7) == "/shell ") {
                     std::string shellCmd = trim(input.substr(7));
                     if (shellCmd.empty()) {
@@ -1389,6 +1415,7 @@ int main(int argc, char* argv[]) {
     sys.memory.saveToDisk();
     sys.improver.saveLog();
     sys.learningEngine.persist();
+    sys.consciousnessEngine.save();
     std::cout << "  " << Color::GREEN << "✓" << Color::RESET << " Memory saved. Improvement log saved. Knowledge persisted.\n";
     std::cout << "  " << Color::BOLD << Color::CYAN << "MK OS shut down cleanly. Goodbye." 
               << Color::RESET << "\n\n";
