@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-005",
+  "type": "fix",
+  "description": "Address review issues: fix temperature override sequencing, add isDangerous check in BirthChamber, document exec/eval blocklist as deliberate, and add test coverage for conversation_mode and idea_engine.",
+  "status": "in_progress",
+  "steps": [
+    "Fix temperature override in prometheus_engine.cpp: move setTemperature() calls to AFTER resonate() returns",
+    "Add isDangerous check in birth_chamber.cpp before code execution in tournament()",
+    "Add comment in code_runner.cpp documenting exec/eval blocklist as deliberate security choice",
+    "Add test_conversation_mode and test_idea_engine to tests/test_main.cpp"
+  ],
+  "acceptance_criteria": [
+    "Temperature override is applied after resonate() so it is not overwritten",
+    "BirthChamber tournament skips execution of candidates that contain dangerous patterns",
+    "Code runner has a comment explaining exec/eval is intentionally broad",
+    "Tests for conversation_mode and idea_engine pass",
+    "Build succeeds with zero warnings",
+    "All tests pass"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && clang++ -std=c++17 -O2 -Wall -Wextra -DLINUX -o mk_os system/mk_entry.cpp -lcurl -lsqlite3 2>&1 | grep -c error",
+    "cd /projects/sandbox/MK_os-2/MK_OS && make test 2>&1 | tail -5"
+  ],
+  "blocked_reason": null,
+  "findings": null
+}

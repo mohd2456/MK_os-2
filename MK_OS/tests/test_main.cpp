@@ -76,6 +76,9 @@ static int g_assertions_failed = 0;
 #include "../mk_brain/embeddings/embeddings_eng.cpp"
 #include "../ai_core/math_solver.cpp"
 #include "../tools/code_runner.cpp"
+#include "../mk_brain/personality/casual_responses.cpp"
+#include "../ai_core/conversation_mode.cpp"
+#include "../ai_core/idea_engine.cpp"
 
 // ============================================================
 // TEST: Pattern Graph
@@ -552,6 +555,152 @@ void test_code_runner_sanitization() {
 }
 
 // ============================================================
+// TEST: Conversation Mode (mood detection, time-of-day, story mode)
+// ============================================================
+void test_conversation_mode() {
+    MKConversationMode conv;
+
+    // --- Mood detection ---
+    // Happy mood
+    auto happyMood = conv.detectMood("I'm so hyped and excited about this!");
+    TEST_ASSERT_EQ(static_cast<int>(happyMood.mood), static_cast<int>(MKMood::HAPPY),
+                   "Hyped/excited input should detect HAPPY mood");
+    TEST_ASSERT_GT(happyMood.confidence, 0.0f, "Happy mood confidence should be > 0");
+    TEST_ASSERT_FALSE(happyMood.trigger_word.empty(), "Should have a trigger word for happy");
+
+    // Sad mood
+    auto sadMood = conv.detectMood("I feel so sad and lonely today, drained honestly");
+    TEST_ASSERT_EQ(static_cast<int>(sadMood.mood), static_cast<int>(MKMood::SAD),
+                   "Sad/lonely/drained input should detect SAD mood");
+    TEST_ASSERT_GT(sadMood.confidence, 0.0f, "Sad mood confidence should be > 0");
+
+    // Angry mood
+    auto angryMood = conv.detectMood("I'm so pissed and furious right now");
+    TEST_ASSERT_EQ(static_cast<int>(angryMood.mood), static_cast<int>(MKMood::ANGRY),
+                   "Pissed/furious input should detect ANGRY mood");
+
+    // Nervous mood
+    auto nervousMood = conv.detectMood("I'm really nervous and anxious about the test");
+    TEST_ASSERT_EQ(static_cast<int>(nervousMood.mood), static_cast<int>(MKMood::NERVOUS),
+                   "Nervous/anxious input should detect NERVOUS mood");
+
+    // Neutral mood (no emotional keywords)
+    auto neutralMood = conv.detectMood("the sky is blue");
+    TEST_ASSERT_EQ(static_cast<int>(neutralMood.mood), static_cast<int>(MKMood::NEUTRAL),
+                   "Neutral statement should detect NEUTRAL mood");
+    TEST_ASSERT_EQ(neutralMood.confidence, 0.0f, "Neutral mood confidence should be 0");
+
+    // Emotion intensity: strong emotions with multiple keywords + caps/exclamation
+    auto strongMood = conv.detectMood("OMG I'M SO EXCITED AND HAPPY AND AMAZING!!!!");
+    TEST_ASSERT_TRUE(strongMood.intensity == MKEmotionIntensity::STRONG ||
+                     strongMood.intensity == MKEmotionIntensity::EXTREME,
+                     "Multiple keywords + caps + exclamation should give STRONG or EXTREME intensity");
+
+    // --- Time of day ---
+    MKTimeOfDay tod = conv.getTimeOfDay();
+    // Just verify it returns a valid enum value (time-dependent, but should not crash)
+    TEST_ASSERT_TRUE(static_cast<int>(tod) >= 0 && static_cast<int>(tod) <= 5,
+                     "getTimeOfDay should return valid MKTimeOfDay enum value");
+
+    // --- Story mode detection ---
+    // Short input should NOT trigger story mode
+    bool shortStory = conv.detectStoryMode("hey what's up");
+    TEST_ASSERT_FALSE(shortStory, "Short input should not trigger story mode");
+
+    // Long narrative input should trigger story mode
+    bool longStory = conv.detectStoryMode(
+        "bro guess what happened today so basically I was at the store and then "
+        "this random dude came up and started talking about aliens and like "
+        "literally he was so convinced and anyway turns out he was right");
+    TEST_ASSERT_TRUE(longStory, "Long narrative with story indicators should trigger story mode");
+
+    // --- isConversation classification ---
+    TEST_ASSERT_TRUE(conv.isConversation("yo"), "Greeting 'yo' should be conversation");
+    TEST_ASSERT_TRUE(conv.isConversation("hey"), "Greeting 'hey' should be conversation");
+    TEST_ASSERT_TRUE(conv.isConversation("bye"), "Goodbye should be conversation");
+    TEST_ASSERT_FALSE(conv.isConversation("/help"), "Command should not be conversation");
+    TEST_ASSERT_FALSE(conv.isConversation("what is the capital of France?"),
+                      "Factual question should not be conversation");
+    TEST_ASSERT_TRUE(conv.isConversation("yeah"), "Vague response should be conversation");
+    TEST_ASSERT_TRUE(conv.isConversation("fr"), "Vague response 'fr' should be conversation");
+
+    // --- classifyInput types ---
+    auto greetType = conv.classifyInput("hey");
+    TEST_ASSERT_EQ(static_cast<int>(greetType), static_cast<int>(MKInputType::GREETING),
+                   "'hey' should classify as GREETING");
+
+    auto byeType = conv.classifyInput("gotta go");
+    TEST_ASSERT_EQ(static_cast<int>(byeType), static_cast<int>(MKInputType::GOODBYE),
+                   "'gotta go' should classify as GOODBYE");
+
+    auto cmdType = conv.classifyInput("/stats");
+    TEST_ASSERT_EQ(static_cast<int>(cmdType), static_cast<int>(MKInputType::COMMAND),
+                   "'/stats' should classify as COMMAND");
+
+    auto vagueType = conv.classifyInput("facts");
+    TEST_ASSERT_EQ(static_cast<int>(vagueType), static_cast<int>(MKInputType::VAGUE_RESPONSE),
+                   "'facts' should classify as VAGUE_RESPONSE");
+
+    // --- Topic memory ---
+    conv.pushTopic("python");
+    conv.pushTopic("music");
+    TEST_ASSERT_EQ(conv.getLastTopic(), std::string("music"), "Last topic should be 'music'");
+    TEST_ASSERT_EQ((int)conv.getRecentTopics().size(), 2, "Should have 2 recent topics");
+}
+
+// ============================================================
+// TEST: Idea Engine (idea generation, brainstorm)
+// ============================================================
+void test_idea_engine() {
+    MKPatternGraph graph("ai_core/hre/knowledge_files");
+    graph.loadAllKnowledge();
+
+    MKIdeaEngine ideaEngine;
+
+    // Generate a single idea
+    MKIdea idea = ideaEngine.generateIdea(graph);
+    TEST_ASSERT_FALSE(idea.conceptA.empty(), "Generated idea should have conceptA");
+    TEST_ASSERT_FALSE(idea.conceptB.empty(), "Generated idea should have conceptB");
+    TEST_ASSERT_FALSE(idea.bridge.empty(), "Generated idea should have a bridge");
+    TEST_ASSERT_FALSE(idea.idea.empty(), "Generated idea should have an idea sentence");
+    TEST_ASSERT_FALSE(idea.category.empty(), "Generated idea should have a category");
+    TEST_ASSERT_TRUE(idea.feasibility >= 0.0f && idea.feasibility <= 1.0f,
+                     "Feasibility should be in [0,1]");
+    TEST_ASSERT_TRUE(idea.novelty >= 0.0f && idea.novelty <= 1.0f,
+                     "Novelty should be in [0,1]");
+    TEST_ASSERT_TRUE(idea.timestamp > 0, "Timestamp should be positive");
+
+    // Generate multiple ideas to verify diversity
+    MKIdea idea2 = ideaEngine.generateIdea(graph);
+    TEST_ASSERT_FALSE(idea2.idea.empty(), "Second generated idea should not be empty");
+    // Concepts can differ (not deterministic, but should produce something)
+
+    // Brainstorm on a topic
+    auto brainstormResults = ideaEngine.brainstorm(graph, "python", 3);
+    TEST_ASSERT_GT((int)brainstormResults.size(), 0, "Brainstorm should return at least 1 idea");
+    TEST_ASSERT_TRUE(brainstormResults.size() <= 3, "Brainstorm should return at most 3 ideas");
+    for (const auto& bi : brainstormResults) {
+        TEST_ASSERT_EQ(bi.conceptA, std::string("python"),
+                       "Brainstorm ideas should have topic as conceptA");
+        TEST_ASSERT_FALSE(bi.conceptB.empty(), "Brainstorm idea should have conceptB");
+        TEST_ASSERT_FALSE(bi.idea.empty(), "Brainstorm idea sentence should not be empty");
+    }
+
+    // inventFor
+    auto inventResults = ideaEngine.inventFor(graph, "slow computer performance");
+    TEST_ASSERT_GT((int)inventResults.size(), 0, "inventFor should return ideas");
+    for (const auto& inv : inventResults) {
+        TEST_ASSERT_FALSE(inv.idea.empty(), "inventFor idea should not be empty");
+        TEST_ASSERT_EQ(inv.category, std::string("invention"),
+                       "inventFor category should be 'invention'");
+    }
+
+    // History tracking
+    auto history = ideaEngine.getHistory();
+    TEST_ASSERT_GT((int)history.size(), 0, "History should not be empty after generating ideas");
+}
+
+// ============================================================
 // Main: Run all tests
 // ============================================================
 int main() {
@@ -570,6 +719,8 @@ int main() {
     RUN_TEST(test_embeddings_engine);
     RUN_TEST(test_math_solver);
     RUN_TEST(test_code_runner_sanitization);
+    RUN_TEST(test_conversation_mode);
+    RUN_TEST(test_idea_engine);
 
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;

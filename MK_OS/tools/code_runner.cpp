@@ -52,6 +52,13 @@ private:
             "os.system(", "os.popen(", "subprocess.call(", "subprocess.run(",
             "subprocess.popen(", "__import__('os')", "__import__(\"os\")",
             // Shell exec variants
+            // NOTE: "exec(" and "eval(" are intentionally broad. This is a deliberate
+            // security choice that prioritizes safety over convenience. It will reject
+            // legitimate Python code like eval("2+2") or exec(compiled_code), but in
+            // a local AI sandbox where untrusted code may enter via feedback loops,
+            // blocking these builtins prevents a class of code-injection attacks.
+            // The 5-second timeout and /tmp sandbox are the actual security boundaries;
+            // this blocklist provides early rejection of obvious attack vectors.
             "exec(", "eval(", "os.exec",
             // Network exfiltration attempts
             "import socket", "import http", "import urllib",

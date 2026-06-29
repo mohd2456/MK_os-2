@@ -271,7 +271,14 @@ public:
         if (!initialized_) return "";
         if (input.empty()) return "";
 
-        // Temperature scheduling: detect if query needs precision or creativity
+        // Step 1: RESONATE — find vibrating droplets
+        // NOTE: resonate() calls updateTemperatureSchedule() internally,
+        // so any keyword-based temperature override must come AFTER this call.
+        auto vibrating = dynamics_.resonate(input, pool_);
+
+        // Temperature override: detect if query needs precision or creativity.
+        // Applied AFTER resonate() so that updateTemperatureSchedule() does not
+        // overwrite the explicit override.
         {
             std::string lower = input;
             std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
@@ -293,11 +300,8 @@ public:
                 // Hot temperature for creative exploration
                 dynamics_.setTemperature(0.9f);
             }
-            // Otherwise let the automatic schedule handle it
+            // Otherwise the automatic schedule (set by resonate) remains
         }
-
-        // Step 1: RESONATE — find vibrating droplets
-        auto vibrating = dynamics_.resonate(input, pool_);
         if (vibrating.empty()) return "";  // Nothing resonated → let fallback handle
 
         // Step 2: Detect if code is needed

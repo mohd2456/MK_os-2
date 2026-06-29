@@ -240,6 +240,39 @@ public:
     }
 
     // =======================================================================
+    // SAFETY: Check if assembled code contains dangerous patterns.
+    // Mirrors the blocklist from MKCodeRunner::isDangerous() to prevent
+    // the BirthChamber feedback loop from executing harmful code.
+    // =======================================================================
+    bool containsDangerousPattern(const std::string& code) const {
+        std::string lower = code;
+        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+
+        static const std::vector<std::string> patterns = {
+            "rm -rf /", "rm -rf /*", "rm -r -f", "rm --recursive",
+            "rm -rf ~", "rm -rf $home",
+            ":(){ :|:& };:",
+            "dd if=/dev/", "mkfs.", "chmod -r 777 /",
+            "> /dev/sda", "shutdown", "reboot", "halt",
+            "$(rm ", "$(dd ", "$(mkfs", "$(shutdown",
+            "`rm ", "`dd ", "`mkfs", "`shutdown",
+            "os.system(", "os.popen(", "subprocess.call(",
+            "subprocess.run(", "subprocess.popen(",
+            "__import__('os')", "__import__(\"os\")",
+            "import socket", "import http", "import urllib",
+            "require('child_process')", "require(\"child_process\")",
+            "child_process", "shutil.rmtree",
+            "fs.rmdirsync", "fs.unlinksync",
+            "std::filesystem::remove_all"
+        };
+
+        for (const auto& p : patterns) {
+            if (lower.find(p) != std::string::npos) return true;
+        }
+        return false;
+    }
+
+    // =======================================================================
     // TOURNAMENT — Compile, test, and select the best candidate
     // =======================================================================
     MKCodeCandidate tournament(std::vector<MKCodeCandidate>& candidates,
@@ -248,6 +281,15 @@ public:
 
         for (auto& candidate : candidates) {
             if (candidate.code.empty()) continue;
+
+            // Safety gate: skip candidates that contain dangerous patterns.
+            // This prevents the absorb() feedback loop from promoting MK's own
+            // response text into code that could execute harmful commands.
+            if (containsDangerousPattern(candidate.code)) {
+                candidate.compiled = false;
+                candidate.score = 0.0f;
+                continue;
+            }
 
             std::string ext = getExtension(candidate.language);
             std::string srcPath = tempDir_ + "/candidate" + ext;
