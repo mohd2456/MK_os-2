@@ -84,6 +84,7 @@ namespace Color {
 #include "../mk_brain/personality/casual_responses.cpp"
 #include "../ai_core/conversation_mode.cpp"
 #include "../ai_core/mce/mce_engine.cpp"
+#include "../ai_core/cxn/cxn_engine.cpp"
 
 // ============================================================
 // Global state
@@ -146,6 +147,7 @@ struct MKSystem {
     MKCasualResponses casualResponses;
     MKConversationMode conversationMode;
     MKConsciousnessEngine consciousnessEngine;
+    MKCrystalNetwork crystalNetwork;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -571,12 +573,16 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
         }
 
         // Generate casual response based on input type and mood
-        // Use consciousness engine if initialized, otherwise fall back to templates
+        // Priority: CXN Crystal Network -> MCE Consciousness -> template fallback
         std::string response;
-        if (sys.consciousnessEngine.isInitialized()) {
+        if (sys.crystalNetwork.isInitialized()) {
+            response = sys.crystalNetwork.generate(input);
+        }
+        // Fall back to MCE if CXN returns empty
+        if (response.empty() && sys.consciousnessEngine.isInitialized()) {
             response = sys.consciousnessEngine.generate(input, sys.graph);
         }
-        // Fall back to template system if MCE returns empty
+        // Fall back to template system if both return empty
         if (response.empty()) {
             response = sys.conversationMode.generateResponse(input, sys.casualResponses);
         }
@@ -1070,6 +1076,32 @@ int main(int argc, char* argv[]) {
     // Step 4c: Initialize MK Consciousness Engine
     sys.consciousnessEngine.initialize(sys.graph, sys.casualResponses);
 
+    // Step 4d: Initialize CXN Crystal Network
+    {
+        // Collect casual response texts for bootstrap
+        std::vector<std::string> casualTexts;
+        auto addCasual = [&](const std::vector<std::string>& v) {
+            for (const auto& s : v) casualTexts.push_back(s);
+        };
+        addCasual(sys.casualResponses.greetings);
+        addCasual(sys.casualResponses.goodbyes);
+        addCasual(sys.casualResponses.acknowledgments);
+        addCasual(sys.casualResponses.reactions_positive);
+        addCasual(sys.casualResponses.reactions_negative);
+        addCasual(sys.casualResponses.encouragements);
+        addCasual(sys.casualResponses.follow_ups);
+
+        // Collect knowledge facts
+        std::vector<std::string> knowledgeFacts;
+        const auto& edges = sys.graph.getAllEdges();
+        for (const auto& e : edges) {
+            knowledgeFacts.push_back(e.source + " " + e.relation + " " + e.target);
+            if (knowledgeFacts.size() > 300) break;
+        }
+
+        sys.crystalNetwork.initialize(casualTexts, knowledgeFacts);
+    }
+
     // Step 4c: Check if daily briefing should be generated
     if (sys.dailyBriefing.shouldGenerate()) {
         std::cout << "\n  " << Color::BMAGENTA << "📋" << Color::RESET 
@@ -1300,6 +1332,16 @@ int main(int argc, char* argv[]) {
                     std::cout << "\n  " << Color::BOLD << Color::BCYAN << "🪞 Echo Memory" << Color::RESET << "\n";
                     std::cout << "  " << Color::DIM << profile << Color::RESET << "\n";
                     commandFound = true;
+                } else if (input == "/crystals") {
+                    std::string stats = sys.crystalNetwork.getStats();
+                    std::string trace = sys.crystalNetwork.explain();
+                    std::cout << "\n  " << Color::BOLD << Color::BMAGENTA << "💎 Crystal Network" << Color::RESET << "\n";
+                    std::cout << "  " << Color::DIM << stats << Color::RESET << "\n";
+                    if (!trace.empty() && trace != "No CXN trace yet.") {
+                        std::cout << "\n  " << Color::BOLD << "Last trace:" << Color::RESET << "\n";
+                        std::cout << "  " << Color::DIM << trace << Color::RESET << "\n";
+                    }
+                    commandFound = true;
                 } else if (input.size() > 7 && input.substr(0, 7) == "/shell ") {
                     std::string shellCmd = trim(input.substr(7));
                     if (shellCmd.empty()) {
@@ -1416,6 +1458,7 @@ int main(int argc, char* argv[]) {
     sys.improver.saveLog();
     sys.learningEngine.persist();
     sys.consciousnessEngine.save();
+    sys.crystalNetwork.save("cxn_crystals.dat");
     std::cout << "  " << Color::GREEN << "✓" << Color::RESET << " Memory saved. Improvement log saved. Knowledge persisted.\n";
     std::cout << "  " << Color::BOLD << Color::CYAN << "MK OS shut down cleanly. Goodbye." 
               << Color::RESET << "\n\n";
