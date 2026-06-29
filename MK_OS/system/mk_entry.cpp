@@ -81,6 +81,8 @@ namespace Color {
 #include "service_manager.cpp"
 #include "../plugins/telegram.cpp"
 #include "../ai_core/neural_net.cpp"
+#include "../mk_brain/personality/casual_responses.cpp"
+#include "../ai_core/conversation_mode.cpp"
 
 // ============================================================
 // Global state
@@ -140,6 +142,8 @@ struct MKSystem {
     MK_Services::ServiceManager serviceManager;
     std::unique_ptr<MKTelegram> telegram;
     MKNeuralNet neuralNet;
+    MKCasualResponses casualResponses;
+    MKConversationMode conversationMode;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
@@ -539,6 +543,50 @@ static void cmd_briefing(MKSystem& sys) {
 // Natural Language Routing
 // ============================================================
 static void handle_natural_query(MKSystem& sys, const std::string& input) {
+    // ---- FRIEND MODE: Check if this is casual conversation ----
+    // Before routing through smart router, catch conversational inputs
+    if (sys.conversationMode.isConversation(input)) {
+        std::string lower = input;
+        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+
+        // Check if it's an opinion request ("what do you think about X")
+        if (sys.conversationMode.isOpinionRequest(input)) {
+            std::string subject = sys.conversationMode.extractOpinionSubject(input);
+            if (!subject.empty()) {
+                // Query knowledge graph for facts about the subject
+                std::vector<std::string> facts;
+                auto results = sys.graph.getAll(subject);
+                for (const auto& e : results) {
+                    facts.push_back(e.source + " " + e.relation + " " + e.target);
+                }
+                std::string response = sys.conversationMode.generateOpinion(subject, facts, sys.casualResponses);
+                std::cout << "\n  " << Color::BCYAN << "~" << Color::RESET << " " << response << "\n";
+                sys.conversationMode.pushTopic(subject);
+                sys.brainMemory.commitToShortTerm("mk", response);
+                sys.memory.recordInteraction("conversation", input);
+                return;
+            }
+        }
+
+        // Generate casual response based on input type and mood
+        std::string response = sys.conversationMode.generateResponse(input, sys.casualResponses);
+        
+        if (!response.empty()) {
+            std::cout << "\n  " << Color::BCYAN << "~" << Color::RESET << " " << response << "\n";
+            
+            // Record in memory
+            sys.brainMemory.commitToShortTerm("user", input);
+            sys.brainMemory.commitToShortTerm("mk", response);
+            sys.memory.recordInteraction("conversation", input);
+            
+            // Extract biographical facts passively
+            sys.factExtractor.extractFromMessage(input);
+            return;
+        }
+        // If generateResponse returned empty, fall through to normal routing
+    }
+
+    // ---- NORMAL ROUTING (question/command) ----
     // Route through MKSmartRouter
     auto decision = sys.router.route(input);
     std::string response;
