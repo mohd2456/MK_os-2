@@ -2,7 +2,7 @@
   "id": "FEAT-005",
   "type": "fix",
   "description": "Address review issues: fix temperature override sequencing, add isDangerous check in BirthChamber, document exec/eval blocklist as deliberate, and add test coverage for conversation_mode and idea_engine.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Fix temperature override in prometheus_engine.cpp: move setTemperature() calls to AFTER resonate() returns",
     "Add isDangerous check in birth_chamber.cpp before code execution in tournament()",
@@ -22,5 +22,5 @@
     "cd /projects/sandbox/MK_os-2/MK_OS && make test 2>&1 | tail -5"
   ],
   "blocked_reason": null,
-  "findings": null
+  "findings": "All 4 review issues addressed. Temperature override now applied after resonate() returns. BirthChamber has containsDangerousPattern() gating before execution. Code runner exec/eval documented as deliberate. Test suite expanded to 11 tests / 160 assertions (up from 9 tests / 102 assertions). Build compiles clean with -Werror."
 }
