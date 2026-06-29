@@ -338,7 +338,7 @@ public:
     MKWordGraph& getGraph() { return graph_; }
     size_t getGraphSize() const { return graph_.getSize(); }
 
-    void save(const std::string& filename) { graph_.save(filename); }
+    void save(const std::string& filename) const { graph_.save(filename); }
     void load(const std::string& filename) { graph_.load(filename); }
 };
 
