@@ -1,0 +1,9 @@
+NAME="MK OS"
+PRETTY_NAME="MK OS 2.0"
+ID=mkos
+ID_LIKE=arch
+VERSION="2.0"
+VERSION_ID="2.0"
+BUILD_ID=rolling
+HOME_URL="https://github.com/mohd2456/MK_os-2"
+LOGO=mk-os-logo
