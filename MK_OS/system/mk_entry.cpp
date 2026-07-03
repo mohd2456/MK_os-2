@@ -1620,8 +1620,11 @@ int main(int argc, char* argv[]) {
     {
         const std::string modelPath = "llm/models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf";
         const std::string dismissPath = ".model_prompt_dismissed";
+        const std::string apiKeyPath = "api_keys.conf";
         bool modelExists = false;
         bool dismissed = false;
+        bool hasApiKey = false;
+        bool localLLMRunning = false;
 
         {
             std::ifstream mf(modelPath);
@@ -1631,50 +1634,171 @@ int main(int argc, char* argv[]) {
             std::ifstream df(dismissPath);
             dismissed = df.good();
         }
+        {
+            // Check if we already have API keys configured
+            std::ifstream kf(apiKeyPath);
+            if (kf.good()) {
+                std::string line;
+                while (std::getline(kf, line)) {
+                    if (line.empty() || line[0] == '#') continue;
+                    size_t eq = line.find('=');
+                    if (eq != std::string::npos) {
+                        std::string val = line.substr(eq + 1);
+                        while (!val.empty() && (val.back() == ' ' || val.back() == '\n' || val.back() == '\r')) val.pop_back();
+                        if (!val.empty()) { hasApiKey = true; break; }
+                    }
+                }
+            }
+            // Also check environment
+            if (!hasApiKey) {
+                const char* gk = std::getenv("GROQ_API_KEY");
+                const char* ork = std::getenv("OPENROUTER_API_KEY");
+                const char* hfk = std::getenv("HF_API_KEY");
+                if ((gk && gk[0]) || (ork && ork[0]) || (hfk && hfk[0])) hasApiKey = true;
+            }
+        }
+        // Check if local llama.cpp or Ollama is running
+        {
+            // Quick TCP check to localhost:8080 (llama.cpp) or :11434 (Ollama)
+            CURL* curl = curl_easy_init();
+            if (curl) {
+                curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8080/health");
+                curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1L);
+                curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 1L);
+                curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
+                curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+                if (curl_easy_perform(curl) == CURLE_OK) localLLMRunning = true;
+                curl_easy_cleanup(curl);
+            }
+            if (!localLLMRunning) {
+                curl = curl_easy_init();
+                if (curl) {
+                    curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:11434/api/tags");
+                    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1L);
+                    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 1L);
+                    curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
+                    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+                    if (curl_easy_perform(curl) == CURLE_OK) localLLMRunning = true;
+                    curl_easy_cleanup(curl);
+                }
+            }
+        }
 
-        if (!modelExists && !dismissed) {
+        // Decision flow: what does MK need?
+        if (localLLMRunning) {
+            // Best case: local LLM is running, use it
+            std::cout << "  " << Color::BGREEN << "+" << Color::RESET
+                      << " LLM: Local server detected. Full brain power available.\n";
+        } else if (hasApiKey) {
+            // Good: we have cloud API keys configured
+            std::cout << "  " << Color::BGREEN << "+" << Color::RESET
+                      << " LLM: Cloud API configured. MK can think and talk naturally.\n";
+        } else if (!dismissed) {
+            // No local LLM, no API key — offer options
             std::cout << "\n"
                 << Color::BOLD << Color::BCYAN
-                << "  ╭─────────────────────────────────────────────╮\n"
-                << "  │  Want MK to be better at understanding you? │\n"
-                << "  │                                             │\n"
-                << "  │  Download a small AI model (638MB) that     │\n"
-                << "  │  helps MK understand messy text and slang.  │\n"
-                << "  │  MK works fine without it, just less smart  │\n"
-                << "  │  at parsing casual language.                │\n"
-                << "  │                                             │\n"
-                << "  │  [y] Yes, download now                      │\n"
-                << "  │  [n] No thanks                              │\n"
-                << "  │  [l] Ask me later                           │\n"
-                << "  ╰─────────────────────────────────────────────╯\n"
+                << "  ╭──────────────────────────────────────────────────────╮\n"
+                << "  │  MK needs a brain to think and talk naturally.       │\n"
+                << "  │                                                      │\n"
+                << "  │  Options:                                            │\n"
+                << "  │                                                      │\n"
+                << "  │  [1] Enter a free API key (recommended for now)      │\n"
+                << "  │      Get one free at:                                │\n"
+                << "  │      • groq.com (fastest, email signup)              │\n"
+                << "  │      • openrouter.ai (many models, email signup)     │\n"
+                << "  │      • huggingface.co (email signup)                 │\n"
+                << "  │                                                      │\n"
+                << "  │  [2] Download a local model (638MB, needs 2GB+ RAM)  │\n"
+                << "  │                                                      │\n"
+                << "  │  [3] Skip for now (MK works but can't talk smoothly) │\n"
+                << "  ╰──────────────────────────────────────────────────────╯\n"
                 << Color::RESET << "\n"
-                << "  Your choice: ";
+                << "  Your choice (1/2/3): ";
             std::cout.flush();
 
             std::string choice;
             std::getline(std::cin, choice);
             choice = trim(choice);
-            std::transform(choice.begin(), choice.end(), choice.begin(), ::tolower);
 
-            if (choice == "y" || choice == "yes") {
+            if (choice == "1") {
+                // Ask which provider
+                std::cout << "\n  Which provider? (groq/openrouter/huggingface): ";
+                std::cout.flush();
+                std::string provider;
+                std::getline(std::cin, provider);
+                provider = trim(provider);
+                std::transform(provider.begin(), provider.end(), provider.begin(), ::tolower);
+
+                std::string keyName;
+                if (provider == "groq" || provider == "g") keyName = "GROQ_API_KEY";
+                else if (provider == "openrouter" || provider == "or" || provider == "o") keyName = "OPENROUTER_API_KEY";
+                else if (provider == "huggingface" || provider == "hf" || provider == "h") keyName = "HF_API_KEY";
+                else {
+                    // Default to Groq
+                    keyName = "GROQ_API_KEY";
+                    std::cout << "  " << Color::DIM << "(Defaulting to Groq)" << Color::RESET << "\n";
+                }
+
+                std::cout << "  Paste your API key: ";
+                std::cout.flush();
+                std::string apiKey;
+                std::getline(std::cin, apiKey);
+                apiKey = trim(apiKey);
+
+                if (!apiKey.empty()) {
+                    // Save to api_keys.conf
+                    std::ofstream keyFile(apiKeyPath, std::ios::app);
+                    if (keyFile.is_open()) {
+                        // Check if file is empty/new, add header
+                        keyFile.seekp(0, std::ios::end);
+                        if (keyFile.tellp() == 0) {
+                            keyFile << "# MK OS API Keys\n";
+                            keyFile << "# Free keys — no credit card needed:\n";
+                            keyFile << "#   Groq: https://console.groq.com\n";
+                            keyFile << "#   OpenRouter: https://openrouter.ai\n";
+                            keyFile << "#   HuggingFace: https://huggingface.co/settings/tokens\n\n";
+                        }
+                        keyFile << keyName << "=" << apiKey << "\n";
+                        keyFile.close();
+                        hasApiKey = true;
+                        std::cout << "\n  " << Color::BGREEN << "✓" << Color::RESET
+                                  << " API key saved! MK can now think and talk naturally.\n"
+                                  << "  " << Color::DIM << "Key stored in: " << apiKeyPath
+                                  << Color::RESET << "\n";
+                    } else {
+                        std::cout << "  " << Color::RED << "✗" << Color::RESET
+                                  << " Could not save key. Set " << keyName 
+                                  << " as environment variable instead.\n";
+                    }
+                } else {
+                    std::cout << "  " << Color::DIM << "No key entered. MK will use basic mode." 
+                              << Color::RESET << "\n";
+                }
+
+            } else if (choice == "2") {
                 std::cout << "\n  " << Color::DIM << "Downloading model..." << Color::RESET << "\n";
-                system("bash llm/download_model.sh");
-                std::cout << "  " << Color::BGREEN << "✓" << Color::RESET
-                          << " Model downloaded! MK is now smarter at understanding you.\n";
-            } else if (choice == "n" || choice == "no") {
+                int ret = system("bash llm/download_model.sh");
+                if (ret == 0) {
+                    std::cout << "  " << Color::BGREEN << "✓" << Color::RESET
+                              << " Model downloaded! Run llm/start_server.sh to activate.\n";
+                } else {
+                    std::cout << "  " << Color::YELLOW << "!" << Color::RESET
+                              << " Download failed. Try option 1 (API key) instead.\n";
+                }
+            } else {
+                // Skip
                 {
                     std::ofstream df(dismissPath);
                     df << "dismissed" << std::endl;
                 }
                 std::cout << "  " << Color::DIM
-                          << "Got it. You can always run ./llm/download_model.sh later."
-                          << Color::RESET << "\n";
-            } else {
-                // "l", "later", empty, or anything else
-                std::cout << "  " << Color::DIM
-                          << "No problem. I'll ask again next time."
+                          << "No problem. You can add an API key anytime with: /apikey"
                           << Color::RESET << "\n";
             }
+        } else {
+            // Dismissed previously, no LLM, no API — just note it
+            std::cout << "  " << Color::DIM << "LLM: Not configured. Use /apikey to add one."
+                      << Color::RESET << "\n";
         }
     }
 
@@ -1731,6 +1855,53 @@ int main(int argc, char* argv[]) {
                 // Clear screen with ANSI escape code
                 std::cout << "\033[2J\033[H";
                 std::cout.flush();
+                commandFound = true;
+            } else if (input == "/apikey" || input.substr(0, 8) == "/apikey ") {
+                // Add or update cloud LLM API key at runtime
+                std::string provider, key;
+                if (input.size() > 8) {
+                    // /apikey groq sk-xxx...
+                    std::string rest = trim(input.substr(8));
+                    size_t sp = rest.find(' ');
+                    if (sp != std::string::npos) {
+                        provider = rest.substr(0, sp);
+                        key = trim(rest.substr(sp + 1));
+                    } else {
+                        provider = rest;
+                    }
+                }
+                if (provider.empty()) {
+                    std::cout << "\n  Which provider? (groq / openrouter / huggingface): ";
+                    std::cout.flush();
+                    std::getline(std::cin, provider);
+                    provider = trim(provider);
+                }
+                std::transform(provider.begin(), provider.end(), provider.begin(), ::tolower);
+                if (key.empty()) {
+                    std::cout << "  Paste your API key: ";
+                    std::cout.flush();
+                    std::getline(std::cin, key);
+                    key = trim(key);
+                }
+                if (!key.empty()) {
+                    std::string keyName;
+                    if (provider == "groq" || provider == "g") keyName = "GROQ_API_KEY";
+                    else if (provider == "openrouter" || provider == "or" || provider == "o") keyName = "OPENROUTER_API_KEY";
+                    else if (provider == "huggingface" || provider == "hf" || provider == "h") keyName = "HF_API_KEY";
+                    else keyName = "GROQ_API_KEY";
+
+                    std::ofstream keyFile("api_keys.conf", std::ios::app);
+                    if (keyFile.is_open()) {
+                        keyFile << keyName << "=" << key << "\n";
+                        keyFile.close();
+                        std::cout << "\n  " << Color::BGREEN << "\xe2\x9c\x93" << Color::RESET
+                                  << " Key saved for " << provider << ". MK brain is now active.\n"
+                                  << "  " << Color::DIM << "Restart MK to use it, or it'll pick up next boot."
+                                  << Color::RESET << "\n";
+                    }
+                } else {
+                    std::cout << "  " << Color::DIM << "No key entered." << Color::RESET << "\n";
+                }
                 commandFound = true;
             } else if (input == "/help") {
                 cmd_help(); commandFound = true;
