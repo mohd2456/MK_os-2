@@ -38,3 +38,4 @@ MK_OS/llm/models/
 # OS files
 .DS_Store
 Thumbs.db
+crypto_portfolio.db

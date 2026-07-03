@@ -20,6 +20,21 @@ LLM_EATER := mk_llm_eater
 
 # Single compilation unit: mk_entry.cpp #includes all other modules
 # No need for separate .o files - this avoids multiple-definition linker errors
+# Modules included via mk_entry.cpp:
+#   system/ - diagnostics, daemon, shell, service_manager
+#   ai_core/ - smart_router, persistent_memory, knowledge_integrator, self_improver,
+#              neural_net, conversation_mode, mce, cxn, prometheus, genesis, idea_engine
+#   ai_core/hre/ - pattern_graph, deep_reasoner, reasoning_chains, composer
+#   mk_brain/ - learning_engine, brain_memory, embeddings, ann_search, cache_mgr,
+#               daily_briefing, fact_extractor, reasoning_engine, personality
+#   network/ - realtime_apis
+#   plugins/ - telegram, pc_helper
+#   crypto/ - market_data, technical_analysis, signal_engine, portfolio_manager,
+#             risk_manager, exchange_api, trading_bot, airdrop_farmer
+#   mind/ - mastery_network, goal_engine, strategy_planner, self_funding
+#   homelab/ - device_registry, resource_monitor, ssh_controller, docker_manager,
+#              service_orchestrator
+#   sync/ - knowledge_sync, device_comm, memory_sync
 
 # Install location
 PREFIX    := /usr/local/bin
@@ -28,7 +43,7 @@ PREFIX    := /usr/local/bin
 # Targets
 # ============================================================
 
-.PHONY: all clean run install tools test help
+.PHONY: all clean run install tools test help python-deps python-check lint full-test
 
 all: $(TARGET)
 	@echo ""
@@ -81,6 +96,34 @@ clean:
 	@find . -name '*.o' -delete
 	@rm -f $(TARGET) $(TEST_TARGET) $(INGEST) $(TELEGRAM) $(LLM_EATER)
 	@echo "  ✓ Clean"
+
+# Install Python dependencies
+python-deps:
+	@echo "Installing Python dependencies..."
+	@pip3 install -r python/requirements.txt
+	@echo "  ✓ Python dependencies installed"
+
+# Validate Python syntax
+python-check:
+	@echo "Checking Python files..."
+	@find . -name '*.py' -exec python3 -m py_compile {} \; 2>&1 && echo "  ✓ All Python files valid" || echo "  ✗ Python syntax errors found"
+
+# Basic lint checks
+lint:
+	@echo "Running lint checks..."
+	@echo "  Checking shell scripts..."
+	@for f in $$(find . -name '*.sh'); do bash -n "$$f" && echo "    ✓ $$f" || echo "    ✗ $$f"; done
+	@echo "  Checking for common issues..."
+	@! grep -rn 'TODO\|FIXME\|HACK' system/ ai_core/ mk_brain/ --include='*.cpp' 2>/dev/null | head -5 || true
+	@echo "  ✓ Lint complete"
+
+# Full test suite: build + test + python check + shell syntax check
+full-test: all test python-check
+	@echo "Running shell syntax checks..."
+	@for f in $$(find . -name '*.sh'); do bash -n "$$f" || exit 1; done
+	@echo ""
+	@echo "  ✓ Full test suite passed"
+	@echo ""
 
 # Help target
 help:

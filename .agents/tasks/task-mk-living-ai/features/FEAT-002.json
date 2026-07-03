@@ -1,0 +1,42 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "The Mind System + Multi-Device Sync + Homelab Controller - The cognitive layer that makes MK a living intelligence. Includes: mastery network (skill progression), goal-driven autonomous loop, device registry with resource awareness, SSH-based homelab management, Docker orchestration, knowledge sync across devices, and the Think-Act-Evaluate-Learn cycle.",
+  "status": "completed",
+  "steps": [
+    "Create MK_OS/mind/ directory for The Mind subsystem",
+    "Create MK_OS/mind/mastery_network.cpp - Class MKMasteryNetwork tracking skills MK is developing. Each skill has: name, level (0-100), practice_hours, last_practiced, sub_skills[], required_for[]. Skills improve through use. Covers: crypto_trading, system_administration, coding, knowledge_gathering, conversation, analysis. Implements spaced practice scheduling.",
+    "Create MK_OS/mind/goal_engine.cpp - Class MKGoalEngine implementing the Think-Act-Evaluate-Learn autonomous loop. Goals have: description, priority, deadline, sub_goals[], progress (0-100), success_criteria, assigned_device. The engine picks the highest priority goal, breaks it into actions, executes them, evaluates results, and learns from outcomes.",
+    "Create MK_OS/mind/strategy_planner.cpp - Class MKStrategyPlanner for long-term planning. Maintains: daily_goals, weekly_goals, monthly_goals. Plans earning strategies (which crypto to trade, what skills to develop). Allocates resources across devices. Adjusts strategy based on results.",
+    "Create MK_OS/mind/self_funding.cpp - Class MKSelfFunding tracking all income: crypto profits, airdrop rewards, any other autonomous earnings. Tracks expenses (API costs, compute costs). Calculates net earnings. Identifies hardware upgrade targets. Generates upgrade proposals (e.g., 'earned $500 this month, recommend upgrading RAM on node-2').",
+    "Create MK_OS/homelab/ directory",
+    "Create MK_OS/homelab/device_registry.cpp - Class MKDeviceRegistry maintaining a database of all devices MK knows about. Each device has: hostname, ip, ssh_user, cpu_model, cpu_cores, ram_mb, gpu_info, storage_gb, os_type, last_seen, current_load, temperature, role (main_rig/compute_node/storage/phone). Persists to JSON file. Auto-discovers devices on LAN.",
+    "Create MK_OS/homelab/resource_monitor.cpp - Class MKResourceMonitor that checks device resources BEFORE running tasks. Methods: canRunTask(device, cpu_needed, ram_needed) -> bool. Reads /proc/cpuinfo, /proc/meminfo, /sys/class/thermal/ on Linux. Prevents crashes by refusing tasks that would overload a device. Implements the 'don't crash' philosophy.",
+    "Create MK_OS/homelab/ssh_controller.cpp - Class MKSSHController for remote command execution. Uses libcurl or popen with ssh. Methods: executeRemote(device, command) -> output, copyFile(src_device, dst_device, path), checkAlive(device) -> bool. Manages SSH key paths. Timeout protection.",
+    "Create MK_OS/homelab/docker_manager.cpp - Class MKDockerManager for container orchestration. Methods: listContainers(device), startContainer(device,name), stopContainer(device,name), deployStack(device,compose_file), getContainerLogs(device,name), getContainerStats(device,name). Operates via SSH to remote Docker daemons.",
+    "Create MK_OS/homelab/service_orchestrator.cpp - Class MKServiceOrchestrator managing homelab services (Plex, Home Assistant, Pi-hole, etc.). Tracks service health, auto-restarts crashed services, load-balances across nodes, handles failover.",
+    "Create MK_OS/sync/ directory",
+    "Create MK_OS/sync/knowledge_sync.cpp - Class MKKnowledgeSync that synchronizes learned knowledge across all MK instances. When MK learns something on phone (via Telegram), it queues the fact for sync. When main PC comes online, facts sync via HTTP/SSH. Implements eventual consistency with timestamps and conflict resolution (latest wins, user corrections always win).",
+    "Create MK_OS/sync/device_comm.cpp - Class MKDeviceComm providing communication between MK instances. Uses simple HTTP REST API on each device. Endpoints: /api/sync (push/pull facts), /api/status (device health), /api/task (delegate a task to another device). Includes authentication via shared secret.",
+    "Create MK_OS/sync/memory_sync.cpp - Class MKMemorySync ensuring conversation memory persists across devices. When you talk to MK on Telegram from phone, the conversation context is available when you sit at the PC. Stores conversation state in JSON, syncs via device_comm.",
+    "Add all mind/, homelab/, sync/ modules to system/mk_entry.cpp includes and MKSystem struct",
+    "Create MK_OS/ai_core/hre/knowledge_files/bulk_homelab.mk with 200+ facts about Docker, SSH, Linux administration, networking, Plex, home automation",
+    "Create MK_OS/ai_core/hre/knowledge_files/bulk_crypto_defi.mk with 300+ facts about cryptocurrency, DeFi, blockchain, trading strategies"
+  ],
+  "acceptance_criteria": [
+    "All mind/, homelab/, sync/ modules compile without errors via mk_entry.cpp",
+    "make in MK_OS/ produces binary with zero errors",
+    "make test passes all tests",
+    "MKDeviceRegistry can add/remove/query devices",
+    "MKResourceMonitor reads system info on Linux (even if simulated values on non-Linux)",
+    "MKGoalEngine can create goals, break into steps, and track progress",
+    "MKKnowledgeSync implements conflict resolution logic",
+    "Knowledge files contain 500+ new facts total"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": "All 18 steps completed successfully. Build produces mk_os binary with 10 warnings (all pre-existing from genesis/crypto modules, plus 3 benign unused-private-field warnings in new code). All 11 tests pass (160 assertions). Knowledge files: bulk_homelab.mk has 245 pipe-delimited facts, bulk_crypto_defi.mk has 331 facts (576 total, exceeds 500+ requirement). Had to rename MKDeviceStatus to MKDeviceHealthStatus in device_comm.cpp to avoid collision with the enum in device_registry.cpp. All new modules use #ifndef guards. No standalone main() functions. MKSystem struct has all new members (masteryNetwork, goalEngine, strategyPlanner, selfFunding, deviceRegistry, resourceMonitor, sshController, dockerManager, serviceOrchestrator, knowledgeSync, deviceComm, memorySync)."
+}

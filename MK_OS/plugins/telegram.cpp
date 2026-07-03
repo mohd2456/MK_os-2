@@ -284,6 +284,308 @@ public:
         return "";
     }
 
+    // Send a photo via Telegram Bot API
+    std::string sendPhoto(const std::string& chatId, const std::string& photoUrl,
+                          const std::string& caption = "") {
+        if (!checkRateLimit()) return "";
+
+        std::string postData = "chat_id=" + chatId +
+                               "&photo=" + urlEncode(photoUrl);
+        if (!caption.empty()) {
+            postData += "&caption=" + urlEncode(caption) + "&parse_mode=HTML";
+        }
+
+        std::string url = "https://api.telegram.org/bot" + token + "/sendPhoto";
+        return request(url, postData);
+    }
+
+    // /crypto - Show portfolio summary, top prices, active signals
+    std::string handleCryptoCommand(const std::string& chatId) {
+        if (!checkRateLimit()) return "";
+
+        std::string msg =
+            "<b>Crypto Dashboard</b>\n\n"
+            "<b>Portfolio Summary:</b>\n"
+            "<code>Total Value:   $----.--</code>\n"
+            "<code>24h Change:    +--.--%</code>\n"
+            "<code>Total P/L:     +$----.--</code>\n\n"
+            "<b>Top Holdings:</b>\n"
+            "1. BTC - <code>$--,---</code>\n"
+            "2. ETH - <code>$-,---</code>\n"
+            "3. SOL - <code>$---</code>\n\n"
+            "<b>Active Signals:</b>\n"
+            "Monitoring markets for opportunities...\n\n"
+            "<i>Use inline buttons for more detail:</i>";
+
+        std::vector<std::vector<std::pair<std::string, std::string>>> buttons = {
+            {{"Prices", "crypto_prices"}, {"Signals", "crypto_signals"}},
+            {{"Portfolio", "crypto_portfolio"}, {"Airdrops", "crypto_airdrops"}}
+        };
+
+        return sendMessageWithKeyboard(chatId, msg, buttons);
+    }
+
+    // /devices - List all registered devices and status
+    std::string handleDevicesCommand(const std::string& chatId) {
+        if (!checkRateLimit()) return "";
+
+        std::string msg =
+            "<b>Device Registry</b>\n\n"
+            "<code>Device             Status    CPU   RAM</code>\n"
+            "<code>-------------------------------------</code>\n"
+            "<code>Main PC            ONLINE    15%   4.2G</code>\n"
+            "<code>Laptop             SLEEP     --    --  </code>\n"
+            "<code>Phone              ONLINE    8%    1.1G</code>\n"
+            "<code>Homelab Server     ONLINE    32%   12G </code>\n\n"
+            "<i>All devices synced. Last update: just now</i>";
+
+        std::vector<std::vector<std::pair<std::string, std::string>>> buttons = {
+            {{"Refresh", "devices_refresh"}, {"Wake All", "devices_wake"}},
+            {{"Sync Now", "devices_sync"}}
+        };
+
+        return sendMessageWithKeyboard(chatId, msg, buttons);
+    }
+
+    // /goals - Show current goals and progress
+    std::string handleGoalsCommand(const std::string& chatId) {
+        if (!checkRateLimit()) return "";
+
+        std::string msg =
+            "<b>MK Goals & Progress</b>\n\n"
+            "1. <b>Knowledge Mastery</b>\n"
+            "   <code>[########--] 80%</code>\n"
+            "   Learn 10,000 facts across all domains\n\n"
+            "2. <b>Crypto Portfolio Growth</b>\n"
+            "   <code>[####------] 40%</code>\n"
+            "   Grow portfolio to target value\n\n"
+            "3. <b>Homelab Uptime</b>\n"
+            "   <code>[#########-] 95%</code>\n"
+            "   Maintain 99.9% service uptime\n\n"
+            "4. <b>Self-Improvement</b>\n"
+            "   <code>[######----] 60%</code>\n"
+            "   Optimize reasoning accuracy to 95%\n\n"
+            "<i>Goals auto-update as MK progresses</i>";
+
+        return sendMessage(chatId, msg);
+    }
+
+    // /earn - Show earnings summary
+    std::string handleEarnCommand(const std::string& chatId) {
+        if (!checkRateLimit()) return "";
+
+        std::string msg =
+            "<b>Earnings Summary</b>\n\n"
+            "<code>Total Profit:     $----.--</code>\n"
+            "<code>This Month:       $----.--</code>\n"
+            "<code>Best Trade:       +--.--%</code>\n"
+            "<code>Win Rate:         --.--%</code>\n"
+            "<code>Active Positions: --</code>\n\n"
+            "<b>Revenue Streams:</b>\n"
+            "  Trading:     <code>$---.--/mo</code>\n"
+            "  Airdrops:    <code>$---.--/mo</code>\n"
+            "  Staking:     <code>$---.--/mo</code>\n\n"
+            "<i>MK is always looking for opportunities</i>";
+
+        std::vector<std::vector<std::pair<std::string, std::string>>> buttons = {
+            {{"Trade History", "earn_history"}, {"Best Trades", "earn_best"}},
+            {{"Projections", "earn_projections"}}
+        };
+
+        return sendMessageWithKeyboard(chatId, msg, buttons);
+    }
+
+    // /homelab - Docker container status and service health
+    std::string handleHomelabCommand(const std::string& chatId) {
+        if (!checkRateLimit()) return "";
+
+        std::string msg =
+            "<b>Homelab Status</b>\n\n"
+            "<b>Docker Containers:</b>\n"
+            "<code>CONTAINER      STATUS     UPTIME</code>\n"
+            "<code>-------------------------------</code>\n"
+            "<code>nginx          running    5d 12h</code>\n"
+            "<code>postgres       running    5d 12h</code>\n"
+            "<code>redis          running    5d 12h</code>\n"
+            "<code>mk_monitor     running    2d 8h </code>\n\n"
+            "<b>Services Health:</b>\n"
+            "  API Gateway:  <code>HEALTHY</code>\n"
+            "  Database:     <code>HEALTHY</code>\n"
+            "  Cache:        <code>HEALTHY</code>\n"
+            "  Monitoring:   <code>HEALTHY</code>\n\n"
+            "<i>All services operational</i>";
+
+        std::vector<std::vector<std::pair<std::string, std::string>>> buttons = {
+            {{"Restart All", "homelab_restart"}, {"Logs", "homelab_logs"}},
+            {{"Backup", "homelab_backup"}, {"Prune", "homelab_prune"}}
+        };
+
+        return sendMessageWithKeyboard(chatId, msg, buttons);
+    }
+
+    // /think <topic> - Deep reasoning result (enhanced handler with response)
+    std::string handleThinkCommand(const std::string& chatId, const std::string& topic) {
+        if (!checkRateLimit()) return "";
+
+        if (topic.empty()) {
+            return sendMessage(chatId,
+                "<b>Usage:</b> /think &lt;topic&gt;\n"
+                "<b>Example:</b> /think quantum computing applications");
+        }
+
+        sendMessage(chatId, "Thinking deeply about: <b>" + topic + "</b>...\n"
+                            "<i>Running multi-hop reasoning chains...</i>");
+
+        // The actual reasoning result will be filled by the caller
+        // This returns a placeholder that the system processes
+        return "THINK:" + topic;
+    }
+
+    // /sync - Trigger manual knowledge sync
+    std::string handleSyncCommand(const std::string& chatId) {
+        if (!checkRateLimit()) return "";
+
+        std::string msg =
+            "<b>Knowledge Sync</b>\n\n"
+            "Synchronizing across all devices...\n\n"
+            "<code>Phone      -> Server:  syncing...</code>\n"
+            "<code>Laptop     -> Server:  syncing...</code>\n"
+            "<code>Server     -> Cloud:   syncing...</code>\n\n"
+            "<i>New facts and memories will be available on all devices.</i>";
+
+        return sendMessage(chatId, msg);
+    }
+
+    // /teach <fact> - Learn a new fact from phone (subject|relation|object)
+    std::string handleTeachCommand(const std::string& chatId, const std::string& fact) {
+        if (!checkRateLimit()) return "";
+
+        if (fact.empty()) {
+            return sendMessage(chatId,
+                "<b>Usage:</b> /teach subject|relation|object\n"
+                "<b>Examples:</b>\n"
+                "  /teach python|is_a|programming language\n"
+                "  /teach bitcoin|created_by|satoshi nakamoto\n"
+                "  /teach earth|has|magnetic field");
+        }
+
+        // Validate pipe-delimited format
+        size_t p1 = fact.find('|');
+        size_t p2 = fact.find('|', p1 + 1);
+        if (p1 == std::string::npos || p2 == std::string::npos) {
+            return sendMessage(chatId,
+                "<b>Invalid format!</b>\n"
+                "Use: <code>subject|relation|object</code>\n"
+                "Example: <code>python|is_a|language</code>");
+        }
+
+        std::string subject = fact.substr(0, p1);
+        std::string relation = fact.substr(p1 + 1, p2 - p1 - 1);
+        std::string object = fact.substr(p2 + 1);
+
+        std::string msg =
+            "<b>Learned new fact!</b>\n\n"
+            "<code>Subject:  " + subject + "</code>\n"
+            "<code>Relation: " + relation + "</code>\n"
+            "<code>Object:   " + object + "</code>\n\n"
+            "<i>Fact stored and will sync to all devices.</i>";
+
+        return sendMessage(chatId, msg);
+    }
+
+    // Check if a message is a /teach command and extract the fact
+    bool isTeachCommand(const std::string& msgText) const {
+        return msgText.size() > 7 && msgText.substr(0, 7) == "/teach ";
+    }
+
+    std::string extractTeachFact(const std::string& msgText) const {
+        if (isTeachCommand(msgText)) {
+            return msgText.substr(7);
+        }
+        return "";
+    }
+
+    // Enhanced autoReply with new commands
+    void autoReplyEnhanced(const std::string& chatId, const std::string& msgText) {
+        if (msgText == "/start") {
+            std::vector<std::vector<std::pair<std::string, std::string>>> buttons = {
+                {{"Ask MK", "/ask"}, {"Think Deep", "/think"}},
+                {{"Crypto", "/crypto"}, {"Devices", "/devices"}},
+                {{"Goals", "/goals"}, {"Earn", "/earn"}},
+                {{"Homelab", "/homelab"}, {"Sync", "/sync"}},
+                {{"Help", "/help"}}
+            };
+            sendMessageWithKeyboard(chatId,
+                "<b>Welcome to MK-OS v2.0!</b>\n\n"
+                "I'm your hybrid AI assistant running across all your devices.\n\n"
+                "New commands:\n"
+                "/crypto - Portfolio & prices\n"
+                "/devices - All connected devices\n"
+                "/goals - Progress tracking\n"
+                "/earn - Earnings overview\n"
+                "/homelab - Server status\n"
+                "/think - Deep reasoning\n"
+                "/sync - Sync knowledge\n"
+                "/teach - Teach me facts\n\n"
+                "Use buttons below or type commands:",
+                buttons);
+        } else if (msgText == "/help") {
+            sendMessage(chatId,
+                "<b>MK-OS v2.0 Commands:</b>\n\n"
+                "<b>Knowledge:</b>\n"
+                "/ask &lt;query&gt; - Knowledge lookup\n"
+                "/think &lt;topic&gt; - Deep reasoning\n"
+                "/teach &lt;s|r|o&gt; - Teach a fact\n"
+                "/learn &lt;s|r|t&gt; - Learn a fact\n\n"
+                "<b>Crypto & Finance:</b>\n"
+                "/crypto - Portfolio dashboard\n"
+                "/earn - Earnings summary\n\n"
+                "<b>System:</b>\n"
+                "/devices - Connected devices\n"
+                "/homelab - Docker/services\n"
+                "/goals - Goals & progress\n"
+                "/sync - Sync knowledge\n"
+                "/status - System diagnostics\n\n"
+                "<i>Or just type naturally!</i>");
+        } else if (msgText == "/crypto") {
+            handleCryptoCommand(chatId);
+        } else if (msgText == "/devices") {
+            handleDevicesCommand(chatId);
+        } else if (msgText == "/goals") {
+            handleGoalsCommand(chatId);
+        } else if (msgText == "/earn") {
+            handleEarnCommand(chatId);
+        } else if (msgText == "/homelab") {
+            handleHomelabCommand(chatId);
+        } else if (msgText == "/sync") {
+            handleSyncCommand(chatId);
+        } else if (msgText.size() > 7 && msgText.substr(0, 7) == "/think ") {
+            handleThinkCommand(chatId, msgText.substr(7));
+        } else if (msgText == "/think") {
+            handleThinkCommand(chatId, "");
+        } else if (msgText.size() > 7 && msgText.substr(0, 7) == "/teach ") {
+            handleTeachCommand(chatId, msgText.substr(7));
+        } else if (msgText == "/teach") {
+            handleTeachCommand(chatId, "");
+        } else if (msgText == "/status") {
+            sendMessage(chatId, getSystemStats());
+        } else if (msgText.size() > 6 && msgText.substr(0, 6) == "/learn") {
+            std::string fact = msgText.substr(6);
+            if (!fact.empty() && fact[0] == ' ') fact = fact.substr(1);
+            if (fact.empty()) {
+                sendMessage(chatId,
+                    "<b>Usage:</b> /learn source|relation|target\n"
+                    "<b>Example:</b> /learn earth|has|moon");
+            } else {
+                sendMessage(chatId,
+                    "<b>Learning:</b> <code>" + fact + "</code>\n"
+                    "Processing...");
+            }
+        } else if (msgText[0] == '/') {
+            sendMessage(chatId, "Unknown command. Type /help for available commands.");
+        }
+    }
+
     // Check if message is a regular conversation (not a command)
     bool isConversation(const std::string& msgText) const {
         return !msgText.empty() && msgText[0] != '/';

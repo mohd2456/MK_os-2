@@ -89,6 +89,42 @@ namespace Color {
 #include "../ai_core/genesis/genesis_engine.cpp"
 #include "../ai_core/idea_engine.cpp"
 #include "../plugins/pc_helper.cpp"
+#include "../crypto/market_data.cpp"
+#include "../crypto/technical_analysis.cpp"
+#include "../crypto/signal_engine.cpp"
+#include "../crypto/portfolio_manager.cpp"
+#include "../crypto/risk_manager.cpp"
+#include "../crypto/exchange_api.cpp"
+#include "../crypto/trading_bot.cpp"
+#include "../crypto/airdrop_farmer.cpp"
+
+// Mind subsystem - The cognitive layer
+#include "../mind/mastery_network.cpp"
+#include "../mind/goal_engine.cpp"
+#include "../mind/strategy_planner.cpp"
+#include "../mind/self_funding.cpp"
+#include "../mind/knowledge_validator.cpp"
+#include "../mind/autonomous_learner.cpp"
+
+// Homelab subsystem - Device management and orchestration
+#include "../homelab/device_registry.cpp"
+#include "../homelab/resource_monitor.cpp"
+#include "../homelab/ssh_controller.cpp"
+#include "../homelab/docker_manager.cpp"
+#include "../homelab/service_orchestrator.cpp"
+
+// Sync subsystem - Multi-device knowledge and memory synchronization
+#include "../sync/knowledge_sync.cpp"
+#include "../sync/device_comm.cpp"
+#include "../sync/memory_sync.cpp"
+
+// Linux driver subsystem - Hardware monitoring for Linux
+#include "../linux/drivers/gpu_monitor.cpp"
+#include "../linux/drivers/network_interface.cpp"
+#include "../linux/drivers/storage_monitor.cpp"
+
+// Configuration system
+#include "../config/mk_config.cpp"
 
 // ============================================================
 // Global state
@@ -228,6 +264,44 @@ struct MKSystem {
     MKPCHelper pcHelper;
     MKGenesisEngine genesis;
 
+    // Crypto trading subsystem
+    MKMarketData cryptoMarketData;
+    MKTechnicalAnalysis cryptoTechnicalAnalysis;
+    MKSignalEngine cryptoSignalEngine;
+    MKPortfolioManager cryptoPortfolioManager;
+    MKRiskManager cryptoRiskManager;
+    MKExchangeAPI cryptoExchangeApi;
+    std::unique_ptr<MKTradingBot> cryptoTradingBot;
+    MKAirdropFarmer cryptoAirdropFarmer;
+
+    // Mind subsystem - The cognitive layer
+    MKMasteryNetwork masteryNetwork;
+    MKGoalEngine goalEngine;
+    MKStrategyPlanner strategyPlanner;
+    MKSelfFunding selfFunding;
+    MKAutonomousLearner autonomousLearner;
+    MKKnowledgeValidator knowledgeValidator;
+
+    // Homelab subsystem
+    MKDeviceRegistry deviceRegistry;
+    MKResourceMonitor resourceMonitor;
+    MKSSHController sshController;
+    MKDockerManager dockerManager;
+    MKServiceOrchestrator serviceOrchestrator;
+
+    // Sync subsystem
+    MKKnowledgeSync knowledgeSync;
+    MKDeviceComm deviceComm;
+    MKMemorySync memorySync;
+
+    // Linux driver subsystem
+    MKGPUMonitor linuxGpuMonitor;
+    MKNetworkInterface linuxNetworkInterface;
+    MKStorageMonitor linuxStorageMonitor;
+
+    // Configuration system
+    MKConfig config;
+
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
     // calls telegram methods must hold this lock.
@@ -273,6 +347,15 @@ struct MKSystem {
         // Initialize neural net with a tiny config (untrained, not used in hot path)
         // The GENERATE route gracefully falls back to MKComposer instead.
         neuralNet.init(256, 32, 1, 64);
+
+        // Initialize crypto trading bot (paper mode by default)
+        cryptoTradingBot = std::make_unique<MKTradingBot>(
+            cryptoMarketData, cryptoTechnicalAnalysis, cryptoSignalEngine,
+            cryptoPortfolioManager, cryptoRiskManager, cryptoExchangeApi);
+        cryptoExchangeApi.initialize("crypto_config.txt");
+
+        // Load configuration
+        config.load();
     }
 
     ~MKSystem() = default;
@@ -910,6 +993,144 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             }
             break;
         }
+        case MKRouteType::CRYPTO: {
+            // Route crypto-related queries through market data and signal engine
+            std::string lower = input;
+            std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+
+            // Try to show live crypto data: prices and signals
+            auto stats = sys.cryptoTradingBot->getStats();
+            std::ostringstream cryptoResp;
+
+            // Get portfolio info
+            auto snapshot = sys.cryptoPortfolioManager.getSnapshot();
+            if (!snapshot.holdings.empty()) {
+                cryptoResp << "Portfolio: ";
+                for (const auto& h : snapshot.holdings) {
+                    cryptoResp << h.symbol << "=" << h.amount << " ";
+                }
+                cryptoResp << ". ";
+            }
+
+            // Get recent signals summary
+            const auto& signalHistory = sys.cryptoSignalEngine.getSignalHistory();
+            if (!signalHistory.empty()) {
+                cryptoResp << "Recent signals: ";
+                int shown = 0;
+                for (auto it = signalHistory.rbegin(); it != signalHistory.rend() && shown < 5; ++it, ++shown) {
+                    cryptoResp << it->symbol << " ";
+                    if (it->type == MKSignalType::BUY || it->type == MKSignalType::STRONG_BUY)
+                        cryptoResp << "BUY";
+                    else if (it->type == MKSignalType::SELL || it->type == MKSignalType::STRONG_SELL)
+                        cryptoResp << "SELL";
+                    else
+                        cryptoResp << "HOLD";
+                    cryptoResp << "(str:" << it->strength << ") ";
+                }
+                cryptoResp << ". ";
+            }
+
+            // Bot stats
+            cryptoResp << "Bot mode: " << (sys.cryptoExchangeApi.isInitialized() ? "LIVE" : "PAPER");
+            cryptoResp << " | Total trades: " << stats.totalTrades;
+            cryptoResp << " | Signals generated: " << stats.signalsGenerated;
+
+            response = cryptoResp.str();
+
+            // Also look up knowledge graph for additional crypto context
+            if (response.empty()) {
+                auto results = sys.graph.getAll(input);
+                if (!results.empty()) {
+                    for (const auto& e : results) {
+                        response += e.source + " " + e.relation + " " + e.target + ". ";
+                    }
+                }
+            }
+            confidence = 0.8f;
+            answered = !response.empty();
+            break;
+        }
+        case MKRouteType::HOMELAB: {
+            // Route homelab/device queries through device registry and resource monitor
+            std::ostringstream homelabResp;
+
+            auto devices = sys.deviceRegistry.getOnlineDevices();
+            int totalDevices = sys.deviceRegistry.deviceCount();
+            if (totalDevices > 0) {
+                homelabResp << "Registered devices (" << totalDevices << ", "
+                           << devices.size() << " online): ";
+                for (const auto& dev : devices) {
+                    homelabResp << dev.hostname << "(" << dev.ip << ", ";
+                    if (dev.status == MKDeviceStatus::ONLINE)
+                        homelabResp << "online";
+                    else if (dev.status == MKDeviceStatus::OFFLINE)
+                        homelabResp << "offline";
+                    else
+                        homelabResp << "unknown";
+                    homelabResp << ") ";
+                }
+                homelabResp << ". ";
+            } else {
+                homelabResp << "No homelab devices registered yet. ";
+            }
+
+            // Resource monitor summary
+            auto localRes = sys.resourceMonitor.getLocalResources();
+            if (localRes.valid) {
+                homelabResp << "Local: CPU " << (int)localRes.cpu_usage_percent << "%, "
+                           << "RAM " << localRes.available_ram_mb << "/" << localRes.total_ram_mb << "MB, "
+                           << "Temp " << (int)localRes.temperature_celsius << "C. ";
+            }
+
+            // SSH controller summary
+            homelabResp << "SSH controller: " << sys.sshController.deviceCount() << " hosts configured.";
+
+            response = homelabResp.str();
+            confidence = 0.7f;
+            answered = !response.empty();
+            break;
+        }
+        case MKRouteType::MIND: {
+            // Route mind/goals/strategy queries through goal engine and mastery network
+            std::ostringstream mindResp;
+
+            // Active goals
+            auto goals = sys.goalEngine.getActiveGoals();
+            if (!goals.empty()) {
+                mindResp << "Active goals (" << goals.size() << "): ";
+                for (const auto& g : goals) {
+                    mindResp << "\"" << g.description << "\" (";
+                    mindResp << (int)g.progress << "% done, ";
+                    if (g.priority == MKGoalPriority::CRITICAL) mindResp << "CRITICAL";
+                    else if (g.priority == MKGoalPriority::HIGH) mindResp << "HIGH";
+                    else if (g.priority == MKGoalPriority::MEDIUM) mindResp << "MEDIUM";
+                    else mindResp << "LOW";
+                    mindResp << ") ";
+                }
+                mindResp << ". ";
+            } else {
+                mindResp << "No active goals. ";
+            }
+
+            // Mastery info
+            mindResp << "Mastery: ";
+            std::vector<std::string> skillNames = {"crypto_trading", "coding", "analysis", "conversation"};
+            for (const auto& s : skillNames) {
+                float level = sys.masteryNetwork.getSkillLevel(s);
+                if (level > 0.0f) {
+                    mindResp << s << "=" << (int)level << " ";
+                }
+            }
+            mindResp << ". ";
+
+            // Completed goal count
+            mindResp << "Completed goals: " << sys.goalEngine.completedCount() << ".";
+
+            response = mindResp.str();
+            confidence = 0.7f;
+            answered = !response.empty();
+            break;
+        }
     }
 
     // If no answer found through primary route, try fallback
@@ -1025,6 +1246,9 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
         case MKRouteType::INSTANT:
         case MKRouteType::SEARCH:
         case MKRouteType::GENERATE:
+        case MKRouteType::CRYPTO:
+        case MKRouteType::HOMELAB:
+        case MKRouteType::MIND:
         default: {
             // For INSTANT/SEARCH/GENERATE, query the graph and compose
             auto results = sys.graph.getAll(input);
@@ -1197,6 +1421,7 @@ int main(int argc, char* argv[]) {
 
     // Step 4: Load knowledge
     sys.graph.loadAllKnowledge();
+    sys.graph.loadFromFile("../../../crypto/crypto_knowledge.mk");
 
     // Step 4a: Index all knowledge into vector search for semantic retrieval
     {
@@ -1342,6 +1567,52 @@ int main(int argc, char* argv[]) {
             // Monitoring placeholder - the actual polling runs in its own thread
         });
     }
+
+    // Register new subsystem scheduled jobs
+    sys.daemon.addJob("crypto_scan", 300, [&sys]() {
+        // Market scan every 5 minutes
+        sys.cryptoTradingBot->runScanCycle();
+    });
+    sys.daemon.addJob("knowledge_sync", 300, [&sys]() {
+        // Sync knowledge check every 5 minutes (queue-based)
+        (void)sys.knowledgeSync.queueSize();
+    });
+    sys.daemon.addJob("device_health", 60, [&sys]() {
+        // Check device health every minute
+        sys.resourceMonitor.getLocalResources();
+    });
+    sys.daemon.addJob("autonomous_learn", 1800, [&sys]() {
+        // Autonomous learning every 30 minutes (only during learning hours)
+        if (sys.config.isLearningHour()) {
+            auto topic = sys.autonomousLearner.pickNextTopic();
+            auto session = sys.autonomousLearner.startSession(topic.topic);
+            // Call web scraper and validate results through knowledge validator
+            auto acceptedFacts = sys.autonomousLearner.learnFromWeb(
+                topic.topic, sys.knowledgeValidator, session, 20);
+            // Integrate accepted facts into the knowledge graph
+            for (const auto& fact : acceptedFacts) {
+                std::istringstream ss(fact);
+                std::string src, rel, tgt, wStr;
+                if (std::getline(ss, src, '|') && std::getline(ss, rel, '|') &&
+                    std::getline(ss, tgt, '|')) {
+                    float w = 0.7f;
+                    if (std::getline(ss, wStr, '|') && !wStr.empty()) {
+                        try { w = std::stof(wStr); } catch (...) {}
+                    }
+                    sys.graph.persistNewFact(src, rel, tgt, w);
+                }
+            }
+            sys.autonomousLearner.endSession(session);
+        }
+    }, true);  // requires cool
+    sys.daemon.addJob("goal_evaluation", 900, [&sys]() {
+        // Evaluate goals every 15 minutes
+        sys.goalEngine.getActiveGoals();
+    });
+    sys.daemon.addJob("portfolio_rebalance", 3600, [&sys]() {
+        // Portfolio rebalance check every hour
+        sys.cryptoPortfolioManager.getRebalanceSuggestions();
+    });
 
     // ============================================================
     // First-boot: offer LLM model download

@@ -26,7 +26,10 @@ enum class MKRouteType {
     GRAPH,      // Knowledge graph lookup (fast, local facts)
     SEARCH,     // Internet search (slower, current events)
     REASON,     // Multi-step reasoning (complex queries)
-    GENERATE    // Creative generation (LLM, if available)
+    GENERATE,   // Creative generation (LLM, if available)
+    CRYPTO,     // Crypto/trading questions and commands
+    HOMELAB,    // Device/service management
+    MIND        // Goals, mastery, strategy, learning
 };
 
 struct MKRoutingDecision {
@@ -60,6 +63,9 @@ private:
     int searchTotal, searchSuccess;
     int reasonTotal, reasonSuccess;
     int generateTotal, generateSuccess;
+    int cryptoTotal, cryptoSuccess;
+    int homelabTotal, homelabSuccess;
+    int mindTotal, mindSuccess;
 
     // Keywords that indicate each route type
     std::vector<std::string> instantKeywords;
@@ -67,6 +73,9 @@ private:
     std::vector<std::string> searchKeywords;
     std::vector<std::string> reasonKeywords;
     std::vector<std::string> generateKeywords;
+    std::vector<std::string> cryptoKeywords;
+    std::vector<std::string> homelabKeywords;
+    std::vector<std::string> mindKeywords;
 
     // Convert string to lowercase
     std::string toLower(const std::string& s) {
@@ -95,6 +104,9 @@ private:
             case MKRouteType::SEARCH:   return "SEARCH";
             case MKRouteType::REASON:   return "REASON";
             case MKRouteType::GENERATE: return "GENERATE";
+            case MKRouteType::CRYPTO:   return "CRYPTO";
+            case MKRouteType::HOMELAB:  return "HOMELAB";
+            case MKRouteType::MIND:     return "MIND";
         }
         return "UNKNOWN";
     }
@@ -107,6 +119,9 @@ private:
             case MKRouteType::SEARCH:   return MKRouteType::REASON;
             case MKRouteType::REASON:   return MKRouteType::SEARCH;
             case MKRouteType::GENERATE: return MKRouteType::REASON;
+            case MKRouteType::CRYPTO:   return MKRouteType::GRAPH;
+            case MKRouteType::HOMELAB:  return MKRouteType::GRAPH;
+            case MKRouteType::MIND:     return MKRouteType::GRAPH;
         }
         return MKRouteType::SEARCH;
     }
@@ -128,6 +143,9 @@ private:
             case MKRouteType::SEARCH:   total = searchTotal; success = searchSuccess; break;
             case MKRouteType::REASON:   total = reasonTotal; success = reasonSuccess; break;
             case MKRouteType::GENERATE: total = generateTotal; success = generateSuccess; break;
+            case MKRouteType::CRYPTO:   total = cryptoTotal; success = cryptoSuccess; break;
+            case MKRouteType::HOMELAB:  total = homelabTotal; success = homelabSuccess; break;
+            case MKRouteType::MIND:     total = mindTotal; success = mindSuccess; break;
         }
         if (total == 0) return 0.5f; // Unknown accuracy defaults to 50%
         return (float)success / (float)total;
@@ -173,6 +191,28 @@ private:
             "brainstorm", "ideas", "suggest", "imagine", "creative",
             "design", "invent", "name for", "slogan", "tagline"
         };
+
+        // CRYPTO: cryptocurrency, trading, blockchain
+        cryptoKeywords = {
+            "crypto", "bitcoin", "ethereum", "portfolio", "trade",
+            "signal", "price", "coin", "defi", "airdrop",
+            "token", "blockchain", "wallet", "exchange", "staking",
+            "yield", "liquidity", "nft", "altcoin", "mining"
+        };
+
+        // HOMELAB: device management, servers, containers
+        homelabKeywords = {
+            "device", "server", "docker", "container", "ssh",
+            "homelab", "service", "deploy", "raspberry", "vm",
+            "monitor", "uptime", "cluster", "network", "host"
+        };
+
+        // MIND: goals, mastery, strategy, learning, earning
+        mindKeywords = {
+            "goal", "plan", "strategy", "mastery", "skill",
+            "learn", "improve", "earn", "money", "funding",
+            "progress", "objective", "milestone", "growth", "schedule"
+        };
     }
 
 public:
@@ -182,10 +222,13 @@ public:
           graphTotal(0), graphSuccess(0),
           searchTotal(0), searchSuccess(0),
           reasonTotal(0), reasonSuccess(0),
-          generateTotal(0), generateSuccess(0) {
+          generateTotal(0), generateSuccess(0),
+          cryptoTotal(0), cryptoSuccess(0),
+          homelabTotal(0), homelabSuccess(0),
+          mindTotal(0), mindSuccess(0) {
         initKeywords();
         std::cout << "[ROUTER] Smart query router initialized.\n";
-        std::cout << "[ROUTER] Routes: INSTANT | GRAPH | SEARCH | REASON | GENERATE\n";
+        std::cout << "[ROUTER] Routes: INSTANT | GRAPH | SEARCH | REASON | GENERATE | CRYPTO | HOMELAB | MIND\n";
     }
 
     // ─── Route a Query ─────────────────────────────────────────────────────────
@@ -202,6 +245,9 @@ public:
         int searchScore = countKeywordMatches(query, searchKeywords);
         int reasonScore = countKeywordMatches(query, reasonKeywords);
         int generateScore = countKeywordMatches(query, generateKeywords);
+        int cryptoScore = countKeywordMatches(query, cryptoKeywords);
+        int homelabScore = countKeywordMatches(query, homelabKeywords);
+        int mindScore = countKeywordMatches(query, mindKeywords);
 
         // Apply accuracy-based weighting (routes that historically work get a boost)
         float instantWeighted = (float)instantScore * (0.5f + getRouteAccuracy(MKRouteType::INSTANT));
@@ -209,6 +255,9 @@ public:
         float searchWeighted = (float)searchScore * (0.5f + getRouteAccuracy(MKRouteType::SEARCH));
         float reasonWeighted = (float)reasonScore * (0.5f + getRouteAccuracy(MKRouteType::REASON));
         float generateWeighted = (float)generateScore * (0.5f + getRouteAccuracy(MKRouteType::GENERATE));
+        float cryptoWeighted = (float)cryptoScore * (0.5f + getRouteAccuracy(MKRouteType::CRYPTO));
+        float homelabWeighted = (float)homelabScore * (0.5f + getRouteAccuracy(MKRouteType::HOMELAB));
+        float mindWeighted = (float)mindScore * (0.5f + getRouteAccuracy(MKRouteType::MIND));
 
         // Find the highest scoring route
         float maxScore = 0.0f;
@@ -219,10 +268,14 @@ public:
         if (searchWeighted > maxScore) { maxScore = searchWeighted; bestRoute = MKRouteType::SEARCH; }
         if (reasonWeighted > maxScore) { maxScore = reasonWeighted; bestRoute = MKRouteType::REASON; }
         if (generateWeighted > maxScore) { maxScore = generateWeighted; bestRoute = MKRouteType::GENERATE; }
+        if (cryptoWeighted > maxScore) { maxScore = cryptoWeighted; bestRoute = MKRouteType::CRYPTO; }
+        if (homelabWeighted > maxScore) { maxScore = homelabWeighted; bestRoute = MKRouteType::HOMELAB; }
+        if (mindWeighted > maxScore) { maxScore = mindWeighted; bestRoute = MKRouteType::MIND; }
 
         // Calculate confidence based on how much the winner leads
         float totalScore = instantWeighted + graphWeighted + searchWeighted
-                         + reasonWeighted + generateWeighted;
+                         + reasonWeighted + generateWeighted
+                         + cryptoWeighted + homelabWeighted + mindWeighted;
         if (totalScore > 0.0f) {
             decision.confidence = maxScore / totalScore;
         } else {
@@ -262,6 +315,12 @@ public:
                 reasonTotal++; if (success) reasonSuccess++; break;
             case MKRouteType::GENERATE:
                 generateTotal++; if (success) generateSuccess++; break;
+            case MKRouteType::CRYPTO:
+                cryptoTotal++; if (success) cryptoSuccess++; break;
+            case MKRouteType::HOMELAB:
+                homelabTotal++; if (success) homelabSuccess++; break;
+            case MKRouteType::MIND:
+                mindTotal++; if (success) mindSuccess++; break;
         }
 
         // Update the most recent history entry
@@ -333,6 +392,12 @@ public:
                 stats.totalRouted = reasonTotal; stats.successful = reasonSuccess; break;
             case MKRouteType::GENERATE:
                 stats.totalRouted = generateTotal; stats.successful = generateSuccess; break;
+            case MKRouteType::CRYPTO:
+                stats.totalRouted = cryptoTotal; stats.successful = cryptoSuccess; break;
+            case MKRouteType::HOMELAB:
+                stats.totalRouted = homelabTotal; stats.successful = homelabSuccess; break;
+            case MKRouteType::MIND:
+                stats.totalRouted = mindTotal; stats.successful = mindSuccess; break;
         }
 
         // Count fallbacks from history
@@ -347,8 +412,10 @@ public:
 
     // Get the overall routing accuracy
     float getOverallAccuracy() {
-        int totalAll = instantTotal + graphTotal + searchTotal + reasonTotal + generateTotal;
-        int successAll = instantSuccess + graphSuccess + searchSuccess + reasonSuccess + generateSuccess;
+        int totalAll = instantTotal + graphTotal + searchTotal + reasonTotal
+                     + generateTotal + cryptoTotal + homelabTotal + mindTotal;
+        int successAll = instantSuccess + graphSuccess + searchSuccess + reasonSuccess
+                       + generateSuccess + cryptoSuccess + homelabSuccess + mindSuccess;
         if (totalAll == 0) return 0.0f;
         return (float)successAll / (float)totalAll;
     }
@@ -372,8 +439,10 @@ public:
     }
 
     void printStats() const {
-        int totalAll = instantTotal + graphTotal + searchTotal + reasonTotal + generateTotal;
-        int successAll = instantSuccess + graphSuccess + searchSuccess + reasonSuccess + generateSuccess;
+        int totalAll = instantTotal + graphTotal + searchTotal + reasonTotal
+                     + generateTotal + cryptoTotal + homelabTotal + mindTotal;
+        int successAll = instantSuccess + graphSuccess + searchSuccess + reasonSuccess
+                       + generateSuccess + cryptoSuccess + homelabSuccess + mindSuccess;
         float accuracy = (totalAll > 0) ? (float)successAll / (float)totalAll * 100.0f : 0.0f;
 
         std::cout << "[ROUTER STATS] Total decisions: " << history.size()
@@ -383,6 +452,9 @@ public:
         std::cout << "  SEARCH:   " << searchTotal << " routed, " << searchSuccess << " successful\n";
         std::cout << "  REASON:   " << reasonTotal << " routed, " << reasonSuccess << " successful\n";
         std::cout << "  GENERATE: " << generateTotal << " routed, " << generateSuccess << " successful\n";
+        std::cout << "  CRYPTO:   " << cryptoTotal << " routed, " << cryptoSuccess << " successful\n";
+        std::cout << "  HOMELAB:  " << homelabTotal << " routed, " << homelabSuccess << " successful\n";
+        std::cout << "  MIND:     " << mindTotal << " routed, " << mindSuccess << " successful\n";
         std::cout << "  Most used route: " << getMostUsedRoute() << "\n";
     }
 };
