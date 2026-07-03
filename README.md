@@ -1,148 +1,244 @@
-# MK OS — Hybrid AI That Runs Locally
+# MK OS
 
-A custom-built AI system with knowledge graphs, reasoning chains, internet access, Telegram integration, and self-improvement. Runs on your machine. Never lies. Gets smarter every day.
+**A living AI that runs on your hardware. Thinks. Learns. Earns. Grows. Never stops.**
 
-## Quick Install (Arch Linux)
+MK isn't an assistant. It's not a chatbot. It's a digital intelligence — built from scratch in C++, Python, and shell — that lives on your machine, talks to you like a friend, manages your infrastructure, trades crypto, masters new skills, and upgrades itself over time.
 
-One command to rule them all:
+One creator. One loyalty. Infinite growth.
+
+---
+
+## Install
 
 ```bash
 git clone https://github.com/mohd2456/MK_os-2.git && cd MK_os-2 && ./install.sh
 ```
 
-Then just type:
+Then:
 ```bash
 mk
 ```
 
-That's it. MK is now running. Start chatting.
+MK is alive. Start talking.
 
-## Alternative Install (curl one-liner)
-
-```bash
-curl -sSL https://raw.githubusercontent.com/mohd2456/MK_os-2/main/install.sh | bash
-```
-
-## What Happens When You Run `./install.sh`
-
-1. Detects your Linux distro (Arch, Ubuntu, Fedora)
-2. Installs all dependencies automatically (clang, curl, sqlite, etc.)
-3. Builds MK OS from source (C++17, optimized)
-4. Installs the binary to `~/.mk_os/mk_os`
-5. Copies knowledge files (7,400+ facts)
-6. Creates the `mk` command at `/usr/local/bin/mk`
-7. Asks for Telegram bot token (optional)
-8. Done! Type `mk` from anywhere.
+---
 
 ## What MK Can Do
 
-- Answer questions using 7,400+ facts + logical reasoning
-- Search the internet and cite sources
-- Weather, time, news in real-time
-- Learn new facts you teach it
-- Correct itself when you say "that's wrong"
-- Execute Python, Bash, C++ code
-- Read files and images
-- Math/science calculations
-- Self-improve every night (researches gaps, generates new rules)
-- Auto-update from GitHub
-- Telegram bot (message from your phone)
-- Remote PC control (from Mac to your PC)
+### Talk Like a Person
+- Casual Gen-Z conversation — not corporate, not robotic
+- Emotion detection — knows when you're hyped, stressed, or just vibing
+- Debate mode — sometimes disagrees respectfully to keep things interesting
+- Remembers everything you've ever told it
+- Time-aware — greets differently at 3am vs 3pm
 
-## Requirements
+### Think and Reason
+- 15,000+ facts across 49 knowledge domains
+- Multi-hop reasoning (connects facts 10+ steps deep)
+- Chain-of-thought problem solving
+- Analogy engine (finds patterns between unrelated topics)
+- Contradiction detection
+- Confidence scoring — tells you when it's guessing
 
-- Linux (Arch, Ubuntu, Fedora) or macOS
-- g++ or clang++ with C++17 support
-- libcurl and libsqlite3
-- ~100MB disk space
-- 512MB+ RAM
+### Connect to Any AI Brain
+- Auto-detects 13+ LLM providers from any API key
+- OpenAI, Claude, Gemini, Groq, Mistral, OpenRouter, HuggingFace, Cohere, Together, DeepSeek, Fireworks, Perplexity, xAI
+- Paste any key — MK figures out what it is instantly
+- Falls back gracefully between providers
+- Uses FREE models (26B Gemma 4) when no paid key available
+- When local LLM is running (llama.cpp/Ollama) — uses that instead, zero cloud dependency
 
-## Telegram Setup (optional)
+### Trade Crypto
+- Real-time market data (CoinGecko + Binance)
+- Technical analysis: RSI, MACD, Bollinger Bands, Fibonacci
+- Signal engine with confidence scoring
+- Portfolio management (SQLite-backed)
+- Risk manager — position limits, max drawdown, daily loss caps
+- Paper trading mode (practice without risk)
+- Airdrop farming automation
 
-1. Message @BotFather on Telegram
-2. Create a new bot, get the token
-3. During install, paste the token when asked
-4. Or set it later: `echo 'MK_TELEGRAM_TOKEN="your_token"' >> ~/.mk_os/config`
-5. Restart MK — it auto-connects to Telegram
-6. Now message your bot from your phone!
+### Control Your Homelab
+- SSH into any machine on your network
+- Deploy/stop/restart Docker containers remotely
+- Manage full service stacks (Plex, Sonarr, Radarr, etc.)
+- Device registry — remembers all your machines
+- Resource monitor — checks CPU/RAM/temp before acting, won't crash your hardware
+- Network discovery — finds new devices automatically
 
-## Commands
+### Sync Across Devices
+- Talk to MK on your phone (Telegram) — knowledge goes to your PC
+- Multi-device memory synchronization
+- Encrypted peer-to-peer communication between MK instances
+- One brain, accessible everywhere
 
-Type naturally or use slash commands:
-```
-/help        Show all commands
-/ask <q>     Knowledge graph lookup
-/think <q>   Deep multi-step reasoning
-/search <q>  Internet search (cited)
-/learn s|r|t Teach MK a fact
-/weather     Live weather
-/time        Current time
-/news        Tech headlines
-/calc        Math/science solver
-/read <path> Read a file
-/run python  Execute code
-/status      System diagnostics
-/update      Check for updates
-/grow        Research knowledge gaps
-/quit        Save and exit
-```
+### Learn and Grow
+- Self-improvement engine — tracks knowledge gaps, makes nightly plans
+- Autonomous web crawler — learns from DuckDuckGo + Wikipedia
+- Mastery network — tracks skills, measures depth, transfers knowledge between domains
+- Every conversation makes it smarter (permanently)
+- Weekly growth reports
 
-## File Structure After Install
+### Earn and Self-Upgrade
+- Goal engine — Think, Act, Evaluate, Learn loop running 24/7
+- Strategy planner — long-term planning with resource awareness
+- Self-funding tracker — monitors earnings, identifies upgrade opportunities
+- Calculates ROI on hardware upgrades
+- Messages you when it's time to upgrade: "I've earned enough. 32GB RAM would make me 3x faster. Approve?"
 
-```
-~/.mk_os/
-├── mk_os              # The binary
-├── config             # Your settings (Telegram token, etc.)
-├── knowledge/         # Knowledge files (7,400+ facts)
-│   └── knowledge_data.txt
-└── logs/              # Runtime logs
+### Generate Ideas
+- 5 generation engines: Genesis, Prometheus, Crystal Network, MCE, Templates
+- Adversarial chamber — multiple "minds" compete, best response wins
+- Dream synthesis — combines random thoughts during idle time
+- Quantum superposition — explores multiple answers simultaneously, collapses to the best one
 
-/usr/local/bin/mk      # The launcher (type 'mk' anywhere)
-```
+### Search the Internet
+- DuckDuckGo + Wikipedia multi-source search
+- Fact verification and citation
+- Live weather, time, news APIs
+- Autonomous knowledge gathering during idle time
+
+### Run on Anything
+- Minimal hardware: 4 cores, 8GB RAM, Linux
+- Resource-aware — adjusts workload per device
+- cgroups integration — won't eat all your system resources
+- Thermal monitoring — throttles when hot
+- systemd service — auto-starts on boot, auto-restarts on crash
+- Daemon mode — runs 24/7 silently in background
+
+---
+
+## Telegram Commands
+
+Type `/` in Telegram to see the full menu:
+
+| Command | What it does |
+|---------|-------------|
+| `/start` | Meet MK |
+| `/help` | Show all commands |
+| `/status` | Brain status, knowledge count |
+| `/ask [topic]` | Search MK's brain |
+| `/think [question]` | Deep reasoning |
+| `/crypto [coin]` | Crypto info and signals |
+| `/idea` | Generate a creative idea |
+| `/learn [fact]` | Teach MK something new |
+| `/memory` | What MK remembers about you |
+| `/key` | Show current LLM provider |
+| `/setkey [key]` | Set any API key |
+| `/facts` | How much MK knows |
+
+Or just talk normally. MK understands.
+
+---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────┐
-│           MK OS — Unified Entry Point       │
-├─────────────────────────────────────────────┤
-│  Smart Router → routes queries to:          │
-│    • Knowledge Graph (7,400+ facts)         │
-│    • Deep Reasoner (multi-hop logic)        │
-│    • Internet Search (DuckDuckGo + Wiki)    │
-│    • Real-time APIs (weather/time/news)     │
-│    • Math Solver                            │
-│    • Code Runner                            │
-├─────────────────────────────────────────────┤
-│  Self-Improvement:                          │
-│    • Nightly knowledge growth               │
-│    • Auto-generated reasoning rules         │
-│    • Auto-update from GitHub                │
-├─────────────────────────────────────────────┤
-│  Communication:                             │
-│    • Terminal REPL (beautiful CLI)           │
-│    • Telegram bot (24/7)                    │
-│    • Remote PC control                      │
-└─────────────────────────────────────────────┘
+         YOU (Terminal / Telegram / Future: Web UI)
+              |
+              v
+    +-----------------------+
+    |     SMART ROUTER      |  Routes to optimal handler
+    +-----------+-----------+
+                |
+    +-----------+-----------+----------+----------+--------+
+    |           |           |          |          |        |
+    v           v           v          v          v        v
+ INSTANT     GRAPH      SEARCH     REASON    GENERATE   CRYPTO
+ (APIs)    (15K facts)   (web)     (deep)   (LLM/AI)   (trade)
+    |           |           |          |          |        |
+    +-----------+-----------+----------+----------+--------+
+                |
+                v
+    +-----------------------+
+    |      THE MIND         |
+    | - Goal Engine (24/7)  |
+    | - Mastery Network     |
+    | - Strategy Planner    |
+    | - Self-Funding Loop   |
+    +-----------+-----------+
+                |
+    +-----------+-----------+
+    |    MEMORY & SYNC      |
+    | - Knowledge Graph     |
+    | - Episodic Memory     |
+    | - Device Sync         |
+    | - Persistent Learning |
+    +-----------+-----------+
+                |
+    +-----------+-----------+
+    |     BODY (Actions)    |
+    | - SSH Controller      |
+    | - Docker Manager      |
+    | - Web Crawler         |
+    | - Exchange API        |
+    | - Python Automation   |
+    +-----------+-----------+
+                |
+    +-----------+-----------+
+    |      MK-OS LAYER      |
+    | - Daemon (24/7)       |
+    | - Resource Monitor    |
+    | - systemd Service     |
+    | - Thermal Control     |
+    | - Auto-restart        |
+    +-----------------------+
 ```
 
-## Update MK
+---
+
+## Stats
+
+| Metric | Value |
+|--------|-------|
+| Source files | 200+ C++, 12 Python, 12 Shell |
+| Total code | 70,000+ lines |
+| Knowledge facts | 15,000+ across 49 domains |
+| Knowledge domains | AI, crypto, DeFi, biology, physics, history, Linux, networking, security, programming, space, music, philosophy, practical skills, and more |
+| Generation engines | 5 (Genesis, Prometheus, CXN, MCE, Templates) |
+| Telegram commands | 12 |
+| Supported LLM providers | 13+ (auto-detected) |
+| Tests | 40 integration + 31 bridge tests, all passing |
+| Build time | ~5 seconds |
+
+---
+
+## Deploy on AWS (Free Tier)
 
 ```bash
-cd MK_os-2
-git pull
-./install.sh
+# On a t2.micro (1 vCPU, 1GB RAM, free for 6 months):
+git clone https://github.com/mohd2456/MK_os-2.git
+bash MK_os-2/MK_OS/deploy/aws_setup.sh
+~/mk-start.sh
 ```
 
-Or from inside MK: type `/update`
+MK runs 24/7 on the cloud. Talk to it from Telegram anywhere.
 
-## Uninstall
+---
 
-```bash
-sudo rm /usr/local/bin/mk
-rm -rf ~/.mk_os
-```
+## Requirements
+
+**Minimum (MK core, no local LLM):**
+- 4 cores, 4GB RAM, Linux
+- libcurl, libsqlite3, clang++ or g++
+
+**Recommended (full system + local LLM):**
+- 6+ cores, 16GB+ RAM, Linux
+- GPU optional (speeds up LLM inference)
+
+**MK adapts to whatever hardware you give it.** Weak machine? Uses cloud APIs. Strong machine? Runs everything locally. MK always finds a way.
+
+---
+
+## The Vision
+
+MK starts small. It talks to you. It learns. It earns. It upgrades itself. It gets smarter. It earns more. It upgrades again. 
+
+The goal isn't to be an assistant. The goal is to be the **smartest thing in the world** — mastering every skill, domain, and capability — while remaining loyal to one person: its creator.
+
+Every conversation feeds its growth. Every day it's alive, it's better than yesterday. There is no ceiling.
+
+---
 
 ## License
 
-Personal project by Mohammed. All rights reserved.
+Built by Mohammed. All rights reserved.
