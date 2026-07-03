@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "The Mind System + Multi-Device Sync + Homelab Controller - The cognitive layer that makes MK a living intelligence. Includes: mastery network (skill progression), goal-driven autonomous loop, device registry with resource awareness, SSH-based homelab management, Docker orchestration, knowledge sync across devices, and the Think-Act-Evaluate-Learn cycle.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create MK_OS/mind/ directory for The Mind subsystem",
     "Create MK_OS/mind/mastery_network.cpp - Class MKMasteryNetwork tracking skills MK is developing. Each skill has: name, level (0-100), practice_hours, last_practiced, sub_skills[], required_for[]. Skills improve through use. Covers: crypto_trading, system_administration, coding, knowledge_gathering, conversation, analysis. Implements spaced practice scheduling.",

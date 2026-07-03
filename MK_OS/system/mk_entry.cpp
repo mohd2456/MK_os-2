@@ -98,6 +98,24 @@ namespace Color {
 #include "../crypto/trading_bot.cpp"
 #include "../crypto/airdrop_farmer.cpp"
 
+// Mind subsystem - The cognitive layer
+#include "../mind/mastery_network.cpp"
+#include "../mind/goal_engine.cpp"
+#include "../mind/strategy_planner.cpp"
+#include "../mind/self_funding.cpp"
+
+// Homelab subsystem - Device management and orchestration
+#include "../homelab/device_registry.cpp"
+#include "../homelab/resource_monitor.cpp"
+#include "../homelab/ssh_controller.cpp"
+#include "../homelab/docker_manager.cpp"
+#include "../homelab/service_orchestrator.cpp"
+
+// Sync subsystem - Multi-device knowledge and memory synchronization
+#include "../sync/knowledge_sync.cpp"
+#include "../sync/device_comm.cpp"
+#include "../sync/memory_sync.cpp"
+
 // ============================================================
 // Global state
 // ============================================================
@@ -245,6 +263,24 @@ struct MKSystem {
     MKExchangeAPI cryptoExchangeApi;
     std::unique_ptr<MKTradingBot> cryptoTradingBot;
     MKAirdropFarmer cryptoAirdropFarmer;
+
+    // Mind subsystem - The cognitive layer
+    MKMasteryNetwork masteryNetwork;
+    MKGoalEngine goalEngine;
+    MKStrategyPlanner strategyPlanner;
+    MKSelfFunding selfFunding;
+
+    // Homelab subsystem
+    MKDeviceRegistry deviceRegistry;
+    MKResourceMonitor resourceMonitor;
+    MKSSHController sshController;
+    MKDockerManager dockerManager;
+    MKServiceOrchestrator serviceOrchestrator;
+
+    // Sync subsystem
+    MKKnowledgeSync knowledgeSync;
+    MKDeviceComm deviceComm;
+    MKMemorySync memorySync;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or

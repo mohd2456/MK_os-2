@@ -31,6 +31,10 @@ LLM_EATER := mk_llm_eater
 #   plugins/ - telegram, pc_helper
 #   crypto/ - market_data, technical_analysis, signal_engine, portfolio_manager,
 #             risk_manager, exchange_api, trading_bot, airdrop_farmer
+#   mind/ - mastery_network, goal_engine, strategy_planner, self_funding
+#   homelab/ - device_registry, resource_monitor, ssh_controller, docker_manager,
+#              service_orchestrator
+#   sync/ - knowledge_sync, device_comm, memory_sync
 
 # Install location
 PREFIX    := /usr/local/bin
