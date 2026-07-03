@@ -11,6 +11,7 @@
 #include <ctime>
 #include <set>
 #include <list>
+#include <dirent.h>
 
 // ===================================================================================
 // MK HYBRID REASONING ENGINE — LAYER 1: PATTERN GRAPH
@@ -435,21 +436,42 @@ public:
         std::cout << "[PATTERN GRAPH] Loaded " << loaded << " facts from: " << path << "\n";
     }
 
-    // Load all .mk files from knowledge directory
+    // Load all .mk files from knowledge directory (dynamic scan)
     void loadAllKnowledge() {
-        std::cout << "[PATTERN GRAPH] Loading all knowledge files from: " << knowledge_dir << "/\n";
-        // Try loading standard knowledge files
-        loadFromFile("core_facts.mk");
-        loadFromFile("personal_facts.mk");
-        loadFromFile("learned_facts.mk");
-        loadFromFile("world_knowledge.mk");
-        loadFromFile("rules.mk");
-        loadFromFile("coding_knowledge.mk");
-        loadFromFile("system_knowledge.mk");
-        // Extended knowledge bases
-        loadFromFile("science_facts.mk");
-        loadFromFile("technology_facts.mk");
-        loadFromFile("geography_history.mk");
+        std::cout << "[PATTERN GRAPH] Scanning all .mk files from: " << knowledge_dir << "/\n";
+        
+        // Dynamically scan directory for all .mk files
+        std::vector<std::string> mk_files;
+        
+        DIR* dir = opendir(knowledge_dir.c_str());
+        if (dir) {
+            struct dirent* entry;
+            while ((entry = readdir(dir)) != nullptr) {
+                std::string fname(entry->d_name);
+                // Only load .mk files
+                if (fname.size() > 3 && fname.substr(fname.size() - 3) == ".mk") {
+                    mk_files.push_back(fname);
+                }
+            }
+            closedir(dir);
+            // Sort for deterministic loading order
+            std::sort(mk_files.begin(), mk_files.end());
+        } else {
+            std::cerr << "[PATTERN GRAPH] Cannot open directory: " << knowledge_dir << "\n";
+            // Fallback to known files
+            mk_files = {"core_facts.mk", "personal_facts.mk", "learned_facts.mk",
+                         "world_knowledge.mk", "rules.mk", "coding_knowledge.mk",
+                         "system_knowledge.mk", "science_facts.mk", "technology_facts.mk",
+                         "geography_history.mk"};
+        }
+        
+        int total_loaded = 0;
+        for (const auto& file : mk_files) {
+            loadFromFile(file);
+            total_loaded++;
+        }
+        std::cout << "[PATTERN GRAPH] Loaded " << total_loaded << " knowledge files, "
+                  << edges.size() << " total facts.\n";
     }
 
     // Append a single new fact to the learned_facts file (for runtime learning)

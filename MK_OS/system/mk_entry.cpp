@@ -103,6 +103,8 @@ namespace Color {
 #include "../mind/goal_engine.cpp"
 #include "../mind/strategy_planner.cpp"
 #include "../mind/self_funding.cpp"
+#include "../mind/autonomous_learner.cpp"
+#include "../mind/knowledge_validator.cpp"
 
 // Homelab subsystem - Device management and orchestration
 #include "../homelab/device_registry.cpp"
@@ -274,6 +276,8 @@ struct MKSystem {
     MKGoalEngine goalEngine;
     MKStrategyPlanner strategyPlanner;
     MKSelfFunding selfFunding;
+    MKAutonomousLearner autonomousLearner;
+    MKKnowledgeValidator knowledgeValidator;
 
     // Homelab subsystem
     MKDeviceRegistry deviceRegistry;
