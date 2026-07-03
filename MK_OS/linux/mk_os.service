@@ -1,0 +1,43 @@
+[Unit]
+Description=MK OS AI System
+After=network.target
+Wants=network-online.target
+Documentation=https://github.com/mohd2456/MK_os-2
+
+[Service]
+Type=simple
+User=mk
+Group=mk
+WorkingDirectory=/opt/mk_os
+ExecStart=/opt/mk_os/mk_os
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=30
+TimeoutStopSec=30
+
+# Resource limits
+Nice=10
+MemoryMax=4G
+CPUQuota=80%
+IOWeight=100
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/mk_os
+PrivateTmp=yes
+
+# Environment
+Environment=MK_HOME=/opt/mk_os
+Environment=MK_LOG_LEVEL=info
+EnvironmentFile=-/opt/mk_os/mk_os.env
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mk_os
+
+[Install]
+WantedBy=multi-user.target

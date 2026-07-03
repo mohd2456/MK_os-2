@@ -43,7 +43,7 @@ PREFIX    := /usr/local/bin
 # Targets
 # ============================================================
 
-.PHONY: all clean run install tools test help
+.PHONY: all clean run install tools test help python-deps
 
 all: $(TARGET)
 	@echo ""
@@ -96,6 +96,12 @@ clean:
 	@find . -name '*.o' -delete
 	@rm -f $(TARGET) $(TEST_TARGET) $(INGEST) $(TELEGRAM) $(LLM_EATER)
 	@echo "  ✓ Clean"
+
+# Install Python dependencies
+python-deps:
+	@echo "Installing Python dependencies..."
+	@pip3 install -r python/requirements.txt
+	@echo "  ✓ Python dependencies installed"
 
 # Help target
 help:

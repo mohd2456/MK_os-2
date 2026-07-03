@@ -116,6 +116,11 @@ namespace Color {
 #include "../sync/device_comm.cpp"
 #include "../sync/memory_sync.cpp"
 
+// Linux driver subsystem - Hardware monitoring for Linux
+#include "../linux/drivers/gpu_monitor.cpp"
+#include "../linux/drivers/network_interface.cpp"
+#include "../linux/drivers/storage_monitor.cpp"
+
 // ============================================================
 // Global state
 // ============================================================
@@ -281,6 +286,11 @@ struct MKSystem {
     MKKnowledgeSync knowledgeSync;
     MKDeviceComm deviceComm;
     MKMemorySync memorySync;
+
+    // Linux driver subsystem
+    MKGPUMonitor linuxGpuMonitor;
+    MKNetworkInterface linuxNetworkInterface;
+    MKStorageMonitor linuxStorageMonitor;
 
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
