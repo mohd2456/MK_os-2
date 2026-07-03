@@ -1,0 +1,21 @@
+{
+  "telegram_token": "",
+  "exchange_api_key": "",
+  "exchange_api_secret": "",
+  "trading_mode": "paper",
+  "risk_limits": {
+    "max_position_pct": 20,
+    "daily_loss_limit_usd": 100,
+    "drawdown_pause_pct": 10
+  },
+  "sync_interval_sec": 300,
+  "learning_schedule": {
+    "start_hour": 2,
+    "end_hour": 6
+  },
+  "cgroup_limits": {
+    "memory_mb": 4096,
+    "cpu_percent": 80
+  },
+  "devices": []
+}

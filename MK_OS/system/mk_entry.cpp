@@ -123,6 +123,9 @@ namespace Color {
 #include "../linux/drivers/network_interface.cpp"
 #include "../linux/drivers/storage_monitor.cpp"
 
+// Configuration system
+#include "../config/mk_config.cpp"
+
 // ============================================================
 // Global state
 // ============================================================
@@ -296,6 +299,9 @@ struct MKSystem {
     MKNetworkInterface linuxNetworkInterface;
     MKStorageMonitor linuxStorageMonitor;
 
+    // Configuration system
+    MKConfig config;
+
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
     // calls telegram methods must hold this lock.
@@ -347,6 +353,9 @@ struct MKSystem {
             cryptoMarketData, cryptoTechnicalAnalysis, cryptoSignalEngine,
             cryptoPortfolioManager, cryptoRiskManager, cryptoExchangeApi);
         cryptoExchangeApi.initialize("crypto_config.txt");
+
+        // Load configuration
+        config.load();
     }
 
     ~MKSystem() = default;
@@ -984,6 +993,42 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             }
             break;
         }
+        case MKRouteType::CRYPTO: {
+            // Route crypto-related queries through knowledge graph with crypto focus
+            auto results = sys.graph.getAll(input);
+            if (!results.empty()) {
+                for (const auto& e : results) {
+                    response += e.source + " " + e.relation + " " + e.target + ". ";
+                }
+                confidence = 0.8f;
+                answered = true;
+            }
+            break;
+        }
+        case MKRouteType::HOMELAB: {
+            // Route homelab/device queries through knowledge graph
+            auto results = sys.graph.getAll(input);
+            if (!results.empty()) {
+                for (const auto& e : results) {
+                    response += e.source + " " + e.relation + " " + e.target + ". ";
+                }
+                confidence = 0.7f;
+                answered = true;
+            }
+            break;
+        }
+        case MKRouteType::MIND: {
+            // Route mind/goals/strategy queries through knowledge graph
+            auto results = sys.graph.getAll(input);
+            if (!results.empty()) {
+                for (const auto& e : results) {
+                    response += e.source + " " + e.relation + " " + e.target + ". ";
+                }
+                confidence = 0.7f;
+                answered = true;
+            }
+            break;
+        }
     }
 
     // If no answer found through primary route, try fallback
@@ -1099,6 +1144,9 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
         case MKRouteType::INSTANT:
         case MKRouteType::SEARCH:
         case MKRouteType::GENERATE:
+        case MKRouteType::CRYPTO:
+        case MKRouteType::HOMELAB:
+        case MKRouteType::MIND:
         default: {
             // For INSTANT/SEARCH/GENERATE, query the graph and compose
             auto results = sys.graph.getAll(input);
@@ -1417,6 +1465,35 @@ int main(int argc, char* argv[]) {
             // Monitoring placeholder - the actual polling runs in its own thread
         });
     }
+
+    // Register new subsystem scheduled jobs
+    sys.daemon.addJob("crypto_scan", 300, [&sys]() {
+        // Market scan every 5 minutes
+        sys.cryptoTradingBot->runScanCycle();
+    });
+    sys.daemon.addJob("knowledge_sync", 300, [&sys]() {
+        // Sync knowledge check every 5 minutes (queue-based)
+        (void)sys.knowledgeSync.queueSize();
+    });
+    sys.daemon.addJob("device_health", 60, [&sys]() {
+        // Check device health every minute
+        sys.resourceMonitor.getLocalResources();
+    });
+    sys.daemon.addJob("autonomous_learn", 1800, [&sys]() {
+        // Autonomous learning every 30 minutes (only during learning hours)
+        if (sys.config.isLearningHour()) {
+            auto session = sys.autonomousLearner.startSession("auto_explore");
+            sys.autonomousLearner.endSession(session);
+        }
+    }, true);  // requires cool
+    sys.daemon.addJob("goal_evaluation", 900, [&sys]() {
+        // Evaluate goals every 15 minutes
+        sys.goalEngine.getActiveGoals();
+    });
+    sys.daemon.addJob("portfolio_rebalance", 3600, [&sys]() {
+        // Portfolio rebalance check every hour
+        sys.cryptoPortfolioManager.getRebalanceSuggestions();
+    });
 
     // ============================================================
     // First-boot: offer LLM model download

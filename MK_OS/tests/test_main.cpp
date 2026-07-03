@@ -80,6 +80,27 @@ static int g_assertions_failed = 0;
 #include "../ai_core/conversation_mode.cpp"
 #include "../ai_core/idea_engine.cpp"
 
+// New module includes for FEAT-005 integration tests
+#include "../crypto/market_data.cpp"
+#include "../crypto/technical_analysis.cpp"
+#include "../crypto/signal_engine.cpp"
+#include "../crypto/portfolio_manager.cpp"
+#include "../crypto/risk_manager.cpp"
+#include "../crypto/exchange_api.cpp"
+#include "../crypto/trading_bot.cpp"
+#include "../homelab/device_registry.cpp"
+#include "../homelab/resource_monitor.cpp"
+#include "../mind/mastery_network.cpp"
+#include "../mind/goal_engine.cpp"
+#include "../mind/self_funding.cpp"
+#include "../mind/autonomous_learner.cpp"
+#include "../mind/knowledge_validator.cpp"
+#include "../sync/knowledge_sync.cpp"
+#include "../config/mk_config.cpp"
+
+// Integration tests
+#include "test_integration.cpp"
+
 // ============================================================
 // TEST: Pattern Graph
 // ============================================================
@@ -721,6 +742,34 @@ int main() {
     RUN_TEST(test_code_runner_sanitization);
     RUN_TEST(test_conversation_mode);
     RUN_TEST(test_idea_engine);
+
+    // Integration tests (FEAT-005)
+    RUN_TEST(test_technical_analysis_rsi);
+    RUN_TEST(test_technical_analysis_macd);
+    RUN_TEST(test_technical_analysis_bollinger);
+    RUN_TEST(test_risk_manager_position_limit);
+    RUN_TEST(test_risk_manager_drawdown);
+    RUN_TEST(test_device_registry_add_remove);
+    RUN_TEST(test_device_registry_roles);
+    RUN_TEST(test_resource_monitor_check);
+    RUN_TEST(test_goal_engine_create);
+    RUN_TEST(test_goal_engine_progress);
+    RUN_TEST(test_mastery_network_skill_up);
+    RUN_TEST(test_mastery_network_decay);
+    RUN_TEST(test_knowledge_sync_conflict);
+    RUN_TEST(test_knowledge_sync_user_correction);
+    RUN_TEST(test_knowledge_validator_format);
+    RUN_TEST(test_knowledge_validator_duplicate);
+    RUN_TEST(test_knowledge_validator_weight);
+    RUN_TEST(test_config_load_defaults);
+    RUN_TEST(test_config_load_parse);
+    RUN_TEST(test_self_funding_track);
+    RUN_TEST(test_trading_bot_paper_mode);
+    RUN_TEST(test_signal_engine_generation);
+    RUN_TEST(test_smart_router_crypto);
+    RUN_TEST(test_smart_router_homelab);
+    RUN_TEST(test_smart_router_mind);
+    RUN_TEST(test_autonomous_learner_session);
 
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;

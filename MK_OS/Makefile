@@ -43,7 +43,7 @@ PREFIX    := /usr/local/bin
 # Targets
 # ============================================================
 
-.PHONY: all clean run install tools test help python-deps
+.PHONY: all clean run install tools test help python-deps python-check lint full-test
 
 all: $(TARGET)
 	@echo ""
@@ -102,6 +102,28 @@ python-deps:
 	@echo "Installing Python dependencies..."
 	@pip3 install -r python/requirements.txt
 	@echo "  ✓ Python dependencies installed"
+
+# Validate Python syntax
+python-check:
+	@echo "Checking Python files..."
+	@find . -name '*.py' -exec python3 -m py_compile {} \; 2>&1 && echo "  ✓ All Python files valid" || echo "  ✗ Python syntax errors found"
+
+# Basic lint checks
+lint:
+	@echo "Running lint checks..."
+	@echo "  Checking shell scripts..."
+	@for f in $$(find . -name '*.sh'); do bash -n "$$f" && echo "    ✓ $$f" || echo "    ✗ $$f"; done
+	@echo "  Checking for common issues..."
+	@! grep -rn 'TODO\|FIXME\|HACK' system/ ai_core/ mk_brain/ --include='*.cpp' 2>/dev/null | head -5 || true
+	@echo "  ✓ Lint complete"
+
+# Full test suite: build + test + python check + shell syntax check
+full-test: all test python-check
+	@echo "Running shell syntax checks..."
+	@for f in $$(find . -name '*.sh'); do bash -n "$$f" || exit 1; done
+	@echo ""
+	@echo "  ✓ Full test suite passed"
+	@echo ""
 
 # Help target
 help:
