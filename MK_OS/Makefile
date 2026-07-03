@@ -20,6 +20,17 @@ LLM_EATER := mk_llm_eater
 
 # Single compilation unit: mk_entry.cpp #includes all other modules
 # No need for separate .o files - this avoids multiple-definition linker errors
+# Modules included via mk_entry.cpp:
+#   system/ - diagnostics, daemon, shell, service_manager
+#   ai_core/ - smart_router, persistent_memory, knowledge_integrator, self_improver,
+#              neural_net, conversation_mode, mce, cxn, prometheus, genesis, idea_engine
+#   ai_core/hre/ - pattern_graph, deep_reasoner, reasoning_chains, composer
+#   mk_brain/ - learning_engine, brain_memory, embeddings, ann_search, cache_mgr,
+#               daily_briefing, fact_extractor, reasoning_engine, personality
+#   network/ - realtime_apis
+#   plugins/ - telegram, pc_helper
+#   crypto/ - market_data, technical_analysis, signal_engine, portfolio_manager,
+#             risk_manager, exchange_api, trading_bot, airdrop_farmer
 
 # Install location
 PREFIX    := /usr/local/bin

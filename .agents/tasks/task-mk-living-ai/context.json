@@ -1,0 +1,30 @@
+{
+  "project_type": "Custom AI system (local LLM + knowledge graph + reasoning engine), multi-language C++17/Python/Shell",
+  "language": "C++17 (primary), Python 3 (scripts/tools), Bash (system scripts)",
+  "build_system": "make with single compilation unit. system/mk_entry.cpp #includes all .cpp files. clang++ -std=c++17 -O2 -Wall -Wextra -DDARWIN system/mk_entry.cpp -lcurl -lsqlite3",
+  "test_framework": "Custom test framework in tests/test_main.cpp with TEST_ASSERT macros. Tests compile as separate binary.",
+  "build_command": "cd MK_OS && make clean && make",
+  "test_command": "cd MK_OS && make test",
+  "verification_instructions": "1. Run make in MK_OS/ - must compile with zero errors. 2. Run make test - all assertions must pass. 3. Python scripts must run with python3 without import errors.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "Requires clang++ (C++17), libcurl, libsqlite3, python3. All available on this sandbox.",
+  "environment_constraints": "OPEN_INTERNET - can install packages. No Docker daemon available for testing. Mac/Linux compilation. Single compilation unit pattern means all new .cpp files that should be part of main binary need to be #included in mk_entry.cpp.",
+  "contribution_requirements": "Include guards (#ifndef) on every .cpp file. No standalone main() functions in modules included by mk_entry.cpp. Follow existing naming: MK prefix for classes. Knowledge files use pipe-delimited format: source|relation|target|weight",
+  "key_patterns": "1. All major classes are in separate .cpp files with #ifndef guards. 2. mk_entry.cpp #includes them all and has the single main(). 3. Knowledge files are .mk format (source|relation|target|weight). 4. Plugins pattern: class with init/process methods, registered in MKSystem struct. 5. Python scripts live in tools/ directory. 6. Shell scripts for system integration in bootloader/ and MK_OS root.",
+  "relevant_files": [
+    "MK_OS/system/mk_entry.cpp",
+    "MK_OS/Makefile",
+    "MK_OS/plugins/telegram.cpp",
+    "MK_OS/plugins/pc_helper.cpp",
+    "MK_OS/plugins/mesh_network.cpp",
+    "MK_OS/network/autonomous_agent.cpp",
+    "MK_OS/ai_core/smart_router.cpp",
+    "MK_OS/mk_brain/learning/learning_engine.cpp",
+    "MK_OS/system/daemon.cpp",
+    "MK_OS/system/service_manager.cpp",
+    "MK_OS/Kernel/power/thermal_governor.cpp",
+    "MK_OS/ai_core/hre/pattern_graph.cpp",
+    "MK_OS/tests/test_main.cpp"
+  ],
+  "directory_structure": "MK_OS/ is the main project. Key dirs: ai_core/ (reasoning, NLP, generation engines), ai_core/hre/knowledge_files/ (.mk knowledge), mk_brain/ (learning, memory, personality, embeddings), network/ (HTTP, search, autonomous agent), plugins/ (telegram, pc_helper, mesh), system/ (entry, daemon, shell, services), Kernel/ (simulated kernel with drivers), security/, llm/, tools/ (utilities), bootloader/ (VM image)"
+}

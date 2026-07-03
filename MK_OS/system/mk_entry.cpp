@@ -89,6 +89,14 @@ namespace Color {
 #include "../ai_core/genesis/genesis_engine.cpp"
 #include "../ai_core/idea_engine.cpp"
 #include "../plugins/pc_helper.cpp"
+#include "../crypto/market_data.cpp"
+#include "../crypto/technical_analysis.cpp"
+#include "../crypto/signal_engine.cpp"
+#include "../crypto/portfolio_manager.cpp"
+#include "../crypto/risk_manager.cpp"
+#include "../crypto/exchange_api.cpp"
+#include "../crypto/trading_bot.cpp"
+#include "../crypto/airdrop_farmer.cpp"
 
 // ============================================================
 // Global state
@@ -228,6 +236,16 @@ struct MKSystem {
     MKPCHelper pcHelper;
     MKGenesisEngine genesis;
 
+    // Crypto trading subsystem
+    MKMarketData cryptoMarketData;
+    MKTechnicalAnalysis cryptoTechnicalAnalysis;
+    MKSignalEngine cryptoSignalEngine;
+    MKPortfolioManager cryptoPortfolioManager;
+    MKRiskManager cryptoRiskManager;
+    MKExchangeAPI cryptoExchangeApi;
+    std::unique_ptr<MKTradingBot> cryptoTradingBot;
+    MKAirdropFarmer cryptoAirdropFarmer;
+
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
     // calls telegram methods must hold this lock.
@@ -273,6 +291,12 @@ struct MKSystem {
         // Initialize neural net with a tiny config (untrained, not used in hot path)
         // The GENERATE route gracefully falls back to MKComposer instead.
         neuralNet.init(256, 32, 1, 64);
+
+        // Initialize crypto trading bot (paper mode by default)
+        cryptoTradingBot = std::make_unique<MKTradingBot>(
+            cryptoMarketData, cryptoTechnicalAnalysis, cryptoSignalEngine,
+            cryptoPortfolioManager, cryptoRiskManager, cryptoExchangeApi);
+        cryptoExchangeApi.initialize("crypto_config.txt");
     }
 
     ~MKSystem() = default;
@@ -1197,6 +1221,7 @@ int main(int argc, char* argv[]) {
 
     // Step 4: Load knowledge
     sys.graph.loadAllKnowledge();
+    sys.graph.loadFromFile("../../../crypto/crypto_knowledge.mk");
 
     // Step 4a: Index all knowledge into vector search for semantic retrieval
     {

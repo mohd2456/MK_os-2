@@ -1,0 +1,7 @@
+{
+  "task_id": "task-mk-living-ai",
+  "task_description": "Transform MK OS into a living autonomous AI that makes money from crypto trading, manages homelab infrastructure, syncs knowledge across all devices, develops mastery over skills, communicates via Telegram from phone, checks device resources before acting (never crashes), has Python automation scripts, proper Linux integration, and a massive knowledge base of 15,000+ facts. The Mind system provides goal-driven autonomy with Think-Act-Evaluate-Learn loops.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005"],
+  "blocked_reason": null
+}

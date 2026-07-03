@@ -1,0 +1,35 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Crypto Trading System - Full autonomous cryptocurrency trading engine with market monitoring, technical analysis, signal generation, portfolio management, risk control, and exchange API integration. This is the money-making brain of MK.",
+  "status": "in_progress",
+  "steps": [
+    "Create MK_OS/crypto/ directory for the entire crypto subsystem",
+    "Create MK_OS/crypto/market_data.cpp - Real-time price fetching from CoinGecko/Binance public APIs using libcurl. Class MKMarketData with methods: fetchPrice(symbol), fetchOHLC(symbol,interval), fetchOrderBook(symbol), fetchVolume(symbol). Store price history in memory for analysis. Include rate limiting.",
+    "Create MK_OS/crypto/technical_analysis.cpp - Class MKTechnicalAnalysis implementing: RSI (14-period), MACD (12,26,9), Bollinger Bands (20,2), EMA/SMA calculations, Volume Weighted Average Price (VWAP), Support/Resistance detection, Moving Average crossover detection, Fibonacci retracement levels. All pure math on price arrays.",
+    "Create MK_OS/crypto/signal_engine.cpp - Class MKSignalEngine that combines technical indicators into buy/sell/hold signals. Implements: multi-timeframe analysis, signal strength scoring (0-100), signal history tracking, backtesting on historical data, false signal filtering. Each signal has confidence, reasoning text, and timestamp.",
+    "Create MK_OS/crypto/portfolio_manager.cpp - Class MKPortfolioManager tracking: holdings (coin, amount, avg_buy_price, current_value), total portfolio value, PnL per position, allocation percentages, rebalancing suggestions, DCA (Dollar Cost Averaging) schedule management. Persists to SQLite.",
+    "Create MK_OS/crypto/risk_manager.cpp - Class MKRiskManager enforcing: position size limits (never >20% in one coin), stop-loss levels, daily loss limits, drawdown protection (pause trading if portfolio drops >10% in 24h), volatility-adjusted position sizing, correlation-based diversification rules.",
+    "Create MK_OS/crypto/exchange_api.cpp - Class MKExchangeAPI with abstract interface for exchange operations: placeOrder(side,symbol,qty,type), cancelOrder(id), getBalance(), getOpenOrders(). Implementations for Binance (spot) using their REST API with HMAC-SHA256 signing. API keys loaded from config file.",
+    "Create MK_OS/crypto/trading_bot.cpp - Class MKTradingBot as the orchestrator: runs the autonomous trading loop (scan markets -> analyze -> generate signals -> check risk -> execute -> monitor). Includes paper trading mode (no real money), live trading mode, performance reporting, trade journal logging.",
+    "Create MK_OS/crypto/airdrop_farmer.cpp - Class MKAirdropFarmer that tracks upcoming airdrops, requirements to qualify, task completion status, estimated values. Maintains a list of protocols and their airdrop criteria.",
+    "Create MK_OS/crypto/crypto_knowledge.mk - Knowledge file with 500+ crypto facts: major coins, DeFi protocols, exchange info, trading strategies, blockchain concepts, historical events, market psychology terms.",
+    "Add #include directives for all crypto modules in system/mk_entry.cpp and add MKTradingBot to the MKSystem struct with proper initialization",
+    "Update the Makefile to list crypto source files in a comment for reference (build still works via single compilation unit)"
+  ],
+  "acceptance_criteria": [
+    "All crypto .cpp files compile without errors when included via mk_entry.cpp",
+    "make in MK_OS/ produces mk_os binary with zero errors",
+    "make test still passes all existing tests",
+    "MKTechnicalAnalysis correctly calculates RSI, MACD, and Bollinger Bands on sample data",
+    "MKRiskManager rejects orders that exceed position limits",
+    "MKTradingBot can run in paper trading mode without crashes",
+    "crypto_knowledge.mk contains 500+ valid pipe-delimited facts"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

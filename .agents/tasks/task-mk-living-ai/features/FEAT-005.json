@@ -1,0 +1,34 @@
+{
+  "id": "FEAT-005",
+  "type": "feat",
+  "description": "Integration, Testing, and Final Wiring - Wire everything together into the main system, add comprehensive tests for all new modules, ensure the autonomous loop works end-to-end, and verify the entire system builds and runs. Add the MK OS configuration system that ties together crypto, homelab, mind, sync, and telegram into one coherent autonomous agent.",
+  "status": "pending",
+  "steps": [
+    "Create MK_OS/config/ directory",
+    "Create MK_OS/config/mk_config.cpp - Class MKConfig that loads configuration from ~/.mk_os/config.json. Settings include: telegram_token, exchange_api_key, exchange_api_secret, devices[] (hostname, ip, ssh_key), trading_mode (paper/live), risk_limits, sync_interval, learning_schedule, cgroup_limits. Provides typed getters. Validates on load.",
+    "Create MK_OS/config/default_config.json - Default configuration template with all settings documented. Paper trading by default. Conservative risk limits. 5-minute sync interval. Nighttime learning schedule.",
+    "Update MK_OS/system/mk_entry.cpp to: include all new modules (crypto/, mind/, homelab/, sync/, config/, linux/drivers/), add them to MKSystem struct, wire up the autonomous loop in the daemon (goal engine ticks, trading bot scans, knowledge sync runs on schedule, resource monitor checks before heavy tasks)",
+    "Update MK_OS/system/daemon.cpp to register new scheduled jobs: crypto market scan (every 5 min), knowledge sync (every 5 min), device health check (every 1 min), autonomous learning (every 30 min during idle), goal evaluation (every 15 min), portfolio rebalance check (every 1 hour)",
+    "Update MK_OS/ai_core/smart_router.cpp to add new route types: CRYPTO (for crypto questions/commands), HOMELAB (for device/service management), MIND (for goals/mastery/strategy queries). Add keywords for routing to these new modules.",
+    "Update MK_OS/tests/test_main.cpp to add tests for: MKTechnicalAnalysis (RSI calculation, MACD, Bollinger Bands), MKRiskManager (position limits, drawdown detection), MKDeviceRegistry (add/remove/find devices), MKResourceMonitor (resource check logic), MKGoalEngine (goal creation, step breakdown), MKKnowledgeSync (conflict resolution), MKMasteryNetwork (skill leveling), MKConfig (config loading). At least 20 new test cases with 100+ assertions.",
+    "Create MK_OS/mk_wrapper_enhanced.sh - Enhanced wrapper script that checks system resources before starting MK, sets up cgroups if available, configures environment variables, starts the Python device_monitor in background, then launches the MK binary. Implements the 'don't crash' first principle.",
+    "Update MK_OS/Makefile to add targets: 'tools-python' (validate Python syntax), 'lint' (run basic checks), 'full-test' (build + test + python check + shell check)"
+  ],
+  "acceptance_criteria": [
+    "make in MK_OS/ compiles the entire system with zero errors",
+    "make test passes ALL tests (old and new) - minimum 30 test cases, 250+ assertions",
+    "Smart router correctly routes crypto/homelab/mind queries to new modules",
+    "Configuration system loads and validates settings",
+    "Daemon has all scheduled jobs registered",
+    "mk_entry.cpp includes all new modules and MKSystem struct has all new members",
+    "Wrapper script passes bash -n syntax check",
+    "The system can start up, run the autonomous loop, and gracefully shut down"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && make test",
+    "cd MK_OS && bash -n mk_wrapper_enhanced.sh"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

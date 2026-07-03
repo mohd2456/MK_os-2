@@ -1,0 +1,49 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Enhanced Telegram + Python Automation Scripts + Linux System Integration - Upgrade Telegram to be the primary mobile interface with rich commands, add Python scripts for flexible automation (content generation, web scraping, data analysis), and add proper Linux system integration (systemd service, real hardware monitoring, cgroups awareness).",
+  "status": "pending",
+  "steps": [
+    "Upgrade MK_OS/plugins/telegram.cpp - Add new command handlers: /crypto (show portfolio, prices, signals), /devices (list all devices, their status), /goals (show current goals and progress), /earn (show earnings summary), /homelab (Docker/service status), /think <topic> (deep reasoning with result sent back), /sync (trigger manual knowledge sync), /teach <fact> (learn from phone). Add inline keyboard support for navigation. Add photo sending capability for charts.",
+    "Create MK_OS/python/ directory for Python automation scripts",
+    "Create MK_OS/python/crypto_monitor.py - Real-time crypto price monitoring script using CoinGecko free API. Outputs JSON with prices, 24h changes, volume. Called by the C++ trading bot for fresh data. Handles rate limits gracefully.",
+    "Create MK_OS/python/content_generator.py - AI content generation using local LLM API (Ollama). Generates blog posts, social media content, code documentation. Takes topic and style as arguments. Output to stdout as JSON.",
+    "Create MK_OS/python/web_scraper.py - Intelligent web scraping for knowledge gathering. Uses requests + BeautifulSoup. Extracts facts from Wikipedia, news sites, crypto sites. Outputs in .mk format (source|relation|target|weight). Respects robots.txt. Rate limited.",
+    "Create MK_OS/python/data_analyzer.py - Data analysis tool for portfolio performance, system metrics, learning progress. Uses standard lib (no numpy dependency). Calculates: moving averages, standard deviation, trends, anomaly detection. Outputs JSON reports.",
+    "Create MK_OS/python/airdrop_tracker.py - Tracks DeFi protocol airdrops. Scrapes airdrop aggregator sites. Maintains JSON database of opportunities with requirements, deadlines, estimated values.",
+    "Create MK_OS/python/knowledge_expander.py - Autonomous knowledge expansion. Given a topic, searches the web, extracts facts, validates them against existing knowledge, and outputs new .mk entries. Can run on a schedule to continuously grow MK's knowledge base.",
+    "Create MK_OS/python/device_monitor.py - System monitoring script that runs on each device. Reports: CPU usage, RAM usage, temperature, disk space, network IO, running processes. Outputs JSON. Used by the homelab controller.",
+    "Create MK_OS/python/requirements.txt - List all Python dependencies: requests, beautifulsoup4, and standard library only (keep lightweight)",
+    "Create MK_OS/linux/ directory for Linux system integration",
+    "Create MK_OS/linux/mk_os.service - systemd unit file for running MK as a system service. Restart on failure. After=network.target. User=mk. WorkingDirectory and ExecStart configured.",
+    "Create MK_OS/linux/mk_cgroups.sh - Script to set up cgroups v2 resource limits for MK process. Limits CPU to configurable percentage, memory to configurable cap. Prevents MK from using more than its fair share.",
+    "Create MK_OS/linux/hardware_monitor.sh - Shell script that reads /sys/class/thermal/, /proc/meminfo, /proc/cpuinfo, lsblk, sensors output. Provides unified JSON output of all hardware stats.",
+    "Create MK_OS/linux/network_discovery.sh - Script using nmap or arping to discover devices on LAN. Outputs JSON list of found hosts with IPs and MAC addresses.",
+    "Create MK_OS/linux/docker_helper.sh - Wrapper script for common Docker operations: deploy a stack, backup volumes, prune images, check health of all containers.",
+    "Create MK_OS/linux/mk_startup.sh - Boot script that checks hardware resources, sets up cgroups, starts the MK daemon, and begins monitoring. The safe startup sequence.",
+    "Create MK_OS/linux/drivers/ directory with enhanced Linux driver interfaces",
+    "Create MK_OS/linux/drivers/gpu_monitor.cpp - Class MKGPUMonitor reading /sys/class/drm/ for GPU stats (temperature, usage, VRAM). Supports AMD (amdgpu) and Intel integrated. Used to decide if GPU-heavy tasks are safe.",
+    "Create MK_OS/linux/drivers/network_interface.cpp - Class MKNetworkInterface reading /sys/class/net/ for network stats. Bandwidth monitoring, interface status, IP discovery. Used for mesh network and device communication.",
+    "Create MK_OS/linux/drivers/storage_monitor.cpp - Class MKStorageMonitor reading disk usage, SMART data (if available), IO stats from /proc/diskstats. Warns when storage is low.",
+    "Add Linux driver modules to mk_entry.cpp includes",
+    "Update Makefile to add a 'python-deps' target that installs Python requirements"
+  ],
+  "acceptance_criteria": [
+    "Telegram plugin compiles with new commands without errors",
+    "All Python scripts run with python3 without syntax errors",
+    "python3 -c 'import ast; ast.parse(open(f).read())' works for each .py file",
+    "Linux shell scripts pass bash -n syntax check",
+    "systemd service file has valid syntax",
+    "GPU/Network/Storage monitor classes compile into the main binary",
+    "make in MK_OS/ succeeds with zero errors",
+    "make test passes all existing and new tests"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && make test",
+    "cd MK_OS && python3 -c \"import ast, glob; [ast.parse(open(f).read()) for f in glob.glob('python/*.py')]\"",
+    "cd MK_OS && bash -n linux/*.sh"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
