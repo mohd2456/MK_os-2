@@ -90,12 +90,14 @@ static int g_assertions_failed = 0;
 #include "../crypto/trading_bot.cpp"
 #include "../homelab/device_registry.cpp"
 #include "../homelab/resource_monitor.cpp"
+#include "../homelab/ssh_controller.cpp"
 #include "../mind/mastery_network.cpp"
 #include "../mind/goal_engine.cpp"
 #include "../mind/self_funding.cpp"
-#include "../mind/autonomous_learner.cpp"
 #include "../mind/knowledge_validator.cpp"
+#include "../mind/autonomous_learner.cpp"
 #include "../sync/knowledge_sync.cpp"
+#include "../sync/device_comm.cpp"
 #include "../config/mk_config.cpp"
 
 // Integration tests
@@ -769,6 +771,9 @@ int main() {
     RUN_TEST(test_smart_router_crypto);
     RUN_TEST(test_smart_router_homelab);
     RUN_TEST(test_smart_router_mind);
+    RUN_TEST(test_hmac_sha256_rfc4231);
+    RUN_TEST(test_device_comm_auth_validation);
+    RUN_TEST(test_ssh_controller_shell_escape);
     RUN_TEST(test_autonomous_learner_session);
 
     std::cout << std::endl;

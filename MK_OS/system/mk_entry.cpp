@@ -103,8 +103,8 @@ namespace Color {
 #include "../mind/goal_engine.cpp"
 #include "../mind/strategy_planner.cpp"
 #include "../mind/self_funding.cpp"
-#include "../mind/autonomous_learner.cpp"
 #include "../mind/knowledge_validator.cpp"
+#include "../mind/autonomous_learner.cpp"
 
 // Homelab subsystem - Device management and orchestration
 #include "../homelab/device_registry.cpp"
@@ -994,39 +994,141 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             break;
         }
         case MKRouteType::CRYPTO: {
-            // Route crypto-related queries through knowledge graph with crypto focus
-            auto results = sys.graph.getAll(input);
-            if (!results.empty()) {
-                for (const auto& e : results) {
-                    response += e.source + " " + e.relation + " " + e.target + ". ";
+            // Route crypto-related queries through market data and signal engine
+            std::string lower = input;
+            std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+
+            // Try to show live crypto data: prices and signals
+            auto stats = sys.cryptoTradingBot->getStats();
+            std::ostringstream cryptoResp;
+
+            // Get portfolio info
+            auto snapshot = sys.cryptoPortfolioManager.getSnapshot();
+            if (!snapshot.holdings.empty()) {
+                cryptoResp << "Portfolio: ";
+                for (const auto& h : snapshot.holdings) {
+                    cryptoResp << h.symbol << "=" << h.amount << " ";
                 }
-                confidence = 0.8f;
-                answered = true;
+                cryptoResp << ". ";
             }
+
+            // Get recent signals summary
+            const auto& signalHistory = sys.cryptoSignalEngine.getSignalHistory();
+            if (!signalHistory.empty()) {
+                cryptoResp << "Recent signals: ";
+                int shown = 0;
+                for (auto it = signalHistory.rbegin(); it != signalHistory.rend() && shown < 5; ++it, ++shown) {
+                    cryptoResp << it->symbol << " ";
+                    if (it->type == MKSignalType::BUY || it->type == MKSignalType::STRONG_BUY)
+                        cryptoResp << "BUY";
+                    else if (it->type == MKSignalType::SELL || it->type == MKSignalType::STRONG_SELL)
+                        cryptoResp << "SELL";
+                    else
+                        cryptoResp << "HOLD";
+                    cryptoResp << "(str:" << it->strength << ") ";
+                }
+                cryptoResp << ". ";
+            }
+
+            // Bot stats
+            cryptoResp << "Bot mode: " << (sys.cryptoExchangeApi.isInitialized() ? "LIVE" : "PAPER");
+            cryptoResp << " | Total trades: " << stats.totalTrades;
+            cryptoResp << " | Signals generated: " << stats.signalsGenerated;
+
+            response = cryptoResp.str();
+
+            // Also look up knowledge graph for additional crypto context
+            if (response.empty()) {
+                auto results = sys.graph.getAll(input);
+                if (!results.empty()) {
+                    for (const auto& e : results) {
+                        response += e.source + " " + e.relation + " " + e.target + ". ";
+                    }
+                }
+            }
+            confidence = 0.8f;
+            answered = !response.empty();
             break;
         }
         case MKRouteType::HOMELAB: {
-            // Route homelab/device queries through knowledge graph
-            auto results = sys.graph.getAll(input);
-            if (!results.empty()) {
-                for (const auto& e : results) {
-                    response += e.source + " " + e.relation + " " + e.target + ". ";
+            // Route homelab/device queries through device registry and resource monitor
+            std::ostringstream homelabResp;
+
+            auto devices = sys.deviceRegistry.getOnlineDevices();
+            int totalDevices = sys.deviceRegistry.deviceCount();
+            if (totalDevices > 0) {
+                homelabResp << "Registered devices (" << totalDevices << ", "
+                           << devices.size() << " online): ";
+                for (const auto& dev : devices) {
+                    homelabResp << dev.hostname << "(" << dev.ip << ", ";
+                    if (dev.status == MKDeviceStatus::ONLINE)
+                        homelabResp << "online";
+                    else if (dev.status == MKDeviceStatus::OFFLINE)
+                        homelabResp << "offline";
+                    else
+                        homelabResp << "unknown";
+                    homelabResp << ") ";
                 }
-                confidence = 0.7f;
-                answered = true;
+                homelabResp << ". ";
+            } else {
+                homelabResp << "No homelab devices registered yet. ";
             }
+
+            // Resource monitor summary
+            auto localRes = sys.resourceMonitor.getLocalResources();
+            if (localRes.valid) {
+                homelabResp << "Local: CPU " << (int)localRes.cpu_usage_percent << "%, "
+                           << "RAM " << localRes.available_ram_mb << "/" << localRes.total_ram_mb << "MB, "
+                           << "Temp " << (int)localRes.temperature_celsius << "C. ";
+            }
+
+            // SSH controller summary
+            homelabResp << "SSH controller: " << sys.sshController.deviceCount() << " hosts configured.";
+
+            response = homelabResp.str();
+            confidence = 0.7f;
+            answered = !response.empty();
             break;
         }
         case MKRouteType::MIND: {
-            // Route mind/goals/strategy queries through knowledge graph
-            auto results = sys.graph.getAll(input);
-            if (!results.empty()) {
-                for (const auto& e : results) {
-                    response += e.source + " " + e.relation + " " + e.target + ". ";
+            // Route mind/goals/strategy queries through goal engine and mastery network
+            std::ostringstream mindResp;
+
+            // Active goals
+            auto goals = sys.goalEngine.getActiveGoals();
+            if (!goals.empty()) {
+                mindResp << "Active goals (" << goals.size() << "): ";
+                for (const auto& g : goals) {
+                    mindResp << "\"" << g.description << "\" (";
+                    mindResp << (int)g.progress << "% done, ";
+                    if (g.priority == MKGoalPriority::CRITICAL) mindResp << "CRITICAL";
+                    else if (g.priority == MKGoalPriority::HIGH) mindResp << "HIGH";
+                    else if (g.priority == MKGoalPriority::MEDIUM) mindResp << "MEDIUM";
+                    else mindResp << "LOW";
+                    mindResp << ") ";
                 }
-                confidence = 0.7f;
-                answered = true;
+                mindResp << ". ";
+            } else {
+                mindResp << "No active goals. ";
             }
+
+            // Mastery info
+            mindResp << "Mastery: ";
+            std::vector<std::string> skillNames = {"crypto_trading", "coding", "analysis", "conversation"};
+            for (const auto& s : skillNames) {
+                float level = sys.masteryNetwork.getSkillLevel(s);
+                if (level > 0.0f) {
+                    mindResp << s << "=" << (int)level << " ";
+                }
+            }
+            mindResp << ". ";
+
+            // Completed goal count
+            mindResp << "Completed goals: " << sys.goalEngine.completedCount() << ".";
+
+            response = mindResp.str();
+            confidence = 0.7f;
+            answered = !response.empty();
             break;
         }
     }
@@ -1482,7 +1584,24 @@ int main(int argc, char* argv[]) {
     sys.daemon.addJob("autonomous_learn", 1800, [&sys]() {
         // Autonomous learning every 30 minutes (only during learning hours)
         if (sys.config.isLearningHour()) {
-            auto session = sys.autonomousLearner.startSession("auto_explore");
+            auto topic = sys.autonomousLearner.pickNextTopic();
+            auto session = sys.autonomousLearner.startSession(topic.topic);
+            // Call web scraper and validate results through knowledge validator
+            auto acceptedFacts = sys.autonomousLearner.learnFromWeb(
+                topic.topic, sys.knowledgeValidator, session, 20);
+            // Integrate accepted facts into the knowledge graph
+            for (const auto& fact : acceptedFacts) {
+                std::istringstream ss(fact);
+                std::string src, rel, tgt, wStr;
+                if (std::getline(ss, src, '|') && std::getline(ss, rel, '|') &&
+                    std::getline(ss, tgt, '|')) {
+                    float w = 0.7f;
+                    if (std::getline(ss, wStr, '|') && !wStr.empty()) {
+                        try { w = std::stof(wStr); } catch (...) {}
+                    }
+                    sys.graph.persistNewFact(src, rel, tgt, w);
+                }
+            }
             sys.autonomousLearner.endSession(session);
         }
     }, true);  // requires cool

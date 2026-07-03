@@ -16,6 +16,9 @@
 #include <algorithm>
 #include <iomanip>
 #include <curl/curl.h>
+#ifndef _WIN32
+#include <sys/stat.h>
+#endif
 
 // ============================================================
 // Data Structures
@@ -393,6 +396,23 @@ public:
         if (!configPath.empty()) {
             std::ifstream file(configPath);
             if (file.is_open()) {
+                // Defense-in-depth: check file permissions on Linux/macOS
+                // Warn if config file with secrets is readable by group/others
+                #ifndef _WIN32
+                {
+                    struct stat fileStat;
+                    if (stat(configPath.c_str(), &fileStat) == 0) {
+                        mode_t perms = fileStat.st_mode & 0777;
+                        if (perms & 0077) {
+                            // File is readable by group or others
+                            std::cerr << "[SECURITY WARNING] " << configPath
+                                      << " has permissions " << std::oct << perms << std::dec
+                                      << ". API secrets should only be readable by owner (0600)."
+                                      << " Run: chmod 600 " << configPath << std::endl;
+                        }
+                    }
+                }
+                #endif
                 std::string line;
                 while (std::getline(file, line)) {
                     size_t eq = line.find('=');

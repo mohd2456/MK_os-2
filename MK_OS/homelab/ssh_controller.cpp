@@ -43,6 +43,21 @@ private:
     int max_retries;
     std::vector<std::string> execution_log;
 
+    // Escape a string for safe inclusion inside single quotes.
+    // Every single quote in the input becomes: '\'' (end quote, escaped quote, start quote).
+    static std::string shellEscapeSingleQuotes(const std::string& input) {
+        std::string escaped;
+        escaped.reserve(input.size() + 16);
+        for (char c : input) {
+            if (c == '\'') {
+                escaped += "'\\''";
+            } else {
+                escaped += c;
+            }
+        }
+        return escaped;
+    }
+
     // Build the SSH command string
     std::string buildSSHCommand(const MKSSHConfig& config, const std::string& remote_cmd) const {
         std::ostringstream cmd;
@@ -59,7 +74,8 @@ private:
             cmd << " -p " << config.port;
         }
         cmd << " " << config.user << "@" << config.ip;
-        cmd << " '" << remote_cmd << "'";
+        // Sanitize remote command to prevent shell injection via single-quote breakout
+        cmd << " '" << shellEscapeSingleQuotes(remote_cmd) << "'";
         cmd << " 2>&1";
         return cmd.str();
     }

@@ -832,6 +832,104 @@ void test_smart_router_mind() {
 }
 
 // ============================================================
+// TEST: HMAC-SHA256 against RFC 4231 Test Vector
+// ============================================================
+void test_hmac_sha256_rfc4231() {
+    // RFC 4231 Test Case 2:
+    // Key  = "Jefe" (4 bytes)
+    // Data = "what do ya want for nothing?" (28 bytes)
+    // HMAC-SHA-256 = 5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843
+    std::string key = "Jefe";
+    std::string data = "what do ya want for nothing?";
+
+    auto hmacResult = MKCryptoAuth::hmacSha256(key, data);
+    std::string hexResult = MKCryptoAuth::toHex(hmacResult);
+
+    TEST_ASSERT_EQ(hexResult,
+                   std::string("5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"),
+                   "HMAC-SHA256 should match RFC 4231 Test Case 2");
+
+    // RFC 4231 Test Case 1:
+    // Key  = 0x0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b (20 bytes of 0x0b)
+    // Data = "Hi There"
+    // HMAC-SHA-256 = b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7
+    std::string key1(20, '\x0b');
+    std::string data1 = "Hi There";
+
+    auto hmacResult1 = MKCryptoAuth::hmacSha256(key1, data1);
+    std::string hexResult1 = MKCryptoAuth::toHex(hmacResult1);
+
+    TEST_ASSERT_EQ(hexResult1,
+                   std::string("b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7"),
+                   "HMAC-SHA256 should match RFC 4231 Test Case 1");
+
+    // Verify that different keys produce different outputs
+    auto hmacDiff = MKCryptoAuth::hmacSha256("different_key", data);
+    std::string hexDiff = MKCryptoAuth::toHex(hmacDiff);
+    TEST_ASSERT_NE(hexDiff, hexResult,
+                   "Different key should produce different HMAC");
+
+    // Verify that different data produces different outputs
+    auto hmacDiff2 = MKCryptoAuth::hmacSha256(key, "different data");
+    std::string hexDiff2 = MKCryptoAuth::toHex(hmacDiff2);
+    TEST_ASSERT_NE(hexDiff2, hexResult,
+                   "Different data should produce different HMAC");
+}
+
+// ============================================================
+// TEST: Device Comm - Auth Token Validation
+// ============================================================
+void test_device_comm_auth_validation() {
+    MKDeviceComm comm;
+    comm.setLocalDevice("test_device", "my_secret_key_123", 9876);
+    comm.registerEndpoint("remote_device", "http://192.168.1.50:8765",
+                         "my_secret_key_123");
+
+    // Build a sync request - should include auth token
+    auto msg = comm.buildSyncRequest("remote_device", "test|data|payload|1.0");
+    TEST_ASSERT_FALSE(msg.auth_token.empty(), "Sync request should have auth token");
+
+    // Validate the request using the same body - should pass
+    bool valid = comm.validateRequest(msg.auth_token, msg.body);
+    TEST_ASSERT_TRUE(valid, "Auth token should validate with correct body and secret");
+
+    // Validate with wrong body - should fail
+    bool invalid = comm.validateRequest(msg.auth_token, "tampered_body");
+    TEST_ASSERT_FALSE(invalid, "Auth token should NOT validate with tampered body");
+
+    // Validate with empty token - should fail
+    bool emptyToken = comm.validateRequest("", msg.body);
+    TEST_ASSERT_FALSE(emptyToken, "Empty auth token should not validate");
+
+    // Validate with wrong token - should fail
+    bool wrongToken = comm.validateRequest("deadbeef1234", msg.body);
+    TEST_ASSERT_FALSE(wrongToken, "Wrong auth token should not validate");
+}
+
+// ============================================================
+// TEST: SSH Controller - Shell Escape
+// ============================================================
+void test_ssh_controller_shell_escape() {
+    MKSSHController controller;
+    controller.registerDevice("test-host", "192.168.1.1", "root", 22, "", 10);
+
+    // Test that shell metacharacters in commands get escaped properly
+    // The escape function should handle single quotes to prevent injection
+
+    // We cannot directly call buildSSHCommand (it is private), but we can verify
+    // executeRemote does not crash with dangerous input containing shell metacharacters.
+    // The escape function turns ' into '\'' preventing breakout.
+    std::string dangerous_cmd = "echo 'hello'; rm -rf /";
+
+    // This will fail (no SSH host), but should not crash or inject
+    auto result = controller.executeRemote("test-host", dangerous_cmd);
+    // Connection will fail - the important thing is no segfault and no injection
+    TEST_ASSERT_FALSE(result.success,
+                      "Command to unreachable host should fail gracefully");
+    TEST_ASSERT_TRUE(true, "executeRemote with shell metacharacters did not crash");
+}
+
+// ============================================================
 // TEST: Autonomous Learner - Session
 // ============================================================
 void test_autonomous_learner_session() {

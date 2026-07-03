@@ -9,6 +9,8 @@
 #include <sstream>
 #include <random>
 #include <set>
+#include <array>
+#include <cstdio>
 
 // ===================================================================================
 // MK AUTONOMOUS LEARNER - Curiosity-Driven Knowledge Expansion
@@ -203,6 +205,71 @@ public:
 
         // Log the session
         logSession(session);
+    }
+
+    // Run the full autonomous learning pipeline for a topic:
+    // 1. Call web_scraper.py via popen() to fetch facts
+    // 2. Parse the output into candidate facts
+    // 3. Validate each fact through MKKnowledgeValidator
+    // 4. Accept validated facts into the session
+    // Returns the list of accepted fact lines ready for graph integration
+    std::vector<std::string> learnFromWeb(const std::string& topic,
+                                           MKKnowledgeValidator& validator,
+                                           LearningSession& session,
+                                           int max_facts = 30) {
+        std::vector<std::string> accepted_facts;
+        learning_active_ = true;
+
+        // Build command to call the Python web scraper
+        std::string cmd = "python3 python/web_scraper.py --topic \"";
+        // Sanitize topic: remove shell-dangerous characters
+        std::string safe_topic;
+        for (char c : topic) {
+            if (c == '"' || c == '\\' || c == '$' || c == '`' || c == '!') {
+                safe_topic += '_';
+            } else {
+                safe_topic += c;
+            }
+        }
+        cmd += safe_topic + "\" --output-format mk --max-facts " + std::to_string(max_facts);
+        cmd += " 2>/dev/null";
+
+        // Execute the scraper via popen
+        std::string scraperOutput;
+        std::array<char, 4096> buffer;
+        FILE* pipe = popen(cmd.c_str(), "r");
+        if (pipe) {
+            while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe) != nullptr) {
+                scraperOutput += buffer.data();
+            }
+            pclose(pipe);
+        }
+
+        if (scraperOutput.empty()) {
+            // Scraper returned nothing (network issue, topic not found, etc.)
+            return accepted_facts;
+        }
+
+        // Parse the output into candidate facts
+        auto candidates = parseScraperOutput(scraperOutput);
+
+        // Validate each candidate fact through the knowledge validator
+        for (const auto& fact_line : candidates) {
+            session.facts_attempted++;
+
+            auto report = validator.validate(fact_line, "web_scraper");
+            if (report.result == ValidationResult::ACCEPT) {
+                accepted_facts.push_back(fact_line);
+                session.facts_accepted++;
+                total_facts_learned_++;
+            } else {
+                session.facts_rejected++;
+                total_facts_rejected_++;
+            }
+        }
+
+        session.source = "web_scraper:" + safe_topic;
+        return accepted_facts;
     }
 
     // Generate a Python scraper command for a topic

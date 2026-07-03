@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-006",
+  "type": "fix",
+  "description": "Address 7 issues from semantic review: shell injection fix in SSH controller, device-comm HMAC auth, route dispatch for CRYPTO/HOMELAB/MIND, plaintext API secret permission check, HMAC-SHA256 test vector, autonomous learner implementation, and related fixes.",
+  "status": "in_progress",
+  "steps": [
+    "Fix shell injection in ssh_controller.cpp by escaping single quotes in remote_cmd",
+    "Add HMAC-based message authentication to device_comm.cpp using the MKCryptoAuth namespace from exchange_api.cpp",
+    "Fix CRYPTO/HOMELAB/MIND route dispatch in mk_entry.cpp to call subsystem-specific logic",
+    "Add file permission check (0600) when loading API secrets in exchange_api.cpp",
+    "Add HMAC-SHA256 known-answer test (RFC 4231 vector) to test_integration.cpp",
+    "Implement actual learning logic in autonomous_learner.cpp that calls web_scraper.py via popen and passes results through knowledge validator"
+  ],
+  "acceptance_criteria": [
+    "SSH controller escapes single quotes in remote commands before passing to shell",
+    "Device comm validates auth_token on inbound requests using HMAC verification",
+    "CRYPTO route shows market data/signals, HOMELAB route shows device info, MIND route shows goals/mastery",
+    "Exchange API warns if config file permissions are too open (not 0600)",
+    "HMAC-SHA256 test against RFC 4231 test vector passes",
+    "Autonomous learner calls popen(web_scraper.py) and validates results through knowledge_validator",
+    "make clean && make compiles with zero errors",
+    "make test passes all tests including new HMAC test"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": null
+}

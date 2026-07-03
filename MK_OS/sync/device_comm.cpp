@@ -88,26 +88,39 @@ private:
     int next_task_id;
     int max_log_size;
 
-    // Generate auth token from shared secret + timestamp
-    std::string generateAuthToken(const std::string& secret, std::time_t timestamp) const {
-        // Simple HMAC-like token: hash(secret + timestamp)
-        // In production, use proper HMAC-SHA256
-        unsigned long hash = 5381;
-        std::string input = secret + std::to_string(timestamp);
-        for (char c : input) {
-            hash = ((hash << 5) + hash) + static_cast<unsigned long>(c);
-        }
-        std::ostringstream ss;
-        ss << std::hex << hash;
-        return ss.str();
+    // Generate HMAC-SHA256 auth token from shared secret + message body.
+    // Uses MKCryptoAuth::hmacSha256 and toHex from exchange_api.cpp.
+    std::string generateAuthToken(const std::string& secret, const std::string& body) const {
+        auto hmac = MKCryptoAuth::hmacSha256(secret, body);
+        return MKCryptoAuth::toHex(hmac);
     }
 
-    // Verify auth token
+    // Legacy overload for timestamp-only (used by buildStatusRequest where body is empty)
+    std::string generateAuthToken(const std::string& secret, std::time_t timestamp) const {
+        return generateAuthToken(secret, std::to_string(timestamp));
+    }
+
+    // Verify HMAC auth token against message body and shared secret.
+    // Checks the token matches HMAC(secret, body).
+    bool verifyAuthToken(const std::string& token, const std::string& secret,
+                         const std::string& body) const {
+        std::string expected = generateAuthToken(secret, body);
+        // Constant-time comparison to prevent timing attacks
+        if (token.size() != expected.size()) return false;
+        unsigned char result = 0;
+        for (size_t i = 0; i < token.size(); i++) {
+            result |= static_cast<unsigned char>(token[i]) ^
+                      static_cast<unsigned char>(expected[i]);
+        }
+        return result == 0;
+    }
+
+    // Legacy overload for backward compatibility: verify with timestamp window
     bool verifyAuthToken(const std::string& token, const std::string& secret) const {
         // Verify against recent timestamps (within 5 min window)
         std::time_t now = std::time(nullptr);
         for (int offset = -300; offset <= 300; offset += 60) {
-            std::string expected = generateAuthToken(secret, now + offset);
+            std::string expected = generateAuthToken(secret, std::to_string(now + offset));
             if (token == expected) return true;
         }
         return false;
@@ -160,7 +173,8 @@ public:
 
         auto it = endpoints.find(target_device);
         if (it != endpoints.end()) {
-            msg.auth_token = generateAuthToken(it->second.shared_secret, msg.sent_at);
+            // HMAC the full body so recipient can verify integrity + authenticity
+            msg.auth_token = generateAuthToken(it->second.shared_secret, msg.body);
         }
         return msg;
     }
@@ -178,7 +192,9 @@ public:
 
         auto it = endpoints.find(target_device);
         if (it != endpoints.end()) {
-            msg.auth_token = generateAuthToken(it->second.shared_secret, msg.sent_at);
+            // For GET requests with empty body, HMAC the timestamp as body
+            msg.auth_token = generateAuthToken(it->second.shared_secret,
+                                               std::to_string(msg.sent_at));
         }
         return msg;
     }
@@ -198,7 +214,8 @@ public:
 
         auto it = endpoints.find(target_device);
         if (it != endpoints.end()) {
-            msg.auth_token = generateAuthToken(it->second.shared_secret, msg.sent_at);
+            // HMAC the full body for integrity + authenticity
+            msg.auth_token = generateAuthToken(it->second.shared_secret, msg.body);
         }
 
         // Track the delegation
@@ -238,8 +255,14 @@ public:
         }
     }
 
-    // Validate an incoming request
-    bool validateRequest(const std::string& auth_token) const {
+    // Validate an incoming request using HMAC of the message body.
+    // Callers must provide the auth_token from the message header and the message body.
+    bool validateRequest(const std::string& auth_token, const std::string& body = "") const {
+        if (auth_token.empty()) return false;
+        if (!body.empty()) {
+            return verifyAuthToken(auth_token, local_secret, body);
+        }
+        // Fallback: verify with timestamp window (for GET requests with no body)
         return verifyAuthToken(auth_token, local_secret);
     }
 
