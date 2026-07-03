@@ -2,7 +2,7 @@
   "id": "FEAT-006",
   "type": "fix",
   "description": "Address 7 issues from semantic review: shell injection fix in SSH controller, device-comm HMAC auth, route dispatch for CRYPTO/HOMELAB/MIND, plaintext API secret permission check, HMAC-SHA256 test vector, autonomous learner implementation, and related fixes.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Fix shell injection in ssh_controller.cpp by escaping single quotes in remote_cmd",
     "Add HMAC-based message authentication to device_comm.cpp using the MKCryptoAuth namespace from exchange_api.cpp",
@@ -26,5 +26,5 @@
     "cd MK_OS && make test"
   ],
   "blocked_reason": null,
-  "findings": null
+  "findings": "All 7 review issues addressed. Build: 0 errors, 10 pre-existing warnings. Tests: 40 passed (3 new), 316 assertions, 0 failures. HMAC-SHA256 implementation verified against RFC 4231 test vectors (both pass). Shell injection mitigated by escaping single quotes with the standard '\\'' technique. Device comm now uses HMAC-SHA256 of message body for auth tokens (constant-time comparison). Route dispatch now calls cryptoTradingBot stats, portfolio snapshot, signal history, device registry, resource monitor, goal engine, and mastery network. Exchange API warns on permissive file modes. Autonomous learner has learnFromWeb() that invokes python3 web_scraper.py via popen and validates output through MKKnowledgeValidator. Include order adjusted (knowledge_validator before autonomous_learner) to resolve forward-reference issue."
 }
