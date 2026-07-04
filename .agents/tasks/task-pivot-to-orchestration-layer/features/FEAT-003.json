@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Build the tool-use framework that lets the LLM invoke real tools (SSH, Docker, file ops, system info, web search) through structured JSON tool calls in its response. Make tools reliable with proper error handling, timeouts, and result formatting. The system prompt tells the LLM what tools are available and the format to call them.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create MK_OS/orchestrator/tool_registry.cpp that defines a ToolRegistry class. Each tool has: name, description, parameter schema (as a string for the LLM prompt), and an execute function. Register these tools: 'ssh_exec' (run command on a remote device via SSH), 'docker_cmd' (manage containers), 'local_shell' (run local command with safety checks from code_runner.cpp), 'read_file' (read file contents), 'write_file' (write/create a file), 'web_search' (search DuckDuckGo via realtime_apis), 'system_info' (get CPU/RAM/temp from resource_monitor), 'device_list' (list homelab devices), 'learn_fact' (teach MK a new fact via learning_engine).",
     "Create MK_OS/orchestrator/tool_executor.cpp that takes a parsed tool call (tool name + JSON args) and dispatches to the appropriate handler. Each handler wraps the existing module (MKSSHController, MKDockerManager, MKCodeRunner, MKRealtimeAPIs, etc.) with proper error handling: catch exceptions, enforce timeouts, limit output size to 2000 chars (to stay token-efficient), and return a structured result string.",

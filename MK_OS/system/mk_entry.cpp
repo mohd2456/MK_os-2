@@ -118,6 +118,14 @@ namespace Color {
 #include "../linux/drivers/network_interface.cpp"
 #include "../linux/drivers/storage_monitor.cpp"
 
+// Tools subsystem
+#include "../tools/code_runner.cpp"
+#include "../tools/file_reader.cpp"
+
+// Tool framework - registry and executor
+#include "../orchestrator/tool_registry.cpp"
+#include "../orchestrator/tool_executor.cpp"
+
 // Configuration system
 #include "../config/mk_config.cpp"
 
@@ -303,6 +311,12 @@ struct MKSystem {
 
     // Configuration system
     MKConfig config;
+
+    // Tool framework
+    MKToolRegistry toolRegistry;
+    MKToolExecutor toolExecutor;
+    MKCodeRunner codeRunner;
+    MKFileReader fileReader;
 
     // Orchestrator - the new clean conversation loop (allocated after helpers are defined)
     std::unique_ptr<MKOrchestrator> orchestrator;
@@ -1053,6 +1067,21 @@ static void initOrchestrator(MKSystem& sys) {
     sys.orchestrator->learningEngine = &sys.learningEngine;
     sys.orchestrator->factExtractor = &sys.factExtractor;
     sys.orchestrator->systemPrompt = &MK_SYSTEM_PROMPT;
+
+    // Wire tool framework
+    sys.orchestrator->toolRegistry = &sys.toolRegistry;
+    sys.orchestrator->toolExecutor = &sys.toolExecutor;
+
+    // Wire tool executor to subsystems
+    sys.toolExecutor.sshController = &sys.sshController;
+    sys.toolExecutor.dockerManager = &sys.dockerManager;
+    sys.toolExecutor.deviceRegistry = &sys.deviceRegistry;
+    sys.toolExecutor.resourceMonitor = &sys.resourceMonitor;
+    sys.toolExecutor.codeRunner = &sys.codeRunner;
+    sys.toolExecutor.fileReader = &sys.fileReader;
+    sys.toolExecutor.realtimeApis = &sys.realtimeApis;
+    sys.toolExecutor.learningEngine = &sys.learningEngine;
+    sys.toolExecutor.graph = &sys.graph;
 }
 
 // ============================================================

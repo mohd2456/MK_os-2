@@ -72,6 +72,8 @@ static int g_assertions_failed = 0;
 #include "../mk_brain/embeddings/embeddings_eng.cpp"
 #include "../ai_core/math_solver.cpp"
 #include "../tools/code_runner.cpp"
+#include "../tools/file_reader.cpp"
+#include "../network/realtime_apis.cpp"
 #include "../mk_brain/memory/brain_memory.cpp"
 #include "../llm/cloud_llm.cpp"
 #include "../llm/llm_engine.cpp"
@@ -127,6 +129,8 @@ static std::vector<std::string> filterRelevantFacts(
 }
 
 // Orchestrator
+#include "../orchestrator/tool_registry.cpp"
+#include "../orchestrator/tool_executor.cpp"
 #include "../orchestrator/conversation_loop.cpp"
 
 // Integration tests
@@ -932,6 +936,311 @@ void test_orchestrator_prompt_includes_facts() {
 }
 
 // ============================================================
+// TEST: Tool Registry - Tool Count
+// ============================================================
+void test_tool_registry_count() {
+    MKToolRegistry registry;
+    TEST_ASSERT_TRUE(registry.toolCount() >= 9,
+                     "Tool registry should have at least 9 default tools");
+    TEST_ASSERT_TRUE(registry.exists("ssh_exec"), "ssh_exec tool should exist");
+    TEST_ASSERT_TRUE(registry.exists("docker_cmd"), "docker_cmd tool should exist");
+    TEST_ASSERT_TRUE(registry.exists("local_shell"), "local_shell tool should exist");
+    TEST_ASSERT_TRUE(registry.exists("read_file"), "read_file tool should exist");
+    TEST_ASSERT_TRUE(registry.exists("write_file"), "write_file tool should exist");
+    TEST_ASSERT_TRUE(registry.exists("web_search"), "web_search tool should exist");
+    TEST_ASSERT_TRUE(registry.exists("system_info"), "system_info tool should exist");
+    TEST_ASSERT_TRUE(registry.exists("device_list"), "device_list tool should exist");
+    TEST_ASSERT_TRUE(registry.exists("learn_fact"), "learn_fact tool should exist");
+    TEST_ASSERT_FALSE(registry.exists("nonexistent"), "nonexistent tool should not exist");
+}
+
+// ============================================================
+// TEST: Tool Registry - Lookup
+// ============================================================
+void test_tool_registry_lookup() {
+    MKToolRegistry registry;
+
+    const MKToolDef* ssh = registry.lookup("ssh_exec");
+    TEST_ASSERT_TRUE(ssh != nullptr, "ssh_exec lookup should succeed");
+    if (ssh) {
+        TEST_ASSERT_EQ(ssh->name, std::string("ssh_exec"), "Tool name should be ssh_exec");
+        TEST_ASSERT_TRUE(!ssh->description.empty(), "Tool description should not be empty");
+        TEST_ASSERT_TRUE(!ssh->paramSchema.empty(), "Tool paramSchema should not be empty");
+        TEST_ASSERT_TRUE(ssh->requiresArgs, "ssh_exec should require args");
+    }
+
+    const MKToolDef* sysInfo = registry.lookup("system_info");
+    TEST_ASSERT_TRUE(sysInfo != nullptr, "system_info lookup should succeed");
+    if (sysInfo) {
+        TEST_ASSERT_FALSE(sysInfo->requiresArgs, "system_info should not require args");
+    }
+
+    TEST_ASSERT_TRUE(registry.lookup("bogus") == nullptr, "Bogus tool lookup should return null");
+}
+
+// ============================================================
+// TEST: Tool Registry - Prompt Generation
+// ============================================================
+void test_tool_registry_prompt() {
+    MKToolRegistry registry;
+    std::string prompt = registry.buildToolPrompt();
+
+    TEST_ASSERT_TRUE(!prompt.empty(), "Tool prompt should not be empty");
+    TEST_ASSERT_TRUE(prompt.find("ssh_exec") != std::string::npos,
+                     "Tool prompt should mention ssh_exec");
+    TEST_ASSERT_TRUE(prompt.find("docker_cmd") != std::string::npos,
+                     "Tool prompt should mention docker_cmd");
+    TEST_ASSERT_TRUE(prompt.find("{\"tool\"") != std::string::npos,
+                     "Tool prompt should show the JSON format");
+    TEST_ASSERT_TRUE(prompt.find("system_info") != std::string::npos,
+                     "Tool prompt should mention system_info");
+}
+
+// ============================================================
+// TEST: Tool Call Parsing - Basic
+// ============================================================
+void test_tool_call_parsing() {
+    MKToolRegistry registry;
+
+    // Test basic tool call parsing
+    std::string response = "Let me check that for you. {\"tool\": \"system_info\", \"args\": {}}";
+    MKParsedToolCall call = registry.parseToolCall(response);
+    TEST_ASSERT_TRUE(call.valid, "Basic tool call should parse as valid");
+    TEST_ASSERT_EQ(call.tool, std::string("system_info"), "Tool name should be system_info");
+
+    // Test with no tool call
+    std::string noTool = "Hello! How can I help you today?";
+    MKParsedToolCall noParse = registry.parseToolCall(noTool);
+    TEST_ASSERT_FALSE(noParse.valid, "No tool call should parse as invalid");
+
+    // Test with unregistered tool name
+    std::string badTool = "{\"tool\": \"destroy_world\", \"args\": {}}";
+    MKParsedToolCall badParse = registry.parseToolCall(badTool);
+    TEST_ASSERT_FALSE(badParse.valid, "Unregistered tool should parse as invalid");
+}
+
+// ============================================================
+// TEST: Tool Call Parsing - Nested Args
+// ============================================================
+void test_tool_call_parsing_with_nested_args() {
+    MKToolRegistry registry;
+
+    // Test parsing tool call with args
+    std::string response = "{\"tool\": \"ssh_exec\", \"args\": {\"device\": \"server1\", \"command\": \"docker ps\"}}";
+    MKParsedToolCall call = registry.parseToolCall(response);
+    TEST_ASSERT_TRUE(call.valid, "Tool call with args should parse as valid");
+    TEST_ASSERT_EQ(call.tool, std::string("ssh_exec"), "Tool name should be ssh_exec");
+    TEST_ASSERT_EQ(call.args["device"], std::string("server1"), "device arg should be server1");
+    TEST_ASSERT_EQ(call.args["command"], std::string("docker ps"), "command arg should be docker ps");
+
+    // Test learn_fact parsing
+    std::string learnCall = "{\"tool\": \"learn_fact\", \"args\": {\"subject\": \"earth\", \"relation\": \"has\", \"object\": \"moon\"}}";
+    MKParsedToolCall learnParse = registry.parseToolCall(learnCall);
+    TEST_ASSERT_TRUE(learnParse.valid, "learn_fact tool call should parse as valid");
+    TEST_ASSERT_EQ(learnParse.args["subject"], std::string("earth"), "subject should be earth");
+    TEST_ASSERT_EQ(learnParse.args["relation"], std::string("has"), "relation should be has");
+    TEST_ASSERT_EQ(learnParse.args["object"], std::string("moon"), "object should be moon");
+}
+
+// ============================================================
+// TEST: Tool Call Parsing - Invalid Tool
+// ============================================================
+void test_tool_call_invalid_tool() {
+    MKToolRegistry registry;
+
+    // Tool that does not exist in registry
+    std::string response = "{\"tool\": \"hack_pentagon\", \"args\": {}}";
+    MKParsedToolCall call = registry.parseToolCall(response);
+    TEST_ASSERT_FALSE(call.valid, "Non-existent tool should not be valid");
+
+    // Malformed JSON
+    std::string malformed = "{\"tool\": }";
+    MKParsedToolCall badCall = registry.parseToolCall(malformed);
+    TEST_ASSERT_FALSE(badCall.valid, "Malformed JSON should not parse as valid");
+}
+
+// ============================================================
+// TEST: Tool Executor - System Info
+// ============================================================
+void test_tool_executor_system_info() {
+    MKToolExecutor executor;
+    MKResourceMonitor monitor;
+    executor.resourceMonitor = &monitor;
+
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "system_info";
+
+    MKToolResult result = executor.execute(call);
+    // Resource monitor should return valid data on this machine
+    TEST_ASSERT_TRUE(result.success, "system_info should succeed on local machine");
+    TEST_ASSERT_TRUE(result.output.find("CPU") != std::string::npos,
+                     "system_info output should mention CPU");
+    TEST_ASSERT_TRUE(result.output.find("RAM") != std::string::npos,
+                     "system_info output should mention RAM");
+}
+
+// ============================================================
+// TEST: Tool Executor - Device List (empty registry)
+// ============================================================
+void test_tool_executor_device_list() {
+    MKToolExecutor executor;
+    MKDeviceRegistry registry;
+    executor.deviceRegistry = &registry;
+
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "device_list";
+
+    MKToolResult result = executor.execute(call);
+    TEST_ASSERT_TRUE(result.success, "device_list should succeed even with empty registry");
+    TEST_ASSERT_TRUE(result.output.find("No devices") != std::string::npos,
+                     "device_list should say no devices when registry is empty");
+}
+
+// ============================================================
+// TEST: Tool Executor - Learn Fact
+// ============================================================
+void test_tool_executor_learn_fact() {
+    MKToolExecutor executor;
+    MKLearningEngine learning;
+    MKPatternGraph graph("ai_core/hre/knowledge_files");
+    executor.learningEngine = &learning;
+    executor.graph = &graph;
+
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "learn_fact";
+    call.args["subject"] = "mars";
+    call.args["relation"] = "is_a";
+    call.args["object"] = "planet";
+
+    MKToolResult result = executor.execute(call);
+    TEST_ASSERT_TRUE(result.success, "learn_fact should succeed");
+    TEST_ASSERT_TRUE(result.output.find("Learned") != std::string::npos,
+                     "learn_fact output should confirm learning");
+    TEST_ASSERT_TRUE(result.output.find("mars") != std::string::npos,
+                     "learn_fact output should contain subject");
+}
+
+// ============================================================
+// TEST: Tool Executor - SSH Safety (unregistered device)
+// ============================================================
+void test_tool_executor_ssh_safety() {
+    MKToolExecutor executor;
+    MKSSHController ssh;
+    MKDeviceRegistry registry;
+    executor.sshController = &ssh;
+    executor.deviceRegistry = &registry;
+
+    // Try to SSH to a device not in the registry
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "ssh_exec";
+    call.args["device"] = "evil_server";
+    call.args["command"] = "rm -rf /";
+
+    MKToolResult result = executor.execute(call);
+    TEST_ASSERT_FALSE(result.success, "SSH to unregistered device should fail");
+    TEST_ASSERT_TRUE(result.error.find("not registered") != std::string::npos,
+                     "Error should mention device not registered");
+}
+
+// ============================================================
+// TEST: Tool Executor - Local Shell Safety (dangerous commands)
+// ============================================================
+void test_tool_executor_local_shell_safety() {
+    MKToolExecutor executor;
+    MKCodeRunner runner(5);
+    executor.codeRunner = &runner;
+
+    // Test dangerous command rejection
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "local_shell";
+    call.args["command"] = "rm -rf /";
+
+    MKToolResult result = executor.execute(call);
+    TEST_ASSERT_FALSE(result.success, "Dangerous shell command should be rejected");
+    TEST_ASSERT_TRUE(result.error.find("BLOCKED") != std::string::npos,
+                     "Error should say BLOCKED for dangerous commands");
+
+    // Test fork bomb
+    call.args["command"] = ":(){ :|:& };:";
+    result = executor.execute(call);
+    TEST_ASSERT_FALSE(result.success, "Fork bomb should be rejected");
+}
+
+// ============================================================
+// TEST: Tool Executor - Write File Safety
+// ============================================================
+void test_tool_executor_write_file_safety() {
+    MKToolExecutor executor;
+
+    // Test write to disallowed path
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "write_file";
+    call.args["path"] = "/etc/passwd";
+    call.args["content"] = "malicious";
+
+    MKToolResult result = executor.execute(call);
+    TEST_ASSERT_FALSE(result.success, "Writing to /etc/passwd should be denied");
+    TEST_ASSERT_TRUE(result.error.find("denied") != std::string::npos ||
+                     result.error.find("outside") != std::string::npos,
+                     "Error should mention write denied or outside allowed");
+
+    // Test path traversal attack
+    call.args["path"] = "../../../etc/shadow";
+    result = executor.execute(call);
+    TEST_ASSERT_FALSE(result.success, "Path traversal should be denied");
+
+    // Test allowed path (/tmp)
+    call.args["path"] = "/tmp/mk_test_write_file_safety.txt";
+    call.args["content"] = "test content";
+    result = executor.execute(call);
+    TEST_ASSERT_TRUE(result.success, "Writing to /tmp should be allowed");
+
+    // Clean up
+    std::remove("/tmp/mk_test_write_file_safety.txt");
+}
+
+// ============================================================
+// TEST: Tool Output Cap
+// ============================================================
+void test_tool_max_output_cap() {
+    // Test the capOutput function behavior through tool execution
+    MKToolExecutor executor;
+    MKFileReader reader;
+    executor.fileReader = &reader;
+
+    // Create a large file in /tmp
+    std::string largePath = "/tmp/mk_test_large_file.txt";
+    {
+        std::ofstream f(largePath);
+        for (int i = 0; i < 500; i++) {
+            f << "Line " << i << ": This is some test content that makes the file large enough to exceed the cap.\n";
+        }
+        f.close();
+    }
+
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "read_file";
+    call.args["path"] = largePath;
+
+    MKToolResult result = executor.execute(call);
+    TEST_ASSERT_TRUE(result.success, "Reading large file should succeed");
+    TEST_ASSERT_TRUE(result.output.size() <= 2001,
+                     "Tool output should be capped at around 2000 chars");
+    TEST_ASSERT_TRUE(result.output.find("[truncated]") != std::string::npos,
+                     "Truncated output should contain truncation marker");
+
+    // Clean up
+    std::remove(largePath.c_str());
+}
+
+// ============================================================
 // Main: Run all tests
 // ============================================================
 int main() {
@@ -1003,6 +1312,21 @@ int main() {
     RUN_TEST(test_orchestrator_respond_non_empty);
     RUN_TEST(test_orchestrator_tool_call_detection);
     RUN_TEST(test_orchestrator_prompt_includes_facts);
+
+    // Tool framework tests (FEAT-003)
+    RUN_TEST(test_tool_registry_count);
+    RUN_TEST(test_tool_registry_lookup);
+    RUN_TEST(test_tool_registry_prompt);
+    RUN_TEST(test_tool_call_parsing);
+    RUN_TEST(test_tool_call_parsing_with_nested_args);
+    RUN_TEST(test_tool_call_invalid_tool);
+    RUN_TEST(test_tool_executor_system_info);
+    RUN_TEST(test_tool_executor_device_list);
+    RUN_TEST(test_tool_executor_learn_fact);
+    RUN_TEST(test_tool_executor_ssh_safety);
+    RUN_TEST(test_tool_executor_local_shell_safety);
+    RUN_TEST(test_tool_executor_write_file_safety);
+    RUN_TEST(test_tool_max_output_cap);
 
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;
