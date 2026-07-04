@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "fix",
   "description": "Fix acknowledgment routing and add math/conversation intent classifier before graph lookup. Also simplify personality tone.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1: Include math_solver.cpp in mk_entry.cpp. Add '#include \"../ai_core/math_solver.cpp\"' after the neural_net.cpp include (around line 78). Add a MKMathSolver instance to the MKSystem struct.",
     "Step 2: In handle_natural_query() in mk_entry.cpp, add math detection BEFORE the conversation mode check and BEFORE the smart router. After the idea engine block, add a check: use MKMathSolver::isMathQuery() on the input. Also add a basic arithmetic pattern detector that catches 'what is <number> <op> <number>' patterns (e.g. 'what is 1+1'). If matched, call mathSolver.solve(input) and display the result. This prevents math queries from falling through to the GRAPH route.",
@@ -27,5 +27,5 @@
     "cd /projects/sandbox/MK_os-2/MK_OS && make test"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 42 tests pass (335 assertions). Build successful with only pre-existing warnings. The 'what is python' router test was updated to use 'define python' since 'what is' was removed from graphKeywords. The math_solver already had solve() for complex expressions; the new hasArithmeticPattern() and evaluateArithmetic() methods handle simple binary operations that solve() could not parse."
 }
