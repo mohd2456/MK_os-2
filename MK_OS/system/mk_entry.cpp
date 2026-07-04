@@ -102,6 +102,10 @@ namespace Color {
 // LLM subsystem - Local and cloud LLM integration
 #include "../llm/cloud_llm.cpp"
 #include "../llm/llm_engine.cpp"
+#include "../llm/provider_router.cpp"
+
+// Security subsystem - Key encryption
+#include "../security/key_encryption.cpp"
 
 // Mind subsystem - The cognitive layer
 #include "../mind/mastery_network.cpp"
@@ -273,6 +277,10 @@ struct MKSystem {
     // LLM subsystem
     MKCloudLLM cloudLLM;
     MKLLMEngine llmEngine;
+    MKProviderRouter providerRouter;
+
+    // Security subsystem
+    MKKeyEncryption keyEncryption;
 
     // Crypto trading subsystem
     MKMarketData cryptoMarketData;
@@ -343,7 +351,9 @@ struct MKSystem {
           telegram(nullptr),
           neuralNet(),
           cloudLLM("."),
-          llmEngine()
+          llmEngine(),
+          providerRouter(),
+          keyEncryption(".")
     {
         // Initialize Telegram bot if token is available
         const char* tgToken = std::getenv("MK_TELEGRAM_TOKEN");
@@ -368,6 +378,23 @@ struct MKSystem {
 
         // Load configuration
         config.load();
+
+        // Load encrypted keys and sync with cloud LLM and provider router
+        if (keyEncryption.hasEncryptedKeys()) {
+            auto encKeys = keyEncryption.loadAllKeys();
+            for (const auto& kv : encKeys) {
+                std::string decrypted = keyEncryption.decrypt(kv.second);
+                if (!decrypted.empty()) {
+                    cloudLLM.loadEncryptedKey(kv.first, decrypted);
+                    providerRouter.setProviderKey(kv.first, decrypted);
+                }
+            }
+        }
+        // Also sync any cloud LLM keys to the provider router
+        auto cloudKeys = cloudLLM.getKeysForEncryption();
+        for (const auto& kv : cloudKeys) {
+            providerRouter.setProviderKey(kv.first, kv.second);
+        }
     }
 
     ~MKSystem() = default;
@@ -1491,11 +1518,82 @@ static void telegram_poll_loop(MKSystem& sys) {
             if (!chatId.empty() && !msgText.empty()) {
                 std::lock_guard<std::mutex> lock(sys.systemMutex);
                 if (msgText[0] == '/') {
-                    // Command-based messages use autoReply
-                    sys.telegram->autoReply(chatId, msgText);
+                    // Handle /setkey command with provider router integration
+                    if (sys.telegram->isSetKeyCommand(msgText)) {
+                        auto args = sys.telegram->extractSetKeyArgs(msgText);
+                        std::string provider = args.first;
+                        std::string key = args.second;
+
+                        // Normalize provider name
+                        std::transform(provider.begin(), provider.end(), provider.begin(), ::tolower);
+
+                        if (key.empty()) {
+                            sys.telegram->sendMessage(chatId,
+                                "<b>Usage:</b> /setkey &lt;provider&gt; &lt;key&gt;\n"
+                                "<b>Providers:</b> groq, openrouter, nvidia, huggingface");
+                        } else if (!sys.providerRouter.isValidProvider(provider)) {
+                            sys.telegram->sendMessage(chatId,
+                                "Unknown provider: <b>" + provider + "</b>\n"
+                                "Valid: groq, openrouter, nvidia, huggingface");
+                        } else {
+                            // Store key encrypted
+                            sys.keyEncryption.saveKey(provider, key);
+                            // Set key in cloud LLM and provider router
+                            sys.cloudLLM.setApiKey(provider, key);
+                            sys.providerRouter.setProviderKey(provider, key);
+
+                            // Test the key with a minimal API call
+                            sys.telegram->sendMessage(chatId,
+                                "Testing <b>" + provider + "</b> key...");
+                            bool testOk = sys.providerRouter.testProvider(provider);
+
+                            if (testOk) {
+                                sys.telegram->sendMessage(chatId,
+                                    "✅ <b>" + provider + "</b> key verified and saved!\n"
+                                    "Provider is now active.");
+                            } else {
+                                sys.telegram->sendMessage(chatId,
+                                    "⚠️ Key saved but test failed for <b>" + provider + "</b>.\n"
+                                    "The key may be invalid or the provider may be down.\n"
+                                    "It will be retried automatically.");
+                            }
+                        }
+                    } else if (sys.telegram->isStatusCommand(msgText)) {
+                        // /status - show provider status report
+                        std::string statusReport = sys.providerRouter.getStatusReport();
+                        sys.telegram->sendMessage(chatId, statusReport);
+                    } else if (sys.telegram->isKeyCommand(msgText)) {
+                        // /key - show active provider (without exposing key)
+                        std::string active = sys.providerRouter.getActiveProvider();
+                        int online = sys.providerRouter.onlineCount();
+                        int total = sys.providerRouter.providerCount();
+                        sys.telegram->sendMessage(chatId,
+                            "<b>Active Provider:</b> " + active + "\n"
+                            "<b>Online:</b> " + std::to_string(online) + "/" + std::to_string(total) + "\n\n"
+                            "<i>Use /status for full details</i>");
+                    } else {
+                        // Other command-based messages use autoReply
+                        sys.telegram->autoReply(chatId, msgText);
+                    }
                 } else {
                     // Route natural language through the AI pipeline
+                    // Use provider router to pick provider based on urgency and token estimate
+                    int tokenEstimate = (int)msgText.size() / 4; // rough estimate
+                    std::string pickedProvider = sys.providerRouter.pickProvider(
+                        MKRoutingUrgency::HIGH, tokenEstimate);
+
+                    auto startTime = std::chrono::steady_clock::now();
                     std::string reply = generate_ai_response(sys, msgText);
+                    auto endTime = std::chrono::steady_clock::now();
+                    float latencyMs = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
+                        endTime - startTime).count();
+
+                    // Log the request to provider router
+                    if (!pickedProvider.empty()) {
+                        sys.providerRouter.logRequest(pickedProvider, tokenEstimate,
+                                                     latencyMs, !reply.empty());
+                    }
+
                     sys.telegram->sendMessage(chatId, reply);
                 }
             }

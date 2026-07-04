@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Multi-Provider API Management System with Nvidia NIM support, encrypted key storage, /setkey and /status Telegram commands, intelligent routing (urgency/size/availability), usage logging, and provider health testing.",
+  "status": "in_progress",
+  "steps": [
+    "Create MK_OS/llm/provider_router.cpp: A new MKProviderRouter class that manages multiple providers (Groq, OpenRouter, Nvidia NIM, local Ollama). It should: (a) hold a vector of provider configs with name, endpoint URL, model, api_key, status, daily_quota, used_quota, avg_latency_ms, fail_count, last_success_time; (b) implement pickProvider(urgency, tokenEstimate) that selects the best provider based on urgency (high=fastest, low=free/local), token count (short <100 tokens use fast providers, long >500 use local/free), and availability (quota remaining, fail count below threshold); (c) implement testProvider(providerName) that makes a minimal API call to verify the key works; (d) implement getStatusReport() returning a formatted string showing all enabled providers, their status, quota used; (e) implement logRequest(providerName, tokens, latencyMs, success) that tracks usage per provider per day; (f) implement fallback chain: if chosen provider fails, try next in preference order.",
+    "Create MK_OS/security/key_encryption.cpp: A simple MKKeyEncryption class using XOR cipher with a device-unique seed (from hostname + username hash). Methods: encrypt(plaintext) -> hex string, decrypt(hexEncrypted) -> plaintext. Keys stored in encrypted_keys.conf as 'PROVIDER_NAME=<hex_encrypted_key>'. This is basic obfuscation (not military-grade) but prevents plaintext keys on disk.",
+    "Modify MK_OS/llm/cloud_llm.cpp: (a) Add Nvidia NIM as a fourth provider with endpoint https://integrate.api.nvidia.com/v1/chat/completions, model 'nvidia/llama-3.1-8b-instruct', and key env var NVIDIA_API_KEY. (b) Refactor loadKeys() to also check encrypted_keys.conf via MKKeyEncryption::decrypt(). (c) Add saveKeysEncrypted() method that saves all keys to encrypted_keys.conf. (d) Add getProviderStatus() method returning a vector of {name, available, failCount, model} for each provider.",
+    "Modify MK_OS/plugins/telegram.cpp: (a) Add handling for '/setkey <provider> <key>' command in autoReply/autoReplyEnhanced. When received: validate provider name (groq/openrouter/nvidia/huggingface), store key via encryption, test the key with a minimal API call, report success/failure to user. (b) Add handling for '/status' command that shows all providers, which are active, quota info, and current routing preference. Format as an HTML Telegram message with checkmarks/crosses. (c) Add '/key' command that shows current active provider name (without exposing the actual key).",
+    "Modify MK_OS/system/mk_entry.cpp: (a) Add #include for provider_router.cpp and key_encryption.cpp in the include section. (b) Add MKProviderRouter and MKKeyEncryption instances to MKSystem struct. (c) In telegram_poll_loop(), handle /setkey and /status commands by delegating to the new classes and sending responses via telegram->sendMessage(). (d) Update the conversation pipeline (handle_natural_query and generate_ai_response) to use MKProviderRouter::pickProvider() before calling cloud LLM, passing urgency='high' for conversation and token estimate from input length. (e) After each LLM call, call providerRouter.logRequest() with the result.",
+    "Add tests in MK_OS/tests/test_main.cpp: (a) test_provider_router_initialization: verify router creates with default providers. (b) test_provider_routing_urgency: verify high urgency picks fastest provider (Groq), low urgency picks local/free. (c) test_provider_routing_fallback: verify if primary provider has max fails, next is chosen. (d) test_key_encryption_roundtrip: verify encrypt then decrypt returns original key. (e) test_provider_status_report: verify status report format."
+  ],
+  "acceptance_criteria": [
+    "make clean && make compiles without errors",
+    "make test passes all existing tests plus 5 new provider routing tests",
+    "/setkey command in Telegram pipeline stores and tests API keys",
+    "/status command returns formatted provider status",
+    "Nvidia NIM is a supported provider alongside Groq, OpenRouter, HuggingFace",
+    "Keys are stored encrypted on disk (not plaintext)",
+    "Provider routing selects based on urgency, token size, and availability"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

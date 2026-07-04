@@ -82,6 +82,8 @@ static int g_assertions_failed = 0;
 #include "../mk_brain/memory/brain_memory.cpp"
 #include "../llm/cloud_llm.cpp"
 #include "../llm/llm_engine.cpp"
+#include "../llm/provider_router.cpp"
+#include "../security/key_encryption.cpp"
 
 // New module includes for FEAT-005 integration tests
 #include "../crypto/market_data.cpp"
@@ -908,6 +910,182 @@ void test_brain_memory_context_string() {
 }
 
 // ============================================================
+// TEST: Provider Router Initialization
+// ============================================================
+void test_provider_router_initialization() {
+    MKProviderRouter router;
+
+    // Should have 5 default providers (groq, openrouter, nvidia, huggingface, ollama)
+    TEST_ASSERT_EQ(router.providerCount(), 5,
+                   "Router should have 5 default providers");
+
+    // All providers should be offline initially (no keys set)
+    TEST_ASSERT_EQ(router.onlineCount(), 0,
+                   "No providers should be online without keys");
+
+    // Valid provider names
+    TEST_ASSERT_TRUE(router.isValidProvider("groq"), "groq should be a valid provider");
+    TEST_ASSERT_TRUE(router.isValidProvider("openrouter"), "openrouter should be valid");
+    TEST_ASSERT_TRUE(router.isValidProvider("nvidia"), "nvidia should be valid");
+    TEST_ASSERT_TRUE(router.isValidProvider("huggingface"), "huggingface should be valid");
+    TEST_ASSERT_TRUE(router.isValidProvider("ollama"), "ollama should be valid");
+    TEST_ASSERT_FALSE(router.isValidProvider("invalid"), "invalid should not be valid");
+
+    // Provider names list
+    auto names = router.getProviderNames();
+    TEST_ASSERT_EQ((int)names.size(), 5, "Should return 5 provider names");
+}
+
+// ============================================================
+// TEST: Provider Routing by Urgency
+// ============================================================
+void test_provider_routing_urgency() {
+    MKProviderRouter router;
+
+    // Set keys for groq (fastest) and huggingface (slowest)
+    router.setProviderKey("groq", "test-key-groq");
+    router.setProviderKey("huggingface", "test-key-hf");
+    router.setProviderKey("ollama", ""); // local but no key
+
+    // High urgency should pick the fastest available provider (groq)
+    std::string highUrgency = router.pickProvider(MKRoutingUrgency::HIGH, 50);
+    TEST_ASSERT_EQ(highUrgency, std::string("groq"),
+                   "High urgency should pick groq (fastest)");
+
+    // Low urgency should prefer free/local; with groq and hf both free,
+    // but hf has lower speed rating so it scores higher on "free" bonus
+    // Actually both are free, so low urgency picks based on free bonus + speed
+    std::string lowUrgency = router.pickProvider(MKRoutingUrgency::LOW, 50);
+    TEST_ASSERT_FALSE(lowUrgency.empty(),
+                      "Low urgency should still pick a provider");
+
+    // Long token request should also prefer free providers
+    std::string longRequest = router.pickProvider(MKRoutingUrgency::MEDIUM, 600);
+    TEST_ASSERT_FALSE(longRequest.empty(),
+                      "Long request should pick a provider");
+}
+
+// ============================================================
+// TEST: Provider Routing Fallback
+// ============================================================
+void test_provider_routing_fallback() {
+    MKProviderRouter router;
+
+    // Set up multiple providers
+    router.setProviderKey("groq", "test-key-groq");
+    router.setProviderKey("openrouter", "test-key-or");
+    router.setProviderKey("nvidia", "test-key-nv");
+
+    // Simulate groq failing repeatedly
+    for (int i = 0; i < 5; i++) {
+        router.logRequest("groq", 100, 0.0f, false);
+    }
+
+    // Now groq should be offline, next provider should be chosen
+    std::string picked = router.pickProvider(MKRoutingUrgency::HIGH, 50);
+    TEST_ASSERT_NE(picked, std::string("groq"),
+                   "Should not pick groq after max failures");
+    TEST_ASSERT_FALSE(picked.empty(),
+                      "Should fall back to another provider");
+
+    // Fallback chain should not include groq
+    auto chain = router.getFallbackChain("groq");
+    bool groqInChain = false;
+    for (const auto& p : chain) {
+        if (p == "groq") groqInChain = true;
+    }
+    TEST_ASSERT_FALSE(groqInChain,
+                      "Fallback chain should not include failed provider");
+    TEST_ASSERT_GT((int)chain.size(), 0,
+                   "Fallback chain should have alternative providers");
+}
+
+// ============================================================
+// TEST: Key Encryption Roundtrip
+// ============================================================
+void test_key_encryption_roundtrip() {
+    MKKeyEncryption enc("/tmp");
+
+    // Test basic encrypt/decrypt roundtrip
+    std::string original = "gsk_abc123def456xyz789";
+    std::string encrypted = enc.encrypt(original);
+    std::string decrypted = enc.decrypt(encrypted);
+
+    TEST_ASSERT_EQ(decrypted, original,
+                   "Decrypt(encrypt(key)) should return original key");
+
+    // Encrypted should not be the same as original (unless XOR key is all zeros, unlikely)
+    TEST_ASSERT_NE(encrypted, original,
+                   "Encrypted key should differ from original");
+
+    // Encrypted should be a hex string (only hex chars)
+    bool allHex = true;
+    for (char c : encrypted) {
+        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) {
+            allHex = false;
+            break;
+        }
+    }
+    TEST_ASSERT_TRUE(allHex, "Encrypted output should be hex string");
+
+    // Test with empty string
+    std::string emptyEnc = enc.encrypt("");
+    TEST_ASSERT_EQ(emptyEnc, std::string(""), "Encrypting empty string should return empty");
+
+    // Test with various key formats
+    std::string longKey = "sk-proj-abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOP";
+    std::string longEnc = enc.encrypt(longKey);
+    std::string longDec = enc.decrypt(longEnc);
+    TEST_ASSERT_EQ(longDec, longKey,
+                   "Long key should survive encrypt/decrypt roundtrip");
+}
+
+// ============================================================
+// TEST: Provider Status Report
+// ============================================================
+void test_provider_status_report() {
+    MKProviderRouter router;
+
+    // Set some providers online
+    router.setProviderKey("groq", "test-key");
+    router.setProviderKey("nvidia", "test-key-nv");
+
+    // Log some requests
+    router.logRequest("groq", 100, 150.0f, true);
+    router.logRequest("groq", 200, 180.0f, true);
+    router.logRequest("nvidia", 50, 300.0f, false);
+
+    // Get status report
+    std::string report = router.getStatusReport();
+
+    // Report should contain provider names
+    TEST_ASSERT_TRUE(report.find("groq") != std::string::npos,
+                     "Status report should contain 'groq'");
+    TEST_ASSERT_TRUE(report.find("nvidia") != std::string::npos,
+                     "Status report should contain 'nvidia'");
+    TEST_ASSERT_TRUE(report.find("openrouter") != std::string::npos,
+                     "Status report should contain 'openrouter'");
+    TEST_ASSERT_TRUE(report.find("huggingface") != std::string::npos,
+                     "Status report should contain 'huggingface'");
+
+    // Report should have provider status info
+    TEST_ASSERT_TRUE(report.find("Provider Status") != std::string::npos,
+                     "Report should have 'Provider Status' header");
+    TEST_ASSERT_TRUE(report.find("Model:") != std::string::npos,
+                     "Report should show model info");
+
+    // Report should show routing stats
+    TEST_ASSERT_TRUE(report.find("Routing:") != std::string::npos,
+                     "Report should show routing stats");
+
+    // Verify request counting
+    TEST_ASSERT_EQ(router.getTotalRequests(), 3,
+                   "Should have 3 total requests logged");
+    TEST_ASSERT_EQ(router.getSuccessfulRequests(), 2,
+                   "Should have 2 successful requests");
+}
+
+// ============================================================
 // Main: Run all tests
 // ============================================================
 int main() {
@@ -968,6 +1146,13 @@ int main() {
     RUN_TEST(test_llm_fallback_logic);
     RUN_TEST(test_rag_context_assembly);
     RUN_TEST(test_brain_memory_context_string);
+
+    // Provider routing tests (FEAT-002 multi-provider)
+    RUN_TEST(test_provider_router_initialization);
+    RUN_TEST(test_provider_routing_urgency);
+    RUN_TEST(test_provider_routing_fallback);
+    RUN_TEST(test_key_encryption_roundtrip);
+    RUN_TEST(test_provider_status_report);
 
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;

@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Integration, polish, and end-to-end testing. Wire everything together, add request logging, graceful degradation when all providers are down, and comprehensive integration tests.",
+  "status": "pending",
+  "steps": [
+    "Create MK_OS/llm/request_logger.cpp: MKRequestLogger class. Methods: (a) logRequest(provider, input_summary, tokens_used, latency_ms, success) - appends to llm_requests.log with timestamp. (b) getStats() -> string summary of today's requests (total calls, per-provider breakdown, avg latency, success rate). (c) getDailyUsage(provider) -> int tokens used today for quota tracking. File format: one JSON line per request.",
+    "Modify MK_OS/system/mk_entry.cpp: (a) Add #include for request_logger.cpp. (b) Add MKRequestLogger to MKSystem. (c) In the conversation pipeline (both REPL and Telegram), after every LLM call (thinking or full generation), call requestLogger.logRequest(). (d) Add /logs command to Telegram that shows today's request stats. (e) Update the /status Telegram command to include provider request counts from the logger. (f) Add graceful degradation: when all cloud providers fail AND no local LLM AND thinking returns empty, use a meaningful response combining graph facts with personality templates (not just 'I don't know').",
+    "Add integration tests in MK_OS/tests/test_integration.cpp: (a) test_full_pipeline_with_no_llm: simulate no LLM available, verify system still produces meaningful responses from graph+templates. (b) test_setkey_flow: verify that setting a key updates provider config and the router uses it. (c) test_request_logging: verify log entries are created with correct format. (d) test_provider_quota_tracking: verify daily usage counting works. (e) test_thinking_to_decision_flow: verify thinking output feeds correctly into decision engine.",
+    "Update MK_OS/plugins/telegram.cpp: Ensure /setkey, /status, /key, and /logs commands are registered in the help text and autoReply handler. Update the /help command output to include the new commands.",
+    "Final cleanup: ensure all new files have proper #ifndef guards, all new classes follow MK naming convention, all includes are in correct order in mk_entry.cpp and test_main.cpp."
+  ],
+  "acceptance_criteria": [
+    "make clean && make compiles without errors",
+    "make test passes all tests (existing + all new tests from FEAT-002 through FEAT-004)",
+    "Request logging writes to llm_requests.log on every LLM call",
+    "/logs command shows daily request statistics",
+    "System degrades gracefully: no LLM = graph facts + templates (not empty response)",
+    "/help in Telegram shows all new commands (/setkey, /status, /key, /logs)",
+    "Full end-to-end flow: input -> thinking -> decision -> response works"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
