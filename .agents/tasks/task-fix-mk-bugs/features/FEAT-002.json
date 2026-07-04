@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "fix",
   "description": "Address review findings: fix HTML escaping bypass, remove entity strings from safeTags, reference MK_SYSTEM_PROMPT in sanitizer",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1 - Fix HTML escaping bypass: Remove escapeForUser call from sendMessage in telegram.cpp so it becomes a pass-through. Instead, add an explicit escapeHtml call on the LLM reply in mk_entry.cpp right after the empty guard and before sendMessage. This ensures only LLM output gets escaped, while MK's own pre-formatted messages remain intact.",
     "Step 2 - Remove entity strings from safeTags: Remove '&lt;', '&gt;', '&amp;' from the safeTags vector in shouldEscapeHtml. Those are HTML entities, not tags.",
@@ -21,5 +21,5 @@
     "Run 'cd /projects/sandbox/MK_os-2/MK_OS && make test' and confirm all tests pass"
   ],
   "blocked_reason": null,
-  "findings": null
+  "findings": "All three review issues fixed successfully. Build: 0 errors (13 pre-existing warnings). Tests: 67 passed, 0 failed, 484 assertions. The MK_SYSTEM_PROMPT constant was moved above sanitizeLLMResponse to satisfy C++ forward reference requirements."
 }
