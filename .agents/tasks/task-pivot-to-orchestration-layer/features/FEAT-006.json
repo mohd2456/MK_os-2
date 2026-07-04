@@ -2,7 +2,7 @@
   "id": "FEAT-006",
   "type": "fix",
   "description": "Post-review fixes: address security, crash, and correctness issues found in code review. Fixes write_file path traversal, SQLite null dereference, cloud LLM bypassing token budget, and JSON parser nested structure handling.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Fix isWritePathAllowed() in tool_executor.cpp: use realpath() to canonicalize paths, fix /tmp prefix to /tmp/, reject relative paths that resolve outside allowed directories",
     "Fix SQLite null column dereference in brain_memory.cpp: add null checks before constructing std::string from sqlite3_column_text()",
@@ -24,5 +24,5 @@
     "cd MK_OS && make test"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 5 review issues addressed. Issue #1 (path traversal): rewrote isWritePathAllowed to use realpath() for canonicalization, trailing slash on /tmp/, and resolution of relative paths. Issue #2 (SQLite null): added null-checks on both loadFromDisk and queryRelevantMemories. Issue #3 (cloud LLM budget): cloud path now receives the same prompt string the ContextBuilder assembled. Issue #4 (thread-safety): confirmed already fixed - REPL path at line 2129 acquires systemMutex before calling handle_natural_query. Issue #5 (JSON parser): added brace/bracket depth tracking with string-skip logic for nested structures. Build: 6 warnings (all pre-existing). Tests: 80 passed, 0 failed, 460 assertions."
 }
