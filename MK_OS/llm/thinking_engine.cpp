@@ -23,6 +23,7 @@ private:
     MKProviderRouter* providerRouter_;
     int maxTokens_;
     float temperature_;
+    mutable std::string lastProvider_; // Track which provider was actually used
 
     // libcurl write callback
     static size_t WriteCallbackThinking(void* contents, size_t size, size_t nmemb, void* userp) {
@@ -108,28 +109,28 @@ private:
         std::string response;
         std::string body;
 
+        // Escape the prompt for JSON embedding (applies to all providers)
+        std::string escapedPrompt;
+        for (char c : prompt) {
+            if (c == '"') escapedPrompt += "\\\"";
+            else if (c == '\n') escapedPrompt += "\\n";
+            else if (c == '\r') escapedPrompt += "\\r";
+            else if (c == '\t') escapedPrompt += "\\t";
+            else if (c == '\\') escapedPrompt += "\\\\";
+            else escapedPrompt += c;
+        }
+
         if (providerName == "ollama") {
             // Ollama uses a different format
             body = "{\"model\":\"phi3:mini\","
                    "\"messages\":[{\"role\":\"system\",\"content\":\"You are a reasoning engine. "
                    "Respond in 1-2 sentences only. State what action should be taken.\"},"
-                   "{\"role\":\"user\",\"content\":\"" + prompt + "\"}],"
+                   "{\"role\":\"user\",\"content\":\"" + escapedPrompt + "\"}],"
                    "\"stream\":false,\"options\":{\"num_predict\":" +
                    std::to_string(maxTokens_) + ",\"temperature\":" +
                    std::to_string(temperature_) + "}}";
         } else {
             // OpenAI-compatible format
-            // Escape the prompt for JSON
-            std::string escapedPrompt;
-            for (char c : prompt) {
-                if (c == '"') escapedPrompt += "\\\"";
-                else if (c == '\n') escapedPrompt += "\\n";
-                else if (c == '\r') escapedPrompt += "\\r";
-                else if (c == '\t') escapedPrompt += "\\t";
-                else if (c == '\\') escapedPrompt += "\\\\";
-                else escapedPrompt += c;
-            }
-
             body = "{\"model\":\"" + model + "\","
                    "\"messages\":[{\"role\":\"system\",\"content\":\"You are a reasoning engine. "
                    "Respond in 1-2 sentences only. State what action should be taken.\"},"
@@ -191,6 +192,9 @@ public:
         providerRouter_ = router;
     }
 
+    // Get the provider that was last used for thinking
+    std::string getLastProvider() const { return lastProvider_; }
+
     // Build a compact thinking prompt from user input and context
     std::string buildThinkingPrompt(const std::string& input,
                                      const std::vector<std::string>& facts,
@@ -240,8 +244,11 @@ public:
         std::string provider = pickThinkingProvider();
         if (provider.empty()) {
             // No LLM available - return empty to trigger fallback
+            lastProvider_ = "";
             return "";
         }
+
+        lastProvider_ = provider;
 
         // Call the provider
         std::string result = callProvider(provider, prompt);
