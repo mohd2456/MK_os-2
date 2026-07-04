@@ -800,6 +800,121 @@ static void cmd_briefing(MKSystem& sys) {
 }
 
 // ============================================================
+// LLM Response Sanitizer (Prompt Leakage Prevention)
+// Strips prompt-leak patterns from LLM responses where weak
+// models echo internal instructions back to the user.
+// ============================================================
+static std::string sanitizeLLMResponse(const std::string& response, const std::string& userInput) {
+    if (response.empty()) return response;
+    (void)userInput; // Reserved for future echo-detection against user input
+
+    std::string result = response;
+
+    // Patterns that indicate the LLM is echoing prompt instructions
+    static const std::vector<std::string> leakPatterns = {
+        "Known facts (use these to answer):",
+        "Answer the user's question naturally",
+        "Do not list the raw facts",
+        "Internal reasoning (use this to inform your response, but do NOT repeat it verbatim to the user):",
+        "synthesize them into a natural response",
+        "Known facts:",
+        "Recent conversation:",
+        "You are MK, a personal AI assistant.",
+        "You talk naturally like a knowledgeable friend.",
+        "You are loyal to your creator Mohammed.",
+        "Keep responses concise and genuine.",
+        "State what action should be taken.",
+        "Respond in 1-2 sentences only.",
+        "You are a reasoning engine."
+    };
+
+    // Count how many leak patterns are found
+    int leakCount = 0;
+    for (const auto& pattern : leakPatterns) {
+        if (result.find(pattern) != std::string::npos) {
+            leakCount++;
+        }
+    }
+
+    // If multiple leak patterns found, the response is mostly prompt echo - reject it
+    if (leakCount >= 2) {
+        return "";
+    }
+
+    // Strip individual leak pattern lines
+    for (const auto& pattern : leakPatterns) {
+        size_t pos = result.find(pattern);
+        while (pos != std::string::npos) {
+            // Find the start of the line containing this pattern
+            size_t lineStart = pos;
+            while (lineStart > 0 && result[lineStart - 1] != '\n') lineStart--;
+            // Find the end of the line
+            size_t lineEnd = result.find('\n', pos);
+            if (lineEnd == std::string::npos) lineEnd = result.size();
+            else lineEnd++; // include the newline
+            result.erase(lineStart, lineEnd - lineStart);
+            pos = result.find(pattern);
+        }
+    }
+
+    // Strip trailing prompt template lines (lines starting with "User:" or "MK:" at the end)
+    while (!result.empty()) {
+        // Find last non-whitespace content
+        size_t lastNonWs = result.find_last_not_of(" \t\n\r");
+        if (lastNonWs == std::string::npos) break;
+
+        // Find the start of the last line
+        size_t lastLineStart = result.rfind('\n', lastNonWs);
+        if (lastLineStart == std::string::npos) lastLineStart = 0;
+        else lastLineStart++;
+
+        std::string lastLine = result.substr(lastLineStart, lastNonWs - lastLineStart + 1);
+        // Trim leading whitespace from lastLine for comparison
+        size_t trimStart = 0;
+        while (trimStart < lastLine.size() && (lastLine[trimStart] == ' ' || lastLine[trimStart] == '\t'))
+            trimStart++;
+        lastLine = lastLine.substr(trimStart);
+
+        if (lastLine.rfind("User:", 0) == 0 || lastLine.rfind("MK:", 0) == 0) {
+            result = result.substr(0, lastLineStart);
+        } else {
+            break;
+        }
+    }
+
+    // Check if response is >80% identical to the system prompt (echo detection)
+    if (!result.empty()) {
+        static const std::string sysPrompt = "You are MK, a personal AI assistant. You are helpful, direct, and friendly. "
+            "You talk naturally like a knowledgeable friend. You are loyal to your creator Mohammed. "
+            "Keep responses concise and genuine. If you do not know something, say so honestly.";
+        // Simple character overlap check
+        int matchChars = 0;
+        std::string lowerResult = result;
+        std::string lowerPrompt = sysPrompt;
+        std::transform(lowerResult.begin(), lowerResult.end(), lowerResult.begin(), ::tolower);
+        std::transform(lowerPrompt.begin(), lowerPrompt.end(), lowerPrompt.begin(), ::tolower);
+        for (size_t i = 0; i + 20 < lowerPrompt.size(); i += 20) {
+            std::string chunk = lowerPrompt.substr(i, 20);
+            if (lowerResult.find(chunk) != std::string::npos) {
+                matchChars += 20;
+            }
+        }
+        float similarity = (float)matchChars / (float)lowerPrompt.size();
+        if (similarity > 0.8f) {
+            return "";
+        }
+    }
+
+    // Trim leading/trailing whitespace
+    size_t start = result.find_first_not_of(" \t\n\r");
+    size_t end = result.find_last_not_of(" \t\n\r");
+    if (start == std::string::npos) return "";
+    result = result.substr(start, end - start + 1);
+
+    return result;
+}
+
+// ============================================================
 // LLM Prompt Construction Helper
 // Single source of truth for building prompts with RAG context
 // ============================================================
@@ -940,9 +1055,11 @@ static std::string synthesizeResponse(MKSystem& sys, const std::string& input,
         std::string response;
         if (sys.llmEngine.isAvailable()) {
             response = sys.llmEngine.generate(prompt);
+            response = sanitizeLLMResponse(response, input);
         }
         if (response.empty() && sys.cloudLLM.isAvailable()) {
             response = sys.cloudLLM.generateWithContext(input, facts, history, "", MK_SYSTEM_PROMPT);
+            response = sanitizeLLMResponse(response, input);
         }
         if (!response.empty()) return response;
     }
@@ -1164,10 +1281,12 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
                     if (!history.empty()) fullPrompt += "Recent conversation:\n" + history + "\n";
                     fullPrompt += "User: " + input + "\nMK:";
                     response = sys.llmEngine.generate(fullPrompt);
+                    response = sanitizeLLMResponse(response, input);
                 }
 
                 if (response.empty() && sys.cloudLLM.isAvailable()) {
                     response = sys.cloudLLM.generateWithContext(input, relevantFacts, history, "", enhancedSystemPrompt);
+                    response = sanitizeLLMResponse(response, input);
                 }
             }
         }
@@ -1796,9 +1915,11 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
                 std::string prompt = buildLLMPrompt(input, {}, history);
                 if (sys.llmEngine.isAvailable()) {
                     response = sys.llmEngine.generate(prompt);
+                    response = sanitizeLLMResponse(response, input);
                 }
                 if (response.empty() && sys.cloudLLM.isAvailable()) {
                     response = sys.cloudLLM.generateWithContext(input, {}, history, "", MK_SYSTEM_PROMPT);
+                    response = sanitizeLLMResponse(response, input);
                 }
             }
         }
@@ -1979,6 +2100,12 @@ static void telegram_poll_loop(MKSystem& sys) {
                         // /logs - show today's LLM request statistics
                         std::string stats = sys.requestLogger.getStats();
                         sys.telegram->sendMessage(chatId, stats);
+                    } else if (msgText == "/crypto") {
+                        sys.telegram->handleCryptoCommand(chatId);
+                    } else if (msgText == "/devices") {
+                        sys.telegram->handleDevicesCommand(chatId);
+                    } else if (msgText == "/goals") {
+                        sys.telegram->handleGoalsCommand(chatId);
                     } else {
                         // Other command-based messages use autoReply
                         sys.telegram->autoReply(chatId, msgText);
@@ -2002,6 +2129,11 @@ static void telegram_poll_loop(MKSystem& sys) {
                                                      latencyMs, !reply.empty());
                         sys.requestLogger.logRequest(pickedProvider, msgText.substr(0, 40),
                                                      tokenEstimate, latencyMs, !reply.empty());
+                    }
+
+                    // Guard against empty reply before sending to Telegram
+                    if (reply.empty()) {
+                        reply = "I'm processing that but couldn't generate a response. Try again or rephrase.";
                     }
 
                     sys.telegram->sendMessage(chatId, reply);

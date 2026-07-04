@@ -1,0 +1,7 @@
+{
+  "task_id": "task-fix-mk-bugs",
+  "task_description": "Fix system prompt leakage, wire missing Telegram commands, add thinking engine validation, fix empty response bug, add HTML escaping, and fix failing test",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

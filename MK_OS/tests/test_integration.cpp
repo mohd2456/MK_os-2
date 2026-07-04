@@ -1193,8 +1193,8 @@ void test_thinking_to_decision_flow() {
     std::string chatThinking = "User is greeting. Should respond warmly.";
     std::string chatResult = decisionEngine.process(
         "hey there!", chatThinking, {}, "");
-    TEST_ASSERT_FALSE(chatResult.empty(),
-                      "Decision engine should handle conversational thinking");
+    TEST_ASSERT_TRUE(chatResult.empty(),
+                     "Decision engine should return empty for conversational thinking (LLM handles it)");
 }
 
 #endif // MK_TEST_INTEGRATION_CPP

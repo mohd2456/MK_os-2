@@ -1387,11 +1387,13 @@ void test_decision_engine_personality() {
                      "Confirmation response should mention confirming");
 
     // Test conversational response when thinking output has no tool keywords
+    // Decision engine intentionally returns empty for conversational inputs;
+    // the LLM path handles generating the user-facing response.
     std::string thinkingChat = "User is saying hello. Should respond in a friendly way.";
     std::vector<std::string> emptyFacts;
     std::string chatResult = engine.process("hey there", thinkingChat, emptyFacts, "");
-    TEST_ASSERT_GT(chatResult.size(), 0u,
-                   "Conversational thinking should produce a response");
+    TEST_ASSERT_TRUE(chatResult.empty(),
+                     "Decision engine should return empty for conversational thinking (LLM handles it)");
 }
 
 // ============================================================

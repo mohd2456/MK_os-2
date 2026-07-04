@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix system prompt leakage, wire /crypto /devices /goals commands, add thinking engine validation, fix empty response bug, add HTML escaping, prevent double responses",
+  "status": "in_progress",
+  "steps": [
+    "Step 1 - Add sanitizeLLMResponse() helper in system/mk_entry.cpp (before generate_ai_response around line 800): Create a static function that strips prompt-leak patterns from LLM responses. Patterns to strip: 'Known facts (use these to answer):', 'Answer the user\\'s question naturally', 'Do not list the raw facts', 'Internal reasoning (use this to inform your response, but do NOT repeat it verbatim to the user):', 'Known facts:', 'Recent conversation:', lines starting with 'User:' or 'MK:' at the end (the prompt template), any line containing 'synthesize them into a natural response'. Also strip responses that are >80% identical to the system prompt text. Trim leading/trailing whitespace after stripping.",
+    "Step 2 - Apply sanitizeLLMResponse() to ALL LLM response paths: In synthesizeResponse() after line ~941 (after sys.llmEngine.generate(prompt)), wrap: response = sanitizeLLMResponse(response, input). Same for the cloudLLM.generateWithContext response at line ~944. In generate_ai_response() conversation path: after sys.llmEngine.generate(fullPrompt) at line ~1163, wrap llmResponse = sanitizeLLMResponse(llmResponse, input). After sys.cloudLLM.generateWithContext at line ~1171, same. In the non-conversation fallback path around line 1795-1800 (the buildLLMPrompt path), wrap response = sanitizeLLMResponse(response, input) after each generate call.",
+    "Step 3 - Wire /crypto, /devices, /goals commands in mk_entry.cpp: In the Telegram polling command dispatcher (around line 1982, before the 'else { autoReply }' fallback), add: else if (msgText == '/crypto') { sys.telegram->handleCryptoCommand(chatId); } else if (msgText == '/devices') { sys.telegram->handleDevicesCommand(chatId); } else if (msgText == '/goals') { sys.telegram->handleGoalsCommand(chatId); }. These methods already exist in plugins/telegram.cpp and work correctly.",
+    "Step 4 - Add validateThinkingOutput() to thinking_engine.cpp: In the MKThinkingEngine class, add a private method validateThinkingOutput(const std::string& result, const std::string& userInput) that rejects: (a) results shorter than 10 chars, (b) results that are >70% similar to userInput (echo detection using character overlap), (c) results containing prompt-leak phrases like 'You are a reasoning engine', 'Respond in 1-2 sentences', 'State what action should be taken', (d) results that are just repetition of the same few words. Return empty string on rejection (the caller already handles empty as fallback). Apply this validation in the think() method right after getting 'result' from callProvider(), before the truncation logic.",
+    "Step 5 - Fix empty response bug: In mk_entry.cpp at line ~2007, before sys.telegram->sendMessage(chatId, reply), add a guard: if (reply.empty()) { reply = \"I'm processing that but couldn't generate a response. Try again or rephrase.\"; }. This ensures Telegram never gets a blank message.",
+    "Step 6 - Add HTML escaping: In plugins/telegram.cpp, add a private method escapeHtml(const std::string& text) that replaces & with &amp;, < with &lt;, > with &gt;. In sendMessage(), before urlEncoding the message, check if it contains any HTML tags that we deliberately use (like <b>, <code>, <i>). If it does NOT contain any intentional HTML formatting, escape the message. Create a helper shouldEscapeHtml() that returns false if message contains our known safe tags, true otherwise. Apply this to the main sendMessage path where user-generated LLM responses are sent (the reply at line 2007 in mk_entry.cpp) - wrap it: reply = sys.telegram->escapeForUser(reply) where escapeForUser only escapes if the reply doesn't already have intentional formatting.",
+    "Step 7 - Fix the failing test_thinking_to_decision_flow test: The test at tests/test_integration.cpp line 1197 expects decision_engine.process() to return non-empty for conversational thinking 'User is greeting. Should respond warmly.' with input 'hey there!'. But the decision engine intentionally returns empty for conversational inputs (it detects 'hey' as a greeting). Fix the test to match the actual designed behavior: conversational thinking SHOULD return empty (the LLM handles it). Change the assertion to TEST_ASSERT_TRUE(chatResult.empty(), 'Decision engine should return empty for conversational thinking (LLM handles it)')."
+  ],
+  "acceptance_criteria": [
+    "Running 'make' from MK_OS/ compiles without errors",
+    "Running 'make test' passes all tests (including the fixed test_thinking_to_decision_flow)",
+    "sanitizeLLMResponse() strips known prompt-leak phrases from responses",
+    "The /crypto command dispatches to handleCryptoCommand() instead of falling to autoReply",
+    "The /devices and /goals commands are similarly wired",
+    "validateThinkingOutput() rejects echoed inputs and prompt fragments",
+    "Empty replies are caught before sending to Telegram",
+    "LLM-generated responses going to Telegram have HTML special chars escaped when not intentionally formatted"
+  ],
+  "verification": [
+    "Run 'cd /projects/sandbox/MK_os-2/MK_OS && make' and confirm 0 errors",
+    "Run 'cd /projects/sandbox/MK_os-2/MK_OS && make test' and confirm all tests pass"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

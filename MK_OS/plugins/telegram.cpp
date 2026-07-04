@@ -172,12 +172,45 @@ public:
     std::string sendMessage(const std::string& chatId, const std::string& message) {
         if (!checkRateLimit()) return "";
 
+        std::string safeMessage = escapeForUser(message);
         std::string postData = "chat_id=" + chatId +
-                               "&text=" + urlEncode(message) +
+                               "&text=" + urlEncode(safeMessage) +
                                "&parse_mode=HTML";
 
         std::string url = "https://api.telegram.org/bot" + token + "/sendMessage";
         return request(url, postData);
+    }
+
+    // Escape HTML special characters for user-facing messages
+    // Only escapes if the message does NOT contain intentional HTML formatting
+    std::string escapeForUser(const std::string& text) const {
+        if (text.empty()) return text;
+        if (!shouldEscapeHtml(text)) return text;
+
+        std::string result;
+        result.reserve(text.size() + 32);
+        for (char c : text) {
+            switch (c) {
+                case '&': result += "&amp;"; break;
+                case '<': result += "&lt;"; break;
+                case '>': result += "&gt;"; break;
+                default: result += c; break;
+            }
+        }
+        return result;
+    }
+
+    // Returns false if the message contains known safe HTML tags we deliberately use
+    bool shouldEscapeHtml(const std::string& text) const {
+        // Check for intentional HTML formatting tags
+        static const std::vector<std::string> safeTags = {
+            "<b>", "</b>", "<i>", "</i>", "<code>", "</code>",
+            "<pre>", "</pre>", "<a ", "</a>", "&lt;", "&gt;", "&amp;"
+        };
+        for (const auto& tag : safeTags) {
+            if (text.find(tag) != std::string::npos) return false;
+        }
+        return true;
     }
 
     // Send message with inline keyboard

@@ -16,6 +16,7 @@
 #include <sstream>
 #include <algorithm>
 #include <iostream>
+#include <map>
 #include <curl/curl.h>
 
 class MKThinkingEngine {
@@ -184,6 +185,70 @@ private:
         return content;
     }
 
+    // Validate thinking output quality
+    // Rejects garbage output from weak/3B models that echo prompts or produce nonsense
+    std::string validateThinkingOutput(const std::string& result, const std::string& userInput) const {
+        if (result.empty()) return "";
+
+        // (a) Reject results shorter than 10 chars (too short to be useful reasoning)
+        if (result.size() < 10) return "";
+
+        // (b) Echo detection: reject if >70% similar to userInput
+        if (!userInput.empty() && userInput.size() > 5) {
+            std::string lowerResult = result;
+            std::string lowerInput = userInput;
+            std::transform(lowerResult.begin(), lowerResult.end(), lowerResult.begin(), ::tolower);
+            std::transform(lowerInput.begin(), lowerInput.end(), lowerInput.begin(), ::tolower);
+
+            // Character overlap check
+            int matchChars = 0;
+            size_t chunkSize = std::min((size_t)10, lowerInput.size());
+            for (size_t i = 0; i + chunkSize <= lowerInput.size(); i += chunkSize) {
+                std::string chunk = lowerInput.substr(i, chunkSize);
+                if (lowerResult.find(chunk) != std::string::npos) {
+                    matchChars += (int)chunkSize;
+                }
+            }
+            float similarity = (float)matchChars / (float)lowerInput.size();
+            if (similarity > 0.7f) return "";
+        }
+
+        // (c) Reject prompt-leak phrases
+        static const std::vector<std::string> promptLeaks = {
+            "You are a reasoning engine",
+            "Respond in 1-2 sentences",
+            "State what action should be taken",
+            "You are MK, a personal AI assistant",
+            "In 1-2 sentences, what should MK do"
+        };
+        std::string lowerResult = result;
+        std::transform(lowerResult.begin(), lowerResult.end(), lowerResult.begin(), ::tolower);
+        for (const auto& leak : promptLeaks) {
+            std::string lowerLeak = leak;
+            std::transform(lowerLeak.begin(), lowerLeak.end(), lowerLeak.begin(), ::tolower);
+            if (lowerResult.find(lowerLeak) != std::string::npos) return "";
+        }
+
+        // (d) Reject repetition: if the same word appears more than 60% of the time
+        std::istringstream ss(result);
+        std::string word;
+        std::map<std::string, int> wordCounts;
+        int totalWords = 0;
+        while (ss >> word) {
+            std::string lw = word;
+            std::transform(lw.begin(), lw.end(), lw.begin(), ::tolower);
+            wordCounts[lw]++;
+            totalWords++;
+        }
+        if (totalWords > 3) {
+            for (const auto& wc : wordCounts) {
+                if ((float)wc.second / (float)totalWords > 0.6f) return "";
+            }
+        }
+
+        return result;
+    }
+
 public:
     MKThinkingEngine()
         : providerRouter_(nullptr), maxTokens_(100), temperature_(0.3f) {}
@@ -252,6 +317,10 @@ public:
 
         // Call the provider
         std::string result = callProvider(provider, prompt);
+
+        // Validate thinking output quality (reject garbage from weak models)
+        result = validateThinkingOutput(result, userInput);
+        if (result.empty()) return "";
 
         // Trim and validate - should be short (1-2 sentences)
         if (result.size() > 500) {

@@ -366,6 +366,7 @@ public:
             if (!isSimpleConversation && words <= 3 &&
                 lower.find('?') == std::string::npos &&
                 lower.find("docker") == std::string::npos &&
+                lower.find("container") == std::string::npos &&
                 lower.find("ssh") == std::string::npos &&
                 lower.find("system") == std::string::npos &&
                 lower.find("status") == std::string::npos) {
