@@ -68,17 +68,10 @@ static int g_assertions_failed = 0;
 // The include paths are relative to MK_OS/ (the working directory)
 // ============================================================
 #include "../ai_core/hre/pattern_graph.cpp"
-#include "../ai_core/hre/deep_reasoner.cpp"
-#include "../ai_core/hre/reasoning_chains.cpp"
-#include "../ai_core/hre/composer.cpp"
-#include "../ai_core/smart_router.cpp"
 #include "../mk_brain/vector_search/ann_search.cpp"
 #include "../mk_brain/embeddings/embeddings_eng.cpp"
 #include "../ai_core/math_solver.cpp"
 #include "../tools/code_runner.cpp"
-#include "../mk_brain/personality/casual_responses.cpp"
-#include "../ai_core/conversation_mode.cpp"
-#include "../ai_core/idea_engine.cpp"
 #include "../mk_brain/memory/brain_memory.cpp"
 #include "../llm/cloud_llm.cpp"
 #include "../llm/llm_engine.cpp"
@@ -110,6 +103,31 @@ static int g_assertions_failed = 0;
 #include "../sync/knowledge_sync.cpp"
 #include "../sync/device_comm.cpp"
 #include "../config/mk_config.cpp"
+
+// Stub helpers needed by the orchestrator (in the test build these are not from mk_entry.cpp)
+#include "../mk_brain/learning/learning_engine.cpp"
+#include "../mk_brain/fact_extractor/biographical.cpp"
+#include "../mk_brain/personality/response_style.cpp"
+
+// Minimal sanitizeLLMResponse for test builds
+static std::string sanitizeLLMResponse(const std::string& response, const std::string& /*userInput*/) {
+    return response;
+}
+
+// Minimal filterRelevantFacts for test builds
+static std::vector<std::string> filterRelevantFacts(
+    const std::string& /*input*/,
+    const std::vector<std::string>& rawFacts,
+    size_t maxFacts = 5) {
+    std::vector<std::string> result;
+    for (size_t i = 0; i < rawFacts.size() && i < maxFacts; i++) {
+        result.push_back(rawFacts[i]);
+    }
+    return result;
+}
+
+// Orchestrator
+#include "../orchestrator/conversation_loop.cpp"
 
 // Integration tests
 #include "test_integration.cpp"
@@ -156,208 +174,6 @@ void test_pattern_graph() {
     // Test reverse query
     auto reverseResult = graph.reverseQuery("is_a", "unique_test_animal_99");
     TEST_ASSERT_GT(reverseResult.size(), 0u, "reverseQuery should find sources for the target");
-}
-
-// ============================================================
-// TEST: Reasoning Chains
-// ============================================================
-void test_reasoning_chains() {
-    MKPatternGraph graph("ai_core/hre/knowledge_files");
-    graph.loadAllKnowledge();
-
-    MKReasoningChains reasoning("ai_core/hre/knowledge_files");
-
-    // Verify rules are loaded
-    TEST_ASSERT_GT(reasoning.ruleCount(), 0, "Should have reasoning rules loaded");
-
-    // deriveAll should complete without crash
-    int newFacts = reasoning.deriveAll(graph);
-    TEST_ASSERT_TRUE(true, "deriveAll completed without crash");
-    (void)newFacts; // Result can be 0 in current implementation
-
-    // Test reasoning with known facts:
-    // Add facts that form a chain: "sparrow is_a bird" + "bird has wings"
-    // Rule: inheritance_has => "sparrow has wings"
-    graph.addFact("sparrow", "is_a", "bird", 1.0f);
-    graph.addFact("bird", "has", "wings", 1.0f);
-
-    auto results = reasoning.reason("sparrow", "has", graph);
-    TEST_ASSERT_GT(results.size(), 0u,
-                   "Reasoning should derive 'sparrow has wings' from inheritance rule");
-
-    if (!results.empty()) {
-        TEST_ASSERT_EQ(results[0].derived_target, "wings",
-                       "Derived target should be 'wings'");
-        TEST_ASSERT_EQ(results[0].rule_name, "inheritance_has",
-                       "Should use the inheritance_has rule");
-        TEST_ASSERT_GT(results[0].confidence, 0.0f,
-                       "Confidence should be greater than 0");
-        TEST_ASSERT_GT(results[0].chain.size(), 0u,
-                       "Reasoning chain should have steps");
-    }
-
-    // Test another rule: transitive is_a
-    // "poodle is_a dog" + "dog is_a animal" => "poodle is_a animal"
-    graph.addFact("poodle", "is_a", "dog", 1.0f);
-    graph.addFact("dog", "is_a", "animal", 1.0f);
-
-    auto transitiveResults = reasoning.reason("poodle", "is_a", graph);
-    TEST_ASSERT_GT(transitiveResults.size(), 0u,
-                   "Should derive transitive is_a: poodle is_a animal");
-
-    // Verify inference count increases
-    TEST_ASSERT_GT(reasoning.inferenceCount(), 0, "Should have made inferences");
-}
-
-// ============================================================
-// TEST: Smart Router
-// ============================================================
-void test_smart_router() {
-    MKSmartRouter router;
-
-    // Test: factual query should route to GRAPH (using "what is" keyword)
-    auto graphDecision = router.route("what is python");
-    TEST_ASSERT_EQ(static_cast<int>(graphDecision.primaryRoute),
-                   static_cast<int>(MKRouteType::GRAPH),
-                   "'what is python' should route to GRAPH");
-    TEST_ASSERT_GT(graphDecision.confidence, 0.3f,
-                   "GRAPH route confidence should be > 0.3");
-
-    // Test: weather query should route to INSTANT
-    auto instantDecision = router.route("weather in london");
-    TEST_ASSERT_EQ(static_cast<int>(instantDecision.primaryRoute),
-                   static_cast<int>(MKRouteType::INSTANT),
-                   "'weather in london' should route to INSTANT");
-    TEST_ASSERT_GT(instantDecision.confidence, 0.3f,
-                   "INSTANT route confidence should be > 0.3");
-
-    // Test: complex reasoning query should route to REASON
-    auto reasonDecision = router.route("explain quantum computing step by step");
-    TEST_ASSERT_EQ(static_cast<int>(reasonDecision.primaryRoute),
-                   static_cast<int>(MKRouteType::REASON),
-                   "'explain quantum computing step by step' should route to REASON");
-    TEST_ASSERT_GT(reasonDecision.confidence, 0.3f,
-                   "REASON route confidence should be > 0.3");
-
-    // Test: creative task should route to GENERATE
-    auto generateDecision = router.route("write me a poem");
-    TEST_ASSERT_EQ(static_cast<int>(generateDecision.primaryRoute),
-                   static_cast<int>(MKRouteType::GENERATE),
-                   "'write me a poem' should route to GENERATE");
-    TEST_ASSERT_GT(generateDecision.confidence, 0.3f,
-                   "GENERATE route confidence should be > 0.3");
-
-    // Test: current events should route to SEARCH
-    auto searchDecision = router.route("latest breaking news this year");
-    TEST_ASSERT_EQ(static_cast<int>(searchDecision.primaryRoute),
-                   static_cast<int>(MKRouteType::SEARCH),
-                   "'latest breaking news this year' should route to SEARCH");
-    TEST_ASSERT_GT(searchDecision.confidence, 0.3f,
-                   "SEARCH route confidence should be > 0.3");
-
-    // Verify all decisions have valid confidence values
-    TEST_ASSERT_TRUE(graphDecision.confidence <= 1.0f, "Confidence should be <= 1.0");
-    TEST_ASSERT_TRUE(instantDecision.confidence <= 1.0f, "Confidence should be <= 1.0");
-    TEST_ASSERT_TRUE(reasonDecision.confidence <= 1.0f, "Confidence should be <= 1.0");
-    TEST_ASSERT_TRUE(generateDecision.confidence <= 1.0f, "Confidence should be <= 1.0");
-    TEST_ASSERT_TRUE(searchDecision.confidence <= 1.0f, "Confidence should be <= 1.0");
-}
-
-// ============================================================
-// TEST: Deep Reasoner
-// ============================================================
-void test_deep_reasoner() {
-    MKPatternGraph graph("ai_core/hre/knowledge_files");
-    graph.loadAllKnowledge();
-
-    MKDeepReasoner reasoner(10);
-
-    // Test think() on a known topic
-    auto thought = reasoner.think("what is python", graph);
-
-    // Should have steps
-    TEST_ASSERT_GT(thought.steps.size(), 0u, "Thought chain should have steps");
-
-    // Should have a decompose step
-    TEST_ASSERT_EQ(thought.steps[0].type, "decompose",
-                   "First step should be decompose");
-
-    // The result should not crash and should produce some output
-    // finalAnswer may be empty if no knowledge found, but the process should complete
-    TEST_ASSERT_TRUE(true, "think() completed without crash");
-
-    // Test with a query that triggers causal reasoning
-    auto causalThought = reasoner.think("why does exercise help", graph);
-    TEST_ASSERT_GT(causalThought.steps.size(), 0u,
-                   "Causal thought chain should have steps");
-
-    // Test plan() method
-    auto planSteps = reasoner.plan("learn programming", graph);
-    TEST_ASSERT_GT(planSteps.size(), 0u, "plan() should return steps");
-
-    // Test contradiction detection
-    graph.addFact("hot", "opposite_of", "cold", 1.0f);
-    graph.addFact("water", "has_property", "hot", 1.0f);
-    bool contradiction = reasoner.checkContradiction("water", "has_property", "cold", graph);
-    TEST_ASSERT_TRUE(contradiction, "Should detect contradiction between hot and cold");
-}
-
-// ============================================================
-// TEST: Composer
-// ============================================================
-void test_composer() {
-    MKComposer composer(MKComposerMode::FRIENDLY);
-
-    // Test composeAnswer with facts
-    MKResponseContext ctx;
-    ctx.subject = "python";
-    ctx.relation = "is_a";
-    ctx.object = "language";
-    ctx.facts_found = {"programming language"};
-    ctx.is_partial = false;
-    ctx.confidence = 1.0f;
-
-    std::string answer = composer.composeAnswer(ctx);
-    TEST_ASSERT_GT(answer.size(), 0u, "composeAnswer should return non-empty string");
-
-    // Test composeAnswer with no facts (unknown)
-    MKResponseContext emptyCtx;
-    emptyCtx.subject = "xyznoexist";
-    emptyCtx.relation = "is_a";
-    emptyCtx.object = "";
-    emptyCtx.is_partial = false;
-    emptyCtx.confidence = 0.0f;
-
-    std::string unknownAnswer = composer.composeAnswer(emptyCtx);
-    TEST_ASSERT_GT(unknownAnswer.size(), 0u, "composeAnswer for unknown should still produce output");
-
-    // Test composeConfirmation
-    std::string confirmation = composer.composeConfirmation("cat", "is_a", "animal");
-    TEST_ASSERT_GT(confirmation.size(), 0u, "composeConfirmation should return non-empty string");
-
-    // Test composeGreeting
-    std::string greeting = composer.composeGreeting();
-    TEST_ASSERT_GT(greeting.size(), 0u, "composeGreeting should return non-empty string");
-
-    // Test composeHelp
-    std::string help = composer.composeHelp();
-    TEST_ASSERT_GT(help.size(), 0u, "composeHelp should return non-empty string");
-
-    // Test composeFactList
-    std::vector<std::pair<std::string, std::string>> facts = {
-        {"is_a", "animal"},
-        {"has", "fur"},
-        {"can", "purr"}
-    };
-    std::string factList = composer.composeFactList("cat", facts);
-    TEST_ASSERT_GT(factList.size(), 0u, "composeFactList should return non-empty string");
-
-    // Test composeParagraph
-    std::string paragraph = composer.composeParagraph("cat", facts);
-    TEST_ASSERT_GT(paragraph.size(), 0u, "composeParagraph should return non-empty string");
-
-    // Test compose count tracking
-    TEST_ASSERT_GT(composer.composeCount(), 0, "Compose count should be positive after usage");
 }
 
 // ============================================================
@@ -589,100 +405,6 @@ void test_code_runner_sanitization() {
 }
 
 // ============================================================
-// TEST: Conversation Mode (mood detection, time-of-day, story mode)
-// ============================================================
-void test_conversation_mode() {
-    MKConversationMode conv;
-
-    // --- Mood detection ---
-    // Happy mood
-    auto happyMood = conv.detectMood("I'm so hyped and excited about this!");
-    TEST_ASSERT_EQ(static_cast<int>(happyMood.mood), static_cast<int>(MKMood::HAPPY),
-                   "Hyped/excited input should detect HAPPY mood");
-    TEST_ASSERT_GT(happyMood.confidence, 0.0f, "Happy mood confidence should be > 0");
-    TEST_ASSERT_FALSE(happyMood.trigger_word.empty(), "Should have a trigger word for happy");
-
-    // Sad mood
-    auto sadMood = conv.detectMood("I feel so sad and lonely today, drained honestly");
-    TEST_ASSERT_EQ(static_cast<int>(sadMood.mood), static_cast<int>(MKMood::SAD),
-                   "Sad/lonely/drained input should detect SAD mood");
-    TEST_ASSERT_GT(sadMood.confidence, 0.0f, "Sad mood confidence should be > 0");
-
-    // Angry mood
-    auto angryMood = conv.detectMood("I'm so pissed and furious right now");
-    TEST_ASSERT_EQ(static_cast<int>(angryMood.mood), static_cast<int>(MKMood::ANGRY),
-                   "Pissed/furious input should detect ANGRY mood");
-
-    // Nervous mood
-    auto nervousMood = conv.detectMood("I'm really nervous and anxious about the test");
-    TEST_ASSERT_EQ(static_cast<int>(nervousMood.mood), static_cast<int>(MKMood::NERVOUS),
-                   "Nervous/anxious input should detect NERVOUS mood");
-
-    // Neutral mood (no emotional keywords)
-    auto neutralMood = conv.detectMood("the sky is blue");
-    TEST_ASSERT_EQ(static_cast<int>(neutralMood.mood), static_cast<int>(MKMood::NEUTRAL),
-                   "Neutral statement should detect NEUTRAL mood");
-    TEST_ASSERT_EQ(neutralMood.confidence, 0.0f, "Neutral mood confidence should be 0");
-
-    // Emotion intensity: strong emotions with multiple keywords + caps/exclamation
-    auto strongMood = conv.detectMood("OMG I'M SO EXCITED AND HAPPY AND AMAZING!!!!");
-    TEST_ASSERT_TRUE(strongMood.intensity == MKEmotionIntensity::STRONG ||
-                     strongMood.intensity == MKEmotionIntensity::EXTREME,
-                     "Multiple keywords + caps + exclamation should give STRONG or EXTREME intensity");
-
-    // --- Time of day ---
-    MKTimeOfDay tod = conv.getTimeOfDay();
-    // Just verify it returns a valid enum value (time-dependent, but should not crash)
-    TEST_ASSERT_TRUE(static_cast<int>(tod) >= 0 && static_cast<int>(tod) <= 5,
-                     "getTimeOfDay should return valid MKTimeOfDay enum value");
-
-    // --- Story mode detection ---
-    // Short input should NOT trigger story mode
-    bool shortStory = conv.detectStoryMode("hey what's up");
-    TEST_ASSERT_FALSE(shortStory, "Short input should not trigger story mode");
-
-    // Long narrative input should trigger story mode
-    bool longStory = conv.detectStoryMode(
-        "bro guess what happened today so basically I was at the store and then "
-        "this random dude came up and started talking about aliens and like "
-        "literally he was so convinced and anyway turns out he was right");
-    TEST_ASSERT_TRUE(longStory, "Long narrative with story indicators should trigger story mode");
-
-    // --- isConversation classification ---
-    TEST_ASSERT_TRUE(conv.isConversation("yo"), "Greeting 'yo' should be conversation");
-    TEST_ASSERT_TRUE(conv.isConversation("hey"), "Greeting 'hey' should be conversation");
-    TEST_ASSERT_TRUE(conv.isConversation("bye"), "Goodbye should be conversation");
-    TEST_ASSERT_FALSE(conv.isConversation("/help"), "Command should not be conversation");
-    TEST_ASSERT_FALSE(conv.isConversation("what is the capital of France?"),
-                      "Factual question should not be conversation");
-    TEST_ASSERT_TRUE(conv.isConversation("yeah"), "Vague response should be conversation");
-    TEST_ASSERT_TRUE(conv.isConversation("fr"), "Vague response 'fr' should be conversation");
-
-    // --- classifyInput types ---
-    auto greetType = conv.classifyInput("hey");
-    TEST_ASSERT_EQ(static_cast<int>(greetType), static_cast<int>(MKInputType::GREETING),
-                   "'hey' should classify as GREETING");
-
-    auto byeType = conv.classifyInput("gotta go");
-    TEST_ASSERT_EQ(static_cast<int>(byeType), static_cast<int>(MKInputType::GOODBYE),
-                   "'gotta go' should classify as GOODBYE");
-
-    auto cmdType = conv.classifyInput("/stats");
-    TEST_ASSERT_EQ(static_cast<int>(cmdType), static_cast<int>(MKInputType::COMMAND),
-                   "'/stats' should classify as COMMAND");
-
-    auto vagueType = conv.classifyInput("facts");
-    TEST_ASSERT_EQ(static_cast<int>(vagueType), static_cast<int>(MKInputType::VAGUE_RESPONSE),
-                   "'facts' should classify as VAGUE_RESPONSE");
-
-    // --- Topic memory ---
-    conv.pushTopic("python");
-    conv.pushTopic("music");
-    TEST_ASSERT_EQ(conv.getLastTopic(), std::string("music"), "Last topic should be 'music'");
-    TEST_ASSERT_EQ((int)conv.getRecentTopics().size(), 2, "Should have 2 recent topics");
-}
-
-// ============================================================
 // TEST: Math Solver - Arithmetic Pattern Detection
 // ============================================================
 void test_math_arithmetic_detection() {
@@ -720,73 +442,6 @@ void test_math_arithmetic_detection() {
     auto result3 = math.evaluateArithmetic("10/2");
     TEST_ASSERT_TRUE(result3.success, "evaluateArithmetic('10/2') should succeed");
     TEST_ASSERT_TRUE(result3.answer.find("5") != std::string::npos, "10/2 should equal 5");
-}
-
-// ============================================================
-// TEST: Conversation Mode - 'yes' as VAGUE_RESPONSE
-// ============================================================
-void test_conversation_yes_vague() {
-    MKConversationMode conv;
-
-    // 'yes' should classify as VAGUE_RESPONSE
-    auto yesType = conv.classifyInput("yes");
-    TEST_ASSERT_EQ(static_cast<int>(yesType), static_cast<int>(MKInputType::VAGUE_RESPONSE),
-                   "'yes' should classify as VAGUE_RESPONSE");
-
-    // 'yes' should be identified as conversation
-    TEST_ASSERT_TRUE(conv.isConversation("yes"), "'yes' should be identified as conversation");
-}
-
-// ============================================================
-// TEST: Idea Engine (idea generation, brainstorm)
-// ============================================================
-void test_idea_engine() {
-    MKPatternGraph graph("ai_core/hre/knowledge_files");
-    graph.loadAllKnowledge();
-
-    MKIdeaEngine ideaEngine;
-
-    // Generate a single idea
-    MKIdea idea = ideaEngine.generateIdea(graph);
-    TEST_ASSERT_FALSE(idea.conceptA.empty(), "Generated idea should have conceptA");
-    TEST_ASSERT_FALSE(idea.conceptB.empty(), "Generated idea should have conceptB");
-    TEST_ASSERT_FALSE(idea.bridge.empty(), "Generated idea should have a bridge");
-    TEST_ASSERT_FALSE(idea.idea.empty(), "Generated idea should have an idea sentence");
-    TEST_ASSERT_FALSE(idea.category.empty(), "Generated idea should have a category");
-    TEST_ASSERT_TRUE(idea.feasibility >= 0.0f && idea.feasibility <= 1.0f,
-                     "Feasibility should be in [0,1]");
-    TEST_ASSERT_TRUE(idea.novelty >= 0.0f && idea.novelty <= 1.0f,
-                     "Novelty should be in [0,1]");
-    TEST_ASSERT_TRUE(idea.timestamp > 0, "Timestamp should be positive");
-
-    // Generate multiple ideas to verify diversity
-    MKIdea idea2 = ideaEngine.generateIdea(graph);
-    TEST_ASSERT_FALSE(idea2.idea.empty(), "Second generated idea should not be empty");
-    // Concepts can differ (not deterministic, but should produce something)
-
-    // Brainstorm on a topic
-    auto brainstormResults = ideaEngine.brainstorm(graph, "python", 3);
-    TEST_ASSERT_GT((int)brainstormResults.size(), 0, "Brainstorm should return at least 1 idea");
-    TEST_ASSERT_TRUE(brainstormResults.size() <= 3, "Brainstorm should return at most 3 ideas");
-    for (const auto& bi : brainstormResults) {
-        TEST_ASSERT_EQ(bi.conceptA, std::string("python"),
-                       "Brainstorm ideas should have topic as conceptA");
-        TEST_ASSERT_FALSE(bi.conceptB.empty(), "Brainstorm idea should have conceptB");
-        TEST_ASSERT_FALSE(bi.idea.empty(), "Brainstorm idea sentence should not be empty");
-    }
-
-    // inventFor
-    auto inventResults = ideaEngine.inventFor(graph, "slow computer performance");
-    TEST_ASSERT_GT((int)inventResults.size(), 0, "inventFor should return ideas");
-    for (const auto& inv : inventResults) {
-        TEST_ASSERT_FALSE(inv.idea.empty(), "inventFor idea should not be empty");
-        TEST_ASSERT_EQ(inv.category, std::string("invention"),
-                       "inventFor category should be 'invention'");
-    }
-
-    // History tracking
-    auto history = ideaEngine.getHistory();
-    TEST_ASSERT_GT((int)history.size(), 0, "History should not be empty after generating ideas");
 }
 
 // ============================================================
@@ -1155,6 +810,128 @@ void test_provider_status_report() {
 }
 
 // ============================================================
+// TEST: MKOrchestrator - Basic Functionality
+// ============================================================
+void test_orchestrator_respond_non_empty() {
+    MKPatternGraph graph("ai_core/hre/knowledge_files");
+    graph.loadAllKnowledge();
+
+    MKBrainMemory memory(10);
+    MKCloudLLM cloudLLM;
+    MKLLMEngine llmEngine;
+    MKProviderRouter providerRouter;
+    MKRequestLogger requestLogger;
+    MKResourceMonitor resourceMonitor;
+    MKDeviceRegistry deviceRegistry;
+    MKLearningEngine learningEngine;
+    MKBiographicalExtractor factExtractor;
+
+    static const std::string testPrompt =
+        "You are MK, a personal AI assistant.";
+
+    MKOrchestrator orch;
+    orch.graph = &graph;
+    orch.brainMemory = &memory;
+    orch.cloudLLM = &cloudLLM;
+    orch.llmEngine = &llmEngine;
+    orch.providerRouter = &providerRouter;
+    orch.requestLogger = &requestLogger;
+    orch.resourceMonitor = &resourceMonitor;
+    orch.deviceRegistry = &deviceRegistry;
+    orch.learningEngine = &learningEngine;
+    orch.factExtractor = &factExtractor;
+    orch.systemPrompt = &testPrompt;
+
+    // Without LLM available, respond() should still return a fallback (not crash)
+    std::string response = orch.respond("hello");
+    TEST_ASSERT_FALSE(response.empty(),
+                      "Orchestrator should return non-empty fallback when LLM unavailable");
+
+    // Test with a query that has graph knowledge
+    std::string pythonResponse = orch.respond("what is python");
+    TEST_ASSERT_FALSE(pythonResponse.empty(),
+                      "Orchestrator should return facts-based response for known topic");
+}
+
+// ============================================================
+// TEST: MKOrchestrator - Tool Call Detection
+// ============================================================
+void test_orchestrator_tool_call_detection() {
+    MKPatternGraph graph("ai_core/hre/knowledge_files");
+    MKBrainMemory memory(10);
+    MKCloudLLM cloudLLM;
+    MKLLMEngine llmEngine;
+    MKProviderRouter providerRouter;
+    MKRequestLogger requestLogger;
+    MKResourceMonitor resourceMonitor;
+    MKDeviceRegistry deviceRegistry;
+    MKLearningEngine learningEngine;
+    MKBiographicalExtractor factExtractor;
+
+    static const std::string testPrompt = "You are MK.";
+
+    MKOrchestrator orch;
+    orch.graph = &graph;
+    orch.brainMemory = &memory;
+    orch.cloudLLM = &cloudLLM;
+    orch.llmEngine = &llmEngine;
+    orch.providerRouter = &providerRouter;
+    orch.requestLogger = &requestLogger;
+    orch.resourceMonitor = &resourceMonitor;
+    orch.deviceRegistry = &deviceRegistry;
+    orch.learningEngine = &learningEngine;
+    orch.factExtractor = &factExtractor;
+    orch.systemPrompt = &testPrompt;
+
+    // Simulate a response containing a tool call
+    // The detectToolCall is a private method, but we can test the overall flow
+    // by checking that the orchestrator handles empty/non-empty responses gracefully
+    std::string emptyResponse = orch.respond("");
+    TEST_ASSERT_TRUE(emptyResponse.empty(),
+                     "Empty input should return empty response");
+}
+
+// ============================================================
+// TEST: MKOrchestrator - Prompt Building includes facts
+// ============================================================
+void test_orchestrator_prompt_includes_facts() {
+    MKPatternGraph graph("ai_core/hre/knowledge_files");
+    graph.addFact("test_subject_xyz", "is_a", "test_category_abc", 1.0f);
+
+    MKBrainMemory memory(10);
+    MKCloudLLM cloudLLM;
+    MKLLMEngine llmEngine;
+    MKProviderRouter providerRouter;
+    MKRequestLogger requestLogger;
+    MKResourceMonitor resourceMonitor;
+    MKDeviceRegistry deviceRegistry;
+    MKLearningEngine learningEngine;
+    MKBiographicalExtractor factExtractor;
+
+    static const std::string testPrompt = "You are MK.";
+
+    MKOrchestrator orch;
+    orch.graph = &graph;
+    orch.brainMemory = &memory;
+    orch.cloudLLM = &cloudLLM;
+    orch.llmEngine = &llmEngine;
+    orch.providerRouter = &providerRouter;
+    orch.requestLogger = &requestLogger;
+    orch.resourceMonitor = &resourceMonitor;
+    orch.deviceRegistry = &deviceRegistry;
+    orch.learningEngine = &learningEngine;
+    orch.factExtractor = &factExtractor;
+    orch.systemPrompt = &testPrompt;
+
+    // When querying a topic that has facts in the graph, the fallback should
+    // include those facts (since LLM is unavailable)
+    std::string response = orch.respond("test_subject_xyz");
+    TEST_ASSERT_TRUE(response.find("test_subject_xyz") != std::string::npos ||
+                     response.find("test_category_abc") != std::string::npos,
+                     "Response should include knowledge graph facts when LLM unavailable");
+}
+
+// ============================================================
 // Main: Run all tests
 // ============================================================
 int main() {
@@ -1165,18 +942,11 @@ int main() {
     std::cout << std::endl;
 
     RUN_TEST(test_pattern_graph);
-    RUN_TEST(test_reasoning_chains);
-    RUN_TEST(test_smart_router);
-    RUN_TEST(test_deep_reasoner);
-    RUN_TEST(test_composer);
     RUN_TEST(test_vector_search);
     RUN_TEST(test_embeddings_engine);
     RUN_TEST(test_math_solver);
     RUN_TEST(test_code_runner_sanitization);
-    RUN_TEST(test_conversation_mode);
     RUN_TEST(test_math_arithmetic_detection);
-    RUN_TEST(test_conversation_yes_vague);
-    RUN_TEST(test_idea_engine);
 
     // Integration tests (FEAT-005)
     RUN_TEST(test_technical_analysis_rsi);
@@ -1201,9 +971,6 @@ int main() {
     RUN_TEST(test_self_funding_track);
     RUN_TEST(test_trading_bot_paper_mode);
     RUN_TEST(test_signal_engine_generation);
-    RUN_TEST(test_smart_router_crypto);
-    RUN_TEST(test_smart_router_homelab);
-    RUN_TEST(test_smart_router_mind);
     RUN_TEST(test_hmac_sha256_rfc4231);
     RUN_TEST(test_device_comm_auth_validation);
     RUN_TEST(test_ssh_controller_shell_escape);
@@ -1231,6 +998,11 @@ int main() {
     RUN_TEST(test_setkey_flow);
     RUN_TEST(test_request_logging);
     RUN_TEST(test_provider_quota_tracking);
+
+    // Orchestrator tests (FEAT-002 pivot)
+    RUN_TEST(test_orchestrator_respond_non_empty);
+    RUN_TEST(test_orchestrator_tool_call_detection);
+    RUN_TEST(test_orchestrator_prompt_includes_facts);
 
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;

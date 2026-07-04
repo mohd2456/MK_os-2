@@ -59,14 +59,8 @@ namespace Color {
 // ============================================================
 #include "diagnostics.cpp"
 #include "../ai_core/hre/pattern_graph.cpp"
-#include "../ai_core/hre/deep_reasoner.cpp"
-#include "../ai_core/hre/reasoning_chains.cpp"
-#include "../ai_core/hre/composer.cpp"
-#include "../ai_core/smart_router.cpp"
 #include "../network/realtime_apis.cpp"
 #include "../ai_core/persistent_memory.cpp"
-#include "../ai_core/knowledge_integrator.cpp"
-#include "../ai_core/self_improver.cpp"
 #include "../mk_brain/personality/response_style.cpp"
 #include "../mk_brain/learning/learning_engine.cpp"
 #include "../mk_brain/memory/brain_memory.cpp"
@@ -75,17 +69,11 @@ namespace Color {
 #include "../mk_brain/cashe/cache_mgr.cpp"
 #include "../mk_brain/daily_briefing.cpp"
 #include "../mk_brain/fact_extractor/biographical.cpp"
-#include "../mk_brain/reasoning/reasoning_engine.cpp"
 #include "daemon.cpp"
 #include "shell.cpp"
 #include "service_manager.cpp"
 #include "../plugins/telegram.cpp"
-#include "../ai_core/neural_net.cpp"
 #include "../ai_core/math_solver.cpp"
-#include "../mk_brain/personality/casual_responses.cpp"
-#include "../ai_core/conversation_mode.cpp"
-
-#include "../ai_core/idea_engine.cpp"
 #include "../plugins/pc_helper.cpp"
 #include "../crypto/market_data.cpp"
 #include "../crypto/technical_analysis.cpp"
@@ -234,21 +222,27 @@ static void print_banner() {
     std::cout << Color::RESET << "\n";
 }
 
+// Forward declaration of orchestrator class (fully defined later in this file)
+class MKOrchestrator;
+
+// ============================================================
+// MK System Prompt (single source of truth)
+// Defined here so it can be referenced by MKSystem constructor.
+// ============================================================
+static const std::string MK_SYSTEM_PROMPT =
+    "You are MK, a personal AI assistant. You are helpful, direct, and friendly. "
+    "You talk naturally like a knowledgeable friend. You are loyal to your creator Mohammed. "
+    "Keep responses concise and genuine. If you do not know something, say so honestly.";
+
 // ============================================================
 // MKSystem - Orchestrates all real modules
 // ============================================================
 struct MKSystem {
     MKPatternGraph graph;
-    MKSmartRouter router;
     MKRealtimeAPIs realtimeApis;
     MKPersistentMemory memory;
-    MKKnowledgeIntegrator integrator;
-    MKSelfImprover improver;
     MKDiagnostics diagnostics;
     MKResponseStyle style;
-    MKDeepReasoner reasoner;
-    MKReasoningChains chains;
-    MKComposer composer;
     MKLearningEngine learningEngine;
     MKBrainMemory brainMemory;
     MKEmbeddingsEngine embeddings;
@@ -256,16 +250,11 @@ struct MKSystem {
     MKCacheManager cacheManager;
     MKDailyBriefing dailyBriefing;
     MKBiographicalExtractor factExtractor;
-    MKReasoningEngine reasoningEngine;
     MKDaemon daemon;
     MK_Shell::MKShell shell;
     MK_Services::ServiceManager serviceManager;
     std::unique_ptr<MKTelegram> telegram;
-    MKNeuralNet neuralNet;
     MKMathSolver mathSolver;
-    MKCasualResponses casualResponses;
-    MKConversationMode conversationMode;
-    MKIdeaEngine ideaEngine;
     MKPCHelper pcHelper;
 
     // LLM subsystem
@@ -315,6 +304,9 @@ struct MKSystem {
     // Configuration system
     MKConfig config;
 
+    // Orchestrator - the new clean conversation loop (allocated after helpers are defined)
+    std::unique_ptr<MKOrchestrator> orchestrator;
+
     // Mutex protecting shared state between Telegram polling thread and REPL thread.
     // Any code that reads/writes graph, memory, learningEngine, factExtractor, or
     // calls telegram methods must hold this lock.
@@ -322,16 +314,10 @@ struct MKSystem {
 
     MKSystem()
         : graph("ai_core/hre/knowledge_files"),
-          router(),
           realtimeApis(),
           memory("mk_memory.dat", 10000, 5000),
-          integrator(),
-          improver(0.6f, 10000, "mk_improvement.log"),
           diagnostics(),
           style(),
-          reasoner(10),
-          chains("ai_core/hre/knowledge_files"),
-          composer(MKComposerMode::FRIENDLY),
           learningEngine(),
           brainMemory(20),
           embeddings(),
@@ -339,12 +325,10 @@ struct MKSystem {
           cacheManager(8),
           dailyBriefing(),
           factExtractor(),
-          reasoningEngine(),
           daemon(),
           shell(),
           serviceManager(),
           telegram(nullptr),
-          neuralNet(),
           cloudLLM("."),
           llmEngine(),
           providerRouter(),
@@ -360,10 +344,6 @@ struct MKSystem {
             std::cout << "  " << Color::DIM << "Note: MK_TELEGRAM_TOKEN not set. "
                       << "Telegram integration disabled." << Color::RESET << "\n";
         }
-
-        // Initialize neural net with a tiny config (untrained, not used in hot path)
-        // The GENERATE route gracefully falls back to MKComposer instead.
-        neuralNet.init(256, 32, 1, 64);
 
         // Initialize crypto trading bot (paper mode by default)
         cryptoTradingBot = std::make_unique<MKTradingBot>(
@@ -398,6 +378,9 @@ struct MKSystem {
             std::string slug = cloudLLM.getModel(pname);
             if (!slug.empty()) providerRouter.setProviderModel(pname, slug);
         }
+
+        // Orchestrator wiring happens after construction (see initOrchestrator below)
+        // because MKOrchestrator is forward-declared and only fully defined later.
     }
 
     ~MKSystem() = default;
@@ -416,6 +399,16 @@ static std::string trim(const std::string& s) {
 // ============================================================
 // Command Handlers
 // ============================================================
+
+// Forward declarations of helper functions defined later
+static std::string sanitizeLLMResponse(const std::string& response, const std::string& userInput);
+static std::string buildLLMPrompt(const std::string& input,
+                                   const std::vector<std::string>& relevantFacts,
+                                   const std::string& history);
+static std::vector<std::string> filterRelevantFacts(
+    const std::string& input,
+    const std::vector<std::string>& rawFacts,
+    size_t maxFacts = 5);
 
 static void cmd_help() {
     std::cout << "\n"
@@ -537,25 +530,36 @@ static void cmd_search(MKSystem& sys, const std::string& query) {
         std::cout << "\n  Usage: /search <query>\n";
         return;
     }
-    auto answer = sys.integrator.buildCitedAnswer(query);
-    if (!answer.formattedResponse.empty()) {
-        std::cout << "\n  " << answer.formattedResponse << "\n";
-    } else if (!answer.text.empty()) {
-        std::cout << "\n  " << answer.text << "\n";
-    } else {
-        std::cout << "\n  No results found for: " << query << "\n";
+    // Search uses LLM directly with the query as context
+    bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
+    if (llmAvailable) {
+        std::string history = sys.brainMemory.getContextString();
+        std::string prompt = buildLLMPrompt("search the internet for: " + query, {}, history);
+        std::string response;
+        if (sys.llmEngine.isAvailable()) {
+            response = sys.llmEngine.generate(prompt);
+            response = sanitizeLLMResponse(response, query);
+        }
+        if (response.empty() && sys.cloudLLM.isAvailable()) {
+            response = sys.cloudLLM.generateWithContext(query, {}, history, "", MK_SYSTEM_PROMPT);
+            response = sanitizeLLMResponse(response, query);
+        }
+        if (!response.empty()) {
+            std::cout << "\n  " << response << "\n";
+            return;
+        }
     }
+    std::cout << "\n  No LLM available to search. Check /status for provider health.\n";
 }
 
 static void cmd_status(MKSystem& sys) {
     std::cout << "\n";
     std::string report = sys.diagnostics.run_full_diagnostics();
     std::cout << "  " << report << "\n";
-    sys.router.printStats();
-    sys.integrator.printStats();
-    sys.memory.printStats();
-    sys.improver.printStats();
     sys.graph.printStats();
+    std::cout << "  " << Color::BOLD << "LLM Providers:" << Color::RESET << "\n";
+    std::string providerReport = sys.providerRouter.getStatusReport();
+    std::cout << "  " << providerReport << "\n";
     std::cout << "\n";
 }
 
@@ -720,18 +724,43 @@ static void cmd_think(MKSystem& sys, const std::string& topic) {
         return;
     }
     std::cout << "  " << Color::DIM << "Thinking..." << Color::RESET << "\n";
-    auto chain = sys.reasoner.think(topic, sys.graph);
-    if (!chain.finalAnswer.empty()) {
-        std::string formatted = sys.style.format_response(chain.finalAnswer, topic, chain.overallConfidence);
-        std::cout << "\n  " << Color::BMAGENTA << "🧠" << Color::RESET << Color::BOLD 
-                  << " Deep Reasoning" << Color::RESET << Color::DIM 
-                  << " (" << chain.steps.size() << " steps, " << chain.totalHops << " hops)" 
-                  << Color::RESET << "\n"
-                  << "  " << Color::GREEN << "●" << Color::RESET << " " << formatted << "\n";
+    // Use LLM directly for deep reasoning
+    bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
+    std::string response;
+    if (llmAvailable) {
+        std::vector<std::string> rawFacts;
+        auto edges = sys.graph.getAll(topic);
+        for (const auto& e : edges) {
+            rawFacts.push_back(e.source + " " + e.relation + " " + e.target);
+        }
+        std::vector<std::string> facts = filterRelevantFacts(topic, rawFacts, 5);
+        std::string history = sys.brainMemory.getContextString();
+        std::string prompt = MK_SYSTEM_PROMPT + "\n\n";
+        if (!facts.empty()) {
+            prompt += "Known facts:\n";
+            for (const auto& f : facts) prompt += "- " + f + "\n";
+            prompt += "\n";
+        }
+        prompt += "Think deeply and reason step by step about: " + topic + "\n";
+        if (!history.empty()) prompt += "Recent conversation:\n" + history + "\n";
+        prompt += "User: " + topic + "\nMK:";
+        if (sys.llmEngine.isAvailable()) {
+            response = sys.llmEngine.generate(prompt);
+            response = sanitizeLLMResponse(response, topic);
+        }
+        if (response.empty() && sys.cloudLLM.isAvailable()) {
+            response = sys.cloudLLM.generateWithContext(topic, facts, history, "", MK_SYSTEM_PROMPT);
+            response = sanitizeLLMResponse(response, topic);
+        }
+    }
+    if (!response.empty()) {
+        std::cout << "\n  " << Color::BMAGENTA << "🧠" << Color::RESET << Color::BOLD
+                  << " Deep Reasoning" << Color::RESET << "\n"
+                  << "  " << Color::GREEN << "●" << Color::RESET << " " << response << "\n";
     } else {
-        std::cout << "\n  " << Color::YELLOW << "○" << Color::RESET 
+        std::cout << "\n  " << Color::YELLOW << "○" << Color::RESET
                   << " No reasoning path found for: " << Color::BOLD << topic << Color::RESET
-                  << "\n  " << Color::DIM << "Try teaching related facts with /learn." 
+                  << "\n  " << Color::DIM << "Try teaching related facts with /learn."
                   << Color::RESET << "\n";
     }
 }
@@ -784,14 +813,6 @@ static std::string escapeHtml(const std::string& text) {
     }
     return result;
 }
-
-// ============================================================
-// MK System Prompt (single source of truth)
-// ============================================================
-static const std::string MK_SYSTEM_PROMPT =
-    "You are MK, a personal AI assistant. You are helpful, direct, and friendly. "
-    "You talk naturally like a knowledgeable friend. You are loyal to your creator Mohammed. "
-    "Keep responses concise and genuine. If you do not know something, say so honestly.";
 
 // ============================================================
 // LLM Response Sanitizer
@@ -934,7 +955,7 @@ static std::string buildLLMPrompt(const std::string& input,
 static std::vector<std::string> filterRelevantFacts(
     const std::string& input,
     const std::vector<std::string>& rawFacts,
-    size_t maxFacts = 5)
+    size_t maxFacts)
 {
     if (rawFacts.empty()) return {};
 
@@ -1011,11 +1032,34 @@ static std::vector<std::string> filterRelevantFacts(
     return filtered;
 }
 
+// Orchestrator - clean single-LLM-call conversation loop
+// Must be included after sanitizeLLMResponse and filterRelevantFacts are defined,
+// since the orchestrator calls them.
+#include "../orchestrator/conversation_loop.cpp"
+
 // ============================================================
-// LLM Synthesis Helper (BUG A+B fix)
-// Sends gathered facts + user question to LLM for natural synthesis.
-// Falls back to style formatting when LLM is unavailable.
-// This is the single function that replaces ALL raw fact dumps.
+// Initialize orchestrator (must be after MKOrchestrator is defined)
+// ============================================================
+static void initOrchestrator(MKSystem& sys) {
+    sys.orchestrator = std::make_unique<MKOrchestrator>();
+    sys.orchestrator->graph = &sys.graph;
+    sys.orchestrator->brainMemory = &sys.brainMemory;
+    sys.orchestrator->cloudLLM = &sys.cloudLLM;
+    sys.orchestrator->llmEngine = &sys.llmEngine;
+    sys.orchestrator->providerRouter = &sys.providerRouter;
+    sys.orchestrator->requestLogger = &sys.requestLogger;
+    sys.orchestrator->resourceMonitor = &sys.resourceMonitor;
+    sys.orchestrator->deviceRegistry = &sys.deviceRegistry;
+    sys.orchestrator->learningEngine = &sys.learningEngine;
+    sys.orchestrator->factExtractor = &sys.factExtractor;
+    sys.orchestrator->systemPrompt = &MK_SYSTEM_PROMPT;
+}
+
+// ============================================================
+// LLM Synthesis Helper
+// Used by command handlers that still need direct LLM synthesis.
+// The orchestrator handles this for natural language; this is
+// a simpler version for /ask and similar commands.
 // ============================================================
 static std::string synthesizeResponse(MKSystem& sys, const std::string& input,
                                        const std::vector<std::string>& rawFacts,
@@ -1023,20 +1067,20 @@ static std::string synthesizeResponse(MKSystem& sys, const std::string& input,
     // First filter facts for relevance
     std::vector<std::string> facts = filterRelevantFacts(input, rawFacts, 5);
 
-    // If no relevant facts survived filtering, return empty (caller handles fallback)
+    // If no relevant facts survived filtering, return empty
     if (facts.empty() && rawFacts.empty()) return "";
 
     // Check if LLM is available
     bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
 
     if (llmAvailable && !facts.empty()) {
-        // Build RAG prompt: user question + relevant facts → LLM → natural answer
+        // Build RAG prompt: user question + relevant facts -> LLM -> natural answer
         std::string history = sys.brainMemory.getContextString();
         std::string prompt = MK_SYSTEM_PROMPT + "\n\n";
         prompt += "Known facts (use these to answer):\n";
         for (const auto& f : facts) prompt += "- " + f + "\n";
         prompt += "\nAnswer the user's question naturally and concisely using the facts above. "
-                  "Do not list the raw facts — synthesize them into a natural response.\n\n";
+                  "Do not list the raw facts - synthesize them into a natural response.\n\n";
         if (!history.empty()) prompt += "Recent conversation:\n" + history + "\n";
         prompt += "User: " + input + "\nMK:";
 
@@ -1052,14 +1096,8 @@ static std::string synthesizeResponse(MKSystem& sys, const std::string& input,
         if (!response.empty()) return response;
     }
 
-    // LLM unavailable or failed: do NOT dump raw facts to the user.
-    // Raw graph triples ("sandwich_attack exploits pending_transactions") are
-    // never an appropriate user-facing response. If the LLM was configured but
-    // failed (rate limit, bad key), return empty so the caller uses honest
-    // degradation. Only format facts through style engine when NO LLM was
-    // ever configured (truly offline mode).
+    // LLM unavailable: format through style engine if truly offline
     if (!llmAvailable && !facts.empty()) {
-        // Truly offline — style engine is the best we can do
         std::string raw;
         for (const auto& f : facts) {
             raw += f + ". ";
@@ -1067,103 +1105,14 @@ static std::string synthesizeResponse(MKSystem& sys, const std::string& input,
         return sys.style.format_response(raw, input, confidence);
     }
 
-    // LLM was configured but failed, or no relevant facts - return empty.
-    // Caller will use mkHonestFallback() for a clean fallback message.
     return "";
 }
 
 // ============================================================
-// Honest degradation helper
-// When the LLM is unavailable, return a clear honest message.
-// ============================================================
-static std::string mkHonestFallback(const std::vector<std::string>& relevantFacts) {
-    // If we have relevant facts from the graph, present them simply
-    if (!relevantFacts.empty()) {
-        std::string factBased;
-        for (size_t i = 0; i < relevantFacts.size() && i < 3; i++) {
-            if (!factBased.empty()) factBased += " Also, ";
-            factBased += relevantFacts[i];
-        }
-        factBased += ".";
-        return "Here's what I know: " + factBased;
-    }
-
-    // No facts, no LLM - be honest
-    return "I can't reach my language model right now, so I can't answer that "
-           "properly. Try again in a moment, or check /status for provider health.";
-}
-
-// ============================================================
-// Tool Output Helper
-// Checks if the user's input mentions system/docker/device topics
-// and returns relevant tool output if so, otherwise empty string.
-// ============================================================
-static std::string getToolOutputIfNeeded(const std::string& input, MKSystem& sys) {
-    std::string lower = input;
-    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-    std::string toolOutput;
-
-    // System/CPU/RAM queries
-    if (lower.find("system") != std::string::npos || lower.find("cpu") != std::string::npos ||
-        lower.find("ram") != std::string::npos || lower.find("memory") != std::string::npos ||
-        lower.find("resource") != std::string::npos || lower.find("temperature") != std::string::npos) {
-        auto localRes = sys.resourceMonitor.getLocalResources();
-        if (localRes.valid) {
-            toolOutput += "System resources: CPU " + std::to_string((int)localRes.cpu_usage_percent) + "%, "
-                        + "RAM " + std::to_string(localRes.available_ram_mb) + "/" 
-                        + std::to_string(localRes.total_ram_mb) + "MB, "
-                        + "Temp " + std::to_string((int)localRes.temperature_celsius) + "C.";
-        }
-    }
-
-    // Docker/container queries
-    if (lower.find("docker") != std::string::npos || lower.find("container") != std::string::npos) {
-        // Docker manager generates commands; we report its availability
-        toolOutput += " Docker manager is available. Use SSH controller to run docker commands on devices.";
-    }
-
-    // Device/homelab queries
-    if (lower.find("device") != std::string::npos || lower.find("homelab") != std::string::npos ||
-        lower.find("server") != std::string::npos) {
-        auto devices = sys.deviceRegistry.getOnlineDevices();
-        int total = sys.deviceRegistry.deviceCount();
-        if (total > 0) {
-            toolOutput += " Homelab: " + std::to_string(total) + " devices registered, "
-                        + std::to_string(devices.size()) + " online.";
-        }
-    }
-
-    return toolOutput;
-}
-
-// ============================================================
-// Natural Language Routing
+// Natural Language Routing - Now uses MKOrchestrator
 // ============================================================
 static void handle_natural_query(MKSystem& sys, const std::string& input) {
-    // ---- IDEA ENGINE: Check for creative requests ----
-    {
-        std::string lower = input;
-        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-        bool isIdeaReq = (lower.find("give me an idea") != std::string::npos ||
-                          lower.find("brainstorm") != std::string::npos ||
-                          lower.find("what if") != std::string::npos ||
-                          lower.find("invent something") != std::string::npos ||
-                          lower.find("idea for") != std::string::npos);
-        if (isIdeaReq) {
-            auto ideas = sys.ideaEngine.brainstorm(sys.graph, input, 3);
-            if (!ideas.empty()) {
-                std::cout << "\n  " << Color::BOLD << Color::BYELLOW << "💡 Ideas:" << Color::RESET << "\n";
-                for (const auto& idea : ideas) {
-                    std::cout << "  " << Color::BGREEN << "→" << Color::RESET << " " << idea.idea << "\n";
-                }
-                std::cout << "\n";
-                sys.memory.recordInteraction("idea_generation", input);
-                return;
-            }
-        }
-    }
-
-    // ---- MATH SOLVER: Check for arithmetic/math queries ----
+    // ---- MATH SOLVER: Check for arithmetic/math queries (fast, no LLM needed) ----
     {
         if (sys.mathSolver.isMathQuery(input)) {
             // Try natural language math first (e.g., "5 times 3")
@@ -1194,488 +1143,21 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
         }
     }
 
-    // ---- EARLY GREETING/SMALL-TALK INTERCEPT ----
-    // Bypass the 3-layer architecture for trivial conversational inputs
-    // to avoid wasting LLM calls and showing "can't reach language model"
-    {
-        MKInputType inputType = sys.conversationMode.classifyInput(input);
-        if (inputType == MKInputType::GREETING || inputType == MKInputType::GOODBYE ||
-            inputType == MKInputType::VAGUE_RESPONSE) {
-            std::string response = sys.conversationMode.generateResponse(input, sys.casualResponses);
-            if (!response.empty()) {
-                std::cout << "\n  " << Color::BCYAN << "~" << Color::RESET << " " << response << "\n";
-                sys.brainMemory.commitToShortTerm("user", input);
-                sys.brainMemory.commitToShortTerm("mk", response);
-                sys.memory.recordInteraction("conversation", input);
-                return;
-            }
-        }
-    }
+    // ---- ALL OTHER QUERIES: Single LLM call via Orchestrator ----
+    std::string response = sys.orchestrator->respond(input);
 
-    // ---- FRIEND MODE: Check if this is casual conversation ----
-    // Before routing through smart router, catch conversational inputs
-    if (sys.conversationMode.isConversation(input)) {
-        std::string lower = input;
-        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-
-        // Check if it's an opinion request ("what do you think about X")
-        if (sys.conversationMode.isOpinionRequest(input)) {
-            std::string subject = sys.conversationMode.extractOpinionSubject(input);
-            if (!subject.empty()) {
-                // Query knowledge graph for facts about the subject
-                std::vector<std::string> facts;
-                auto results = sys.graph.getAll(subject);
-                for (const auto& e : results) {
-                    facts.push_back(e.source + " " + e.relation + " " + e.target);
-                }
-                std::string response = sys.conversationMode.generateOpinion(subject, facts, sys.casualResponses);
-                std::cout << "\n  " << Color::BCYAN << "~" << Color::RESET << " " << response << "\n";
-                sys.conversationMode.pushTopic(subject);
-                sys.brainMemory.commitToShortTerm("mk", response);
-                sys.memory.recordInteraction("conversation", input);
-                return;
-            }
-        }
-
-        // === SINGLE LLM CALL ARCHITECTURE ===
-        // Gather context: graph facts + conversation history + tool output
-        std::vector<std::string> relevantFacts;
-        auto graphResults = sys.graph.getAll(input);
-        for (const auto& e : graphResults) {
-            relevantFacts.push_back(e.source + " " + e.relation + " " + e.target);
-        }
-        relevantFacts = filterRelevantFacts(input, relevantFacts, 5);
-        std::string history = sys.brainMemory.getContextString();
-        std::string toolOutput = getToolOutputIfNeeded(input, sys);
-
-        std::string response;
-        bool llmConfigured = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
-
-        if (llmConfigured) {
-            // Build prompt with all available context
-            std::string enhancedPrompt = MK_SYSTEM_PROMPT;
-            if (!toolOutput.empty()) {
-                enhancedPrompt += "\n\nSystem info: " + toolOutput;
-            }
-
-            if (sys.llmEngine.isAvailable()) {
-                std::string fullPrompt = enhancedPrompt + "\n\n";
-                if (!relevantFacts.empty()) {
-                    fullPrompt += "Known facts:\n";
-                    for (const auto& f : relevantFacts) fullPrompt += "- " + f + "\n";
-                    fullPrompt += "\n";
-                }
-                if (!history.empty()) fullPrompt += "Recent conversation:\n" + history + "\n";
-                fullPrompt += "User: " + input + "\nMK:";
-                response = sys.llmEngine.generate(fullPrompt);
-                response = sanitizeLLMResponse(response, input);
-            }
-
-            if (response.empty() && sys.cloudLLM.isAvailable()) {
-                response = sys.cloudLLM.generateWithContext(input, relevantFacts, history, toolOutput, enhancedPrompt);
-                response = sanitizeLLMResponse(response, input);
-            }
-        }
-
-        // If LLM failed or not configured, use honest fallback
-        if (response.empty()) {
-            response = mkHonestFallback(relevantFacts);
-        }
-        
-        if (!response.empty()) {
-            std::cout << "\n  " << Color::BCYAN << "~" << Color::RESET << " " << response << "\n";
-            
-            // Record in memory
-            sys.brainMemory.commitToShortTerm("user", input);
-            sys.brainMemory.commitToShortTerm("mk", response);
-            sys.memory.recordInteraction("conversation", input);
-            
-            // Extract biographical facts passively
-            sys.factExtractor.extractFromMessage(input);
-            return;
-        }
-        // If generateResponse returned empty, fall through to normal routing
-    }
-
-    // ---- NORMAL ROUTING (question/command) ----
-    // Route through MKSmartRouter
-    auto decision = sys.router.route(input);
-    std::string response;
-    float confidence = 0.0f;
-    bool answered = false;
-
-    switch (decision.primaryRoute) {
-        case MKRouteType::INSTANT: {
-            // Detect what kind of instant data is needed
-            std::string lower = input;
-            std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-
-            if (lower.find("weather") != std::string::npos) {
-                // Try to extract city from query
-                std::string city = "New York"; // default
-                // Simple extraction: last word(s) after "weather" or "in"
-                size_t inPos = lower.find(" in ");
-                if (inPos != std::string::npos) {
-                    city = input.substr(inPos + 4);
-                    // Strip trailing noise words
-                    static const std::vector<std::string> noise = {
-                        " today", " tonight", " now", " right now",
-                        " this week", " this weekend", " tomorrow",
-                        " currently", " please", " lately"
-                    };
-                    std::string cityLower = city;
-                    std::transform(cityLower.begin(), cityLower.end(), cityLower.begin(), ::tolower);
-                    for (const auto& word : noise) {
-                        size_t pos = cityLower.find(word);
-                        if (pos != std::string::npos) {
-                            city = city.substr(0, pos);
-                            cityLower = cityLower.substr(0, pos);
-                        }
-                    }
-                    city = trim(city);
-                }
-                auto data = sys.realtimeApis.getWeather(trim(city));
-                if (data.valid) {
-                    response = "Weather in " + data.city + ": " +
-                               std::to_string((int)data.temperature) + " C, " + data.description;
-                    confidence = 0.9f;
-                    answered = true;
-                }
-            } else if (lower.find("time") != std::string::npos || lower.find("clock") != std::string::npos) {
-                // Try to extract timezone from the natural language query
-                std::string tz = extract_timezone(input);
-                if (tz.empty()) {
-                    tz = "America/New_York"; // default fallback
-                }
-                auto data = sys.realtimeApis.getCurrentTime(tz);
-                if (data.valid) {
-                    response = "Current time (" + data.timezone + "): " + data.datetime;
-                    confidence = 0.95f;
-                    answered = true;
-                }
-            } else if (lower.find("news") != std::string::npos) {
-                auto data = sys.realtimeApis.getTechNews(3);
-                if (data.valid && !data.headlines.empty()) {
-                    response = "Top headlines: ";
-                    for (size_t i = 0; i < data.headlines.size(); i++) {
-                        response += std::to_string(i + 1) + ") " + data.headlines[i].title;
-                        if (i < data.headlines.size() - 1) response += " | ";
-                    }
-                    confidence = 0.9f;
-                    answered = true;
-                }
-            }
-
-            if (!answered) {
-                // Fallback to graph if instant route cannot handle it
-                auto results = sys.graph.getAll(input);
-                if (!results.empty()) {
-                    std::vector<std::string> rawFacts;
-                    for (const auto& e : results) {
-                        rawFacts.push_back(e.source + " " + e.relation + " " + e.target);
-                    }
-                    response = synthesizeResponse(sys, input, rawFacts, 0.7f);
-                    confidence = 0.7f;
-                    answered = !response.empty();
-                }
-            }
-            break;
-        }
-        case MKRouteType::GRAPH: {
-            // Knowledge graph lookup
-            auto results = sys.graph.getAll(input);
-            if (!results.empty()) {
-                std::vector<std::string> rawFacts;
-                for (const auto& e : results) {
-                    rawFacts.push_back(e.source + " " + e.relation + " " + e.target);
-                }
-                response = synthesizeResponse(sys, input, rawFacts, 0.8f);
-                confidence = 0.8f;
-                answered = !response.empty();
-            }
-            if (!answered) {
-                // Try path query
-                auto pathResult = sys.graph.pathQuery(input, "is_a", 5);
-                if (pathResult.found) {
-                    response = input + " is " + pathResult.answer;
-                    confidence = pathResult.confidence;
-                    answered = true;
-                } else {
-                    // Fallback to vector search
-                    auto vecResults = sys.vectorSearch.search(input, 3);
-                    if (!vecResults.empty() && vecResults[0].score > 0.3f) {
-                        std::vector<std::string> rawFacts;
-                        for (const auto& vr : vecResults) {
-                            if (vr.score > 0.3f) {
-                                rawFacts.push_back(vr.sourceText);
-                            }
-                        }
-                        response = synthesizeResponse(sys, input, rawFacts, vecResults[0].score);
-                        confidence = vecResults[0].score;
-                        answered = !response.empty();
-                    }
-                }
-            }
-            break;
-        }
-        case MKRouteType::SEARCH: {
-            auto answer = sys.integrator.buildCitedAnswer(input);
-            if (!answer.formattedResponse.empty()) {
-                response = answer.formattedResponse;
-                confidence = answer.confidence;
-                answered = true;
-            } else if (!answer.text.empty()) {
-                response = answer.text;
-                confidence = answer.confidence;
-                answered = true;
-            }
-            break;
-        }
-        case MKRouteType::REASON: {
-            // Enrich the graph with rule-based inferences before deep reasoning
-            sys.chains.deriveAll(sys.graph);
-            auto chain = sys.reasoner.think(input, sys.graph);
-            if (!chain.finalAnswer.empty()) {
-                response = chain.finalAnswer;
-                confidence = chain.overallConfidence;
-                answered = true;
-            }
-            break;
-        }
-        case MKRouteType::GENERATE: {
-            // NOTE: neural_net.cpp is wired and initialized with a tiny config
-            // (vocab=256, dim=32, layers=1, ff=64) but has NO trained weights.
-            // The GENERATE route gracefully falls back to MKComposer which provides
-            // template-based responses. The neural net exists for future training
-            // but is NOT called in the hot path to avoid nonsense output.
-
-            auto results = sys.graph.getAll(input);
-            if (!results.empty()) {
-                std::vector<std::string> rawFacts;
-                for (const auto& e : results) {
-                    rawFacts.push_back(e.source + " " + e.relation + " " + e.target);
-                }
-                // Use LLM synthesis (RAG) instead of raw composer output
-                response = synthesizeResponse(sys, input, rawFacts, 0.6f);
-                confidence = 0.6f;
-                answered = !response.empty();
-            }
-            if (!answered) {
-                // No graph facts — try LLM directly or fall back to composer
-                bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
-                if (llmAvailable) {
-                    std::string history = sys.brainMemory.getContextString();
-                    std::string prompt = buildLLMPrompt(input, {}, history);
-                    if (sys.llmEngine.isAvailable()) {
-                        response = sys.llmEngine.generate(prompt);
-                    }
-                    if (response.empty() && sys.cloudLLM.isAvailable()) {
-                        response = sys.cloudLLM.generateWithContext(input, {}, history, "", MK_SYSTEM_PROMPT);
-                    }
-                }
-                if (response.empty()) {
-                    MKResponseContext ctx;
-                    ctx.subject = input;
-                    ctx.is_partial = false;
-                    ctx.confidence = 0.3f;
-                    response = sys.composer.composeAnswer(ctx);
-                }
-                confidence = 0.3f;
-                answered = !response.empty();
-            }
-            break;
-        }
-        case MKRouteType::CRYPTO: {
-            // Route crypto-related queries through market data and signal engine
-            std::string lower = input;
-            std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-
-            // Try to show live crypto data: prices and signals
-            auto stats = sys.cryptoTradingBot->getStats();
-            std::ostringstream cryptoResp;
-
-            // Get portfolio info
-            auto snapshot = sys.cryptoPortfolioManager.getSnapshot();
-            if (!snapshot.holdings.empty()) {
-                cryptoResp << "Portfolio: ";
-                for (const auto& h : snapshot.holdings) {
-                    cryptoResp << h.symbol << "=" << h.amount << " ";
-                }
-                cryptoResp << ". ";
-            }
-
-            // Get recent signals summary
-            const auto& signalHistory = sys.cryptoSignalEngine.getSignalHistory();
-            if (!signalHistory.empty()) {
-                cryptoResp << "Recent signals: ";
-                int shown = 0;
-                for (auto it = signalHistory.rbegin(); it != signalHistory.rend() && shown < 5; ++it, ++shown) {
-                    cryptoResp << it->symbol << " ";
-                    if (it->type == MKSignalType::BUY || it->type == MKSignalType::STRONG_BUY)
-                        cryptoResp << "BUY";
-                    else if (it->type == MKSignalType::SELL || it->type == MKSignalType::STRONG_SELL)
-                        cryptoResp << "SELL";
-                    else
-                        cryptoResp << "HOLD";
-                    cryptoResp << "(str:" << it->strength << ") ";
-                }
-                cryptoResp << ". ";
-            }
-
-            // Bot stats
-            cryptoResp << "Bot mode: " << (sys.cryptoExchangeApi.isInitialized() ? "LIVE" : "PAPER");
-            cryptoResp << " | Total trades: " << stats.totalTrades;
-            cryptoResp << " | Signals generated: " << stats.signalsGenerated;
-
-            response = cryptoResp.str();
-
-            // Also look up knowledge graph for additional crypto context
-            if (response.empty()) {
-                auto results = sys.graph.getAll(input);
-                if (!results.empty()) {
-                    std::vector<std::string> rawFacts;
-                    for (const auto& e : results) {
-                        rawFacts.push_back(e.source + " " + e.relation + " " + e.target);
-                    }
-                    response = synthesizeResponse(sys, input, rawFacts, 0.7f);
-                }
-            }
-            confidence = 0.8f;
-            answered = !response.empty();
-            break;
-        }
-        case MKRouteType::HOMELAB: {
-            // Route homelab/device queries through device registry and resource monitor
-            std::ostringstream homelabResp;
-
-            auto devices = sys.deviceRegistry.getOnlineDevices();
-            int totalDevices = sys.deviceRegistry.deviceCount();
-            if (totalDevices > 0) {
-                homelabResp << "Registered devices (" << totalDevices << ", "
-                           << devices.size() << " online): ";
-                for (const auto& dev : devices) {
-                    homelabResp << dev.hostname << "(" << dev.ip << ", ";
-                    if (dev.status == MKDeviceStatus::ONLINE)
-                        homelabResp << "online";
-                    else if (dev.status == MKDeviceStatus::OFFLINE)
-                        homelabResp << "offline";
-                    else
-                        homelabResp << "unknown";
-                    homelabResp << ") ";
-                }
-                homelabResp << ". ";
-            } else {
-                homelabResp << "No homelab devices registered yet. ";
-            }
-
-            // Resource monitor summary
-            auto localRes = sys.resourceMonitor.getLocalResources();
-            if (localRes.valid) {
-                homelabResp << "Local: CPU " << (int)localRes.cpu_usage_percent << "%, "
-                           << "RAM " << localRes.available_ram_mb << "/" << localRes.total_ram_mb << "MB, "
-                           << "Temp " << (int)localRes.temperature_celsius << "C. ";
-            }
-
-            // SSH controller summary
-            homelabResp << "SSH controller: " << sys.sshController.deviceCount() << " hosts configured.";
-
-            response = homelabResp.str();
-            confidence = 0.7f;
-            answered = !response.empty();
-            break;
-        }
-        case MKRouteType::MIND: {
-            // Route mind/goals/strategy queries through goal engine and mastery network
-            std::ostringstream mindResp;
-
-            // Active goals
-            auto goals = sys.goalEngine.getActiveGoals();
-            if (!goals.empty()) {
-                mindResp << "Active goals (" << goals.size() << "): ";
-                for (const auto& g : goals) {
-                    mindResp << "\"" << g.description << "\" (";
-                    mindResp << (int)g.progress << "% done, ";
-                    if (g.priority == MKGoalPriority::CRITICAL) mindResp << "CRITICAL";
-                    else if (g.priority == MKGoalPriority::HIGH) mindResp << "HIGH";
-                    else if (g.priority == MKGoalPriority::MEDIUM) mindResp << "MEDIUM";
-                    else mindResp << "LOW";
-                    mindResp << ") ";
-                }
-                mindResp << ". ";
-            } else {
-                mindResp << "No active goals. ";
-            }
-
-            // Mastery info
-            mindResp << "Mastery: ";
-            std::vector<std::string> skillNames = {"crypto_trading", "coding", "analysis", "conversation"};
-            for (const auto& s : skillNames) {
-                float level = sys.masteryNetwork.getSkillLevel(s);
-                if (level > 0.0f) {
-                    mindResp << s << "=" << (int)level << " ";
-                }
-            }
-            mindResp << ". ";
-
-            // Completed goal count
-            mindResp << "Completed goals: " << sys.goalEngine.completedCount() << ".";
-
-            response = mindResp.str();
-            confidence = 0.7f;
-            answered = !response.empty();
-            break;
-        }
-    }
-
-    // If no answer found through primary route, try fallback
-    if (!answered && decision.confidence < 0.7f) {
-        auto fallbackChain = sys.router.getFallbackChain(decision.primaryRoute, decision.confidence);
-        for (size_t i = 1; i < fallbackChain.size() && !answered; i++) {
-            if (fallbackChain[i] == MKRouteType::GRAPH) {
-                auto results = sys.graph.getAll(input);
-                if (!results.empty()) {
-                    std::vector<std::string> rawFacts;
-                    for (const auto& e : results) {
-                        rawFacts.push_back(e.source + " " + e.relation + " " + e.target);
-                    }
-                    response = synthesizeResponse(sys, input, rawFacts, 0.6f);
-                    confidence = 0.6f;
-                    answered = !response.empty();
-                }
-            } else if (fallbackChain[i] == MKRouteType::SEARCH) {
-                auto answer = sys.integrator.buildCitedAnswer(input);
-                if (!answer.text.empty()) {
-                    response = answer.formattedResponse.empty() ? answer.text : answer.formattedResponse;
-                    confidence = answer.confidence;
-                    answered = true;
-                }
-            }
-        }
-    }
-
-    // Format response through style engine
-    if (answered && !response.empty()) {
-        std::string formatted = sys.style.format_response(response, input, confidence);
-        std::cout << "\n  " << Color::GREEN << "●" << Color::RESET << " " << formatted << "\n";
+    if (!response.empty()) {
+        std::cout << "\n  " << Color::BCYAN << "~" << Color::RESET << " " << response << "\n";
     } else {
-        std::cout << "\n  " << Color::YELLOW << "○" << Color::RESET 
+        std::cout << "\n  " << Color::YELLOW << "○" << Color::RESET
                   << " I don't have enough knowledge to answer that yet.\n"
-                  << "  " << Color::DIM << "Try: " << Color::GREEN << "/learn" << Color::RESET 
-                  << Color::DIM << " to teach me, " << Color::GREEN << "/search" << Color::RESET
-                  << Color::DIM << " for internet, or " << Color::GREEN << "/think" << Color::RESET 
+                  << "  " << Color::DIM << "Try: " << Color::GREEN << "/learn" << Color::RESET
+                  << Color::DIM << " to teach me, or " << Color::GREEN << "/think" << Color::RESET
                   << Color::DIM << " for reasoning." << Color::RESET << "\n";
     }
 
     // Record outcome
-    sys.router.reportOutcome(decision.primaryRoute, answered);
-    sys.improver.logQueryOutcome(input, confidence, answered);
     sys.memory.recordInteraction("query", input);
-    if (answered) {
-        sys.memory.recordQA(input, response, confidence);
-    }
-
-    // Passively extract biographical facts from user input
-    sys.factExtractor.extractFromMessage(input);
 }
 
 // ============================================================
@@ -1685,190 +1167,7 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
 // Forward declaration - generates an AI response for a natural language query.
 // Caller must hold sys.systemMutex.
 static std::string generate_ai_response(MKSystem& sys, const std::string& input) {
-    // Early intercept for trivial conversational inputs (greetings, goodbyes, small talk)
-    // Prevents wasting LLM calls and showing "can't reach language model" for simple greetings
-    {
-        MKInputType inputType = sys.conversationMode.classifyInput(input);
-        if (inputType == MKInputType::GREETING || inputType == MKInputType::GOODBYE ||
-            inputType == MKInputType::VAGUE_RESPONSE) {
-            std::string response = sys.conversationMode.generateResponse(input, sys.casualResponses);
-            if (!response.empty()) {
-                sys.brainMemory.commitToShortTerm("user", input);
-                sys.brainMemory.commitToShortTerm("mk", response);
-                sys.memory.recordInteraction("conversation", input);
-                return response;
-            }
-        }
-    }
-
-    // If input is conversational, use single LLM call
-    if (sys.conversationMode.isConversation(input)) {
-        std::string llmResponse;
-
-        // Gather context: graph facts + conversation history + tool output
-        std::vector<std::string> relevantFacts;
-        auto graphResults = sys.graph.getAll(input);
-        for (const auto& e : graphResults) {
-            relevantFacts.push_back(e.source + " " + e.relation + " " + e.target);
-        }
-        relevantFacts = filterRelevantFacts(input, relevantFacts, 5);
-        std::string history = sys.brainMemory.getContextString();
-        std::string toolOutput = getToolOutputIfNeeded(input, sys);
-
-        // Single LLM call with gathered context
-        bool llmConfigured = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
-        if (llmConfigured) {
-            std::string enhancedPrompt = MK_SYSTEM_PROMPT;
-            if (!toolOutput.empty()) {
-                enhancedPrompt += "\n\nSystem info: " + toolOutput;
-            }
-
-            if (sys.llmEngine.isAvailable()) {
-                std::string fullPrompt = enhancedPrompt + "\n\n";
-                if (!relevantFacts.empty()) {
-                    fullPrompt += "Known facts:\n";
-                    for (const auto& f : relevantFacts) fullPrompt += "- " + f + "\n";
-                    fullPrompt += "\n";
-                }
-                if (!history.empty()) fullPrompt += "Recent conversation:\n" + history + "\n";
-                fullPrompt += "User: " + input + "\nMK:";
-                auto genStart = std::chrono::steady_clock::now();
-                llmResponse = sys.llmEngine.generate(fullPrompt);
-                auto genEnd = std::chrono::steady_clock::now();
-                float genLatency = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
-                    genEnd - genStart).count();
-                sys.requestLogger.logRequest("local", "generate: " + input.substr(0, 40),
-                                             (int)fullPrompt.size() / 4, genLatency, !llmResponse.empty());
-                llmResponse = sanitizeLLMResponse(llmResponse, input);
-            }
-
-            if (llmResponse.empty() && sys.cloudLLM.isAvailable()) {
-                auto genStart = std::chrono::steady_clock::now();
-                llmResponse = sys.cloudLLM.generateWithContext(input, relevantFacts, history, toolOutput, enhancedPrompt);
-                auto genEnd = std::chrono::steady_clock::now();
-                float genLatency = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
-                    genEnd - genStart).count();
-                std::string cloudProvider = sys.cloudLLM.getProviderName();
-                sys.requestLogger.logRequest(cloudProvider, "cloud: " + input.substr(0, 40),
-                                             (int)input.size() / 4, genLatency, !llmResponse.empty());
-                llmResponse = sanitizeLLMResponse(llmResponse, input);
-            }
-        }
-
-        // Honest fallback if LLM failed
-        if (llmResponse.empty()) {
-            llmResponse = mkHonestFallback(relevantFacts);
-        }
-
-        if (!llmResponse.empty()) {
-            sys.brainMemory.commitToShortTerm("user", input);
-            sys.brainMemory.commitToShortTerm("mk", llmResponse);
-            sys.memory.recordInteraction("telegram_conversation", input);
-            sys.factExtractor.extractFromMessage(input);
-            return llmResponse;
-        }
-    }
-
-    auto decision = sys.router.route(input);
-    std::string response;
-    bool answered = false;
-
-    switch (decision.primaryRoute) {
-        case MKRouteType::GRAPH: {
-            auto results = sys.graph.getAll(input);
-            if (!results.empty()) {
-                std::vector<std::string> rawFacts;
-                for (const auto& e : results) {
-                    rawFacts.push_back(e.source + " " + e.relation + " " + e.target);
-                }
-                response = synthesizeResponse(sys, input, rawFacts, 0.8f);
-                answered = !response.empty();
-            }
-            if (!answered) {
-                auto pathResult = sys.graph.pathQuery(input, "is_a", 5);
-                if (pathResult.found) {
-                    response = input + " is " + pathResult.answer;
-                    answered = true;
-                } else {
-                    auto vecResults = sys.vectorSearch.search(input, 3);
-                    if (!vecResults.empty() && vecResults[0].score > 0.3f) {
-                        std::vector<std::string> rawFacts;
-                        for (const auto& vr : vecResults) {
-                            if (vr.score > 0.3f) rawFacts.push_back(vr.sourceText);
-                        }
-                        response = synthesizeResponse(sys, input, rawFacts, vecResults[0].score);
-                        answered = !response.empty();
-                    }
-                }
-            }
-            break;
-        }
-        case MKRouteType::REASON: {
-            sys.chains.deriveAll(sys.graph);
-            auto chain = sys.reasoner.think(input, sys.graph);
-            if (!chain.finalAnswer.empty()) {
-                response = chain.finalAnswer;
-                answered = true;
-            }
-            break;
-        }
-        case MKRouteType::INSTANT:
-        case MKRouteType::SEARCH:
-        case MKRouteType::GENERATE:
-        case MKRouteType::CRYPTO:
-        case MKRouteType::HOMELAB:
-        case MKRouteType::MIND:
-        default: {
-            // For all other routes, query graph and synthesize through LLM/style
-            auto results = sys.graph.getAll(input);
-            if (!results.empty()) {
-                std::vector<std::string> rawFacts;
-                for (const auto& e : results) {
-                    rawFacts.push_back(e.source + " " + e.relation + " " + e.target);
-                }
-                response = synthesizeResponse(sys, input, rawFacts, 0.7f);
-                answered = !response.empty();
-            }
-            break;
-        }
-    }
-
-    if (!answered || response.empty()) {
-        // Fallback: try vector search for a relevant answer
-        auto vecResults = sys.vectorSearch.search(input, 3);
-        if (!vecResults.empty() && vecResults[0].score > 0.3f) {
-            std::vector<std::string> rawFacts;
-            for (const auto& vr : vecResults) {
-                if (vr.score > 0.3f) rawFacts.push_back(vr.sourceText);
-            }
-            response = synthesizeResponse(sys, input, rawFacts, vecResults[0].score);
-        }
-        // If still empty, try LLM without facts (general knowledge)
-        if (response.empty()) {
-            bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
-            if (llmAvailable) {
-                std::string history = sys.brainMemory.getContextString();
-                std::string prompt = buildLLMPrompt(input, {}, history);
-                if (sys.llmEngine.isAvailable()) {
-                    response = sys.llmEngine.generate(prompt);
-                    response = sanitizeLLMResponse(response, input);
-                }
-                if (response.empty() && sys.cloudLLM.isAvailable()) {
-                    response = sys.cloudLLM.generateWithContext(input, {}, history, "", MK_SYSTEM_PROMPT);
-                    response = sanitizeLLMResponse(response, input);
-                }
-            }
-        }
-        if (response.empty()) {
-            response = "I don't have enough knowledge about that yet. Try asking me about science, technology, or programming.";
-        }
-    }
-
-    // Record interaction
-    sys.memory.recordInteraction("telegram_query", input);
-    sys.factExtractor.extractFromMessage(input);
-
-    return response;
+    return sys.orchestrator->respondForTelegram(input);
 }
 
 static void telegram_poll_loop(MKSystem& sys) {
@@ -2117,6 +1416,9 @@ int main(int argc, char* argv[]) {
     // Step 3: Initialize all modules
     std::cout << "  " << Color::DIM << "Initializing modules..." << Color::RESET << "\n\n";
     MKSystem sys;
+
+    // Initialize the orchestrator (requires full MKOrchestrator definition)
+    initOrchestrator(sys);
 
     // Step 4: Load knowledge
     sys.graph.loadAllKnowledge();
@@ -2646,22 +1948,11 @@ int main(int argc, char* argv[]) {
                     }
                     commandFound = true;
                 } else if (input == "/idea") {
-                    auto idea = sys.ideaEngine.generateIdea(sys.graph);
-                    std::cout << "\n  " << Color::BOLD << Color::BYELLOW << "💡 IDEA #" << sys.ideaEngine.getHistory().size() << Color::RESET << "\n";
+                    // Use orchestrator for creative idea generation
+                    std::string response = sys.orchestrator->respond("Generate a creative, novel idea by combining two unrelated concepts. Be specific and unique.");
+                    std::cout << "\n  " << Color::BOLD << Color::BYELLOW << "💡 IDEA" << Color::RESET << "\n";
                     std::cout << "  " << Color::DIM << "─────────────────────────────────" << Color::RESET << "\n";
-                    std::cout << "  Concept A: " << Color::BOLD << idea.conceptA << Color::RESET << "\n";
-                    std::cout << "  Concept B: " << Color::BOLD << idea.conceptB << Color::RESET << "\n";
-                    std::cout << "  Bridge: " << Color::CYAN << idea.bridge << Color::RESET << "\n\n";
-                    std::cout << "  " << Color::BGREEN << "→" << Color::RESET << " \"" << idea.idea << "\"\n\n";
-                    int fBar = (int)(idea.feasibility * 10);
-                    int nBar = (int)(idea.novelty * 10);
-                    std::cout << "  Feasibility: " << Color::GREEN;
-                    for (int i = 0; i < 10; i++) std::cout << (i < fBar ? "\xe2\x96\x88" : "\xe2\x96\x91");
-                    std::cout << Color::RESET << " " << (int)(idea.feasibility * 100) << "%\n";
-                    std::cout << "  Novelty:     " << Color::CYAN;
-                    for (int i = 0; i < 10; i++) std::cout << (i < nBar ? "\xe2\x96\x88" : "\xe2\x96\x91");
-                    std::cout << Color::RESET << " " << (int)(idea.novelty * 100) << "%\n";
-                    std::cout << "  Category:    " << Color::MAGENTA << idea.category << Color::RESET << "\n";
+                    std::cout << "  " << Color::BGREEN << "→" << Color::RESET << " " << response << "\n";
                     std::cout << "  " << Color::DIM << "─────────────────────────────────" << Color::RESET << "\n";
                     commandFound = true;
                 } else if (input.size() > 12 && input.substr(0, 12) == "/brainstorm ") {
@@ -2669,16 +1960,10 @@ int main(int argc, char* argv[]) {
                     if (topic.empty()) {
                         std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET << " /brainstorm <topic>\n";
                     } else {
-                        auto ideas = sys.ideaEngine.brainstorm(sys.graph, topic, 5);
+                        std::string response = sys.orchestrator->respond("Brainstorm 5 creative ideas about: " + topic + ". Number them 1-5.");
                         std::cout << "\n  " << Color::BOLD << Color::BYELLOW << "💡 BRAINSTORM: " << topic << Color::RESET << "\n";
                         std::cout << "  " << Color::DIM << "═════════════════════════════════" << Color::RESET << "\n";
-                        int n = 1;
-                        for (const auto& idea : ideas) {
-                            std::cout << "\n  " << Color::BOLD << n++ << "." << Color::RESET << " " << idea.idea << "\n";
-                            std::cout << "     " << Color::DIM << "[" << idea.category << " | feasibility: "
-                                      << (int)(idea.feasibility * 100) << "% | novelty: "
-                                      << (int)(idea.novelty * 100) << "%]" << Color::RESET << "\n";
-                        }
+                        std::cout << "\n  " << response << "\n";
                         std::cout << "\n  " << Color::DIM << "═════════════════════════════════" << Color::RESET << "\n";
                     }
                     commandFound = true;
@@ -2691,16 +1976,10 @@ int main(int argc, char* argv[]) {
                     if (problem.empty()) {
                         std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET << " /invent <problem>\n";
                     } else {
-                        auto ideas = sys.ideaEngine.inventFor(sys.graph, problem);
+                        std::string response = sys.orchestrator->respond("Invent 3 creative solutions for this problem: " + problem + ". Number them 1-3.");
                         std::cout << "\n  " << Color::BOLD << Color::BYELLOW << "🔧 INVENTIONS for: " << problem << Color::RESET << "\n";
                         std::cout << "  " << Color::DIM << "═════════════════════════════════" << Color::RESET << "\n";
-                        int n = 1;
-                        for (const auto& idea : ideas) {
-                            std::cout << "\n  " << Color::BOLD << n++ << "." << Color::RESET << " " << idea.idea << "\n";
-                            std::cout << "     " << Color::DIM << "[feasibility: "
-                                      << (int)(idea.feasibility * 100) << "% | novelty: "
-                                      << (int)(idea.novelty * 100) << "%]" << Color::RESET << "\n";
-                        }
+                        std::cout << "\n  " << response << "\n";
                         std::cout << "\n  " << Color::DIM << "═════════════════════════════════" << Color::RESET << "\n";
                     }
                     commandFound = true;
@@ -2802,7 +2081,6 @@ int main(int argc, char* argv[]) {
         if (interaction_count % AUTO_SAVE_INTERVAL == 0) {
             std::lock_guard<std::mutex> lock(sys.systemMutex);
             sys.memory.saveToDisk();
-            sys.improver.saveLog();
         }
     }
 
@@ -2823,9 +2101,8 @@ int main(int argc, char* argv[]) {
     sys.serviceManager.shutdown_all();
 
     sys.memory.saveToDisk();
-    sys.improver.saveLog();
     sys.learningEngine.persist();
-    std::cout << "  " << Color::GREEN << "✓" << Color::RESET << " Memory saved. Improvement log saved. Knowledge persisted.\n";
+    std::cout << "  " << Color::GREEN << "✓" << Color::RESET << " Memory saved. Knowledge persisted.\n";
     std::cout << "  " << Color::BOLD << Color::CYAN << "MK OS shut down cleanly. Goodbye." 
               << Color::RESET << "\n\n";
 

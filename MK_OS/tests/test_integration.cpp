@@ -790,48 +790,6 @@ void test_signal_engine_generation() {
 }
 
 // ============================================================
-// TEST: Smart Router - Crypto Route
-// ============================================================
-void test_smart_router_crypto() {
-    MKSmartRouter router;
-
-    auto decision = router.route("check my crypto portfolio bitcoin price");
-    TEST_ASSERT_EQ(static_cast<int>(decision.primaryRoute),
-                   static_cast<int>(MKRouteType::CRYPTO),
-                   "Crypto keywords should route to CRYPTO");
-    TEST_ASSERT_GT(decision.confidence, 0.3f,
-                   "CRYPTO route should have reasonable confidence");
-}
-
-// ============================================================
-// TEST: Smart Router - Homelab Route
-// ============================================================
-void test_smart_router_homelab() {
-    MKSmartRouter router;
-
-    auto decision = router.route("deploy docker container on server homelab");
-    TEST_ASSERT_EQ(static_cast<int>(decision.primaryRoute),
-                   static_cast<int>(MKRouteType::HOMELAB),
-                   "Homelab keywords should route to HOMELAB");
-    TEST_ASSERT_GT(decision.confidence, 0.3f,
-                   "HOMELAB route should have reasonable confidence");
-}
-
-// ============================================================
-// TEST: Smart Router - Mind Route
-// ============================================================
-void test_smart_router_mind() {
-    MKSmartRouter router;
-
-    auto decision = router.route("set a goal to improve my skill and earn money");
-    TEST_ASSERT_EQ(static_cast<int>(decision.primaryRoute),
-                   static_cast<int>(MKRouteType::MIND),
-                   "Mind keywords should route to MIND");
-    TEST_ASSERT_GT(decision.confidence, 0.3f,
-                   "MIND route should have reasonable confidence");
-}
-
-// ============================================================
 // TEST: HMAC-SHA256 against RFC 4231 Test Vector
 // ============================================================
 void test_hmac_sha256_rfc4231() {
@@ -964,16 +922,12 @@ void test_autonomous_learner_session() {
 // ============================================================
 void test_full_pipeline_with_no_llm() {
     // Simulate the scenario where no LLM is available:
-    // thinking engine returns empty, cloud LLM is unavailable,
-    // but graph has facts. System should produce meaningful response.
+    // graph has facts. System should produce meaningful response via orchestrator fallback.
 
     MKPatternGraph graph("ai_core/hre/knowledge_files");
     graph.loadAllKnowledge();
     graph.addFact("python", "is_a", "programming_language", 1.0f);
     graph.addFact("python", "created_by", "guido_van_rossum", 0.95f);
-
-    MKConversationMode convMode;
-    MKCasualResponses casualResponses;
 
     // Get facts about python
     auto results = graph.getAll("python");
@@ -991,11 +945,7 @@ void test_full_pipeline_with_no_llm() {
             factBased += relevantFacts[i];
         }
         factBased += ".";
-        std::string prefix = convMode.generateResponse("hmm", casualResponses);
-        if (prefix.empty() || prefix.size() < 3) {
-            prefix = "Here's what I know:";
-        }
-        response = prefix + " " + factBased;
+        response = "Here's what I know: " + factBased;
     }
 
     TEST_ASSERT_FALSE(response.empty(),
@@ -1005,11 +955,34 @@ void test_full_pipeline_with_no_llm() {
     TEST_ASSERT_TRUE(response.size() > 10,
                      "Degraded response should be meaningful (> 10 chars)");
 
-    // Test with no facts available - should still produce something from templates
-    std::vector<std::string> emptyFacts;
-    std::string emptyResponse = convMode.generateResponse("tell me something", casualResponses);
-    TEST_ASSERT_FALSE(emptyResponse.empty(),
-                      "Template fallback should produce a response even with no facts");
+    // Use orchestrator for the full test
+    MKBrainMemory memory(10);
+    MKCloudLLM cloudLLM;
+    MKLLMEngine llmEngine;
+    MKProviderRouter providerRouter;
+    MKRequestLogger requestLogger;
+    MKResourceMonitor resourceMonitor;
+    MKDeviceRegistry deviceRegistry;
+    MKLearningEngine learningEngine;
+    MKBiographicalExtractor factExtractor;
+    static const std::string testPrompt = "You are MK.";
+
+    MKOrchestrator orch;
+    orch.graph = &graph;
+    orch.brainMemory = &memory;
+    orch.cloudLLM = &cloudLLM;
+    orch.llmEngine = &llmEngine;
+    orch.providerRouter = &providerRouter;
+    orch.requestLogger = &requestLogger;
+    orch.resourceMonitor = &resourceMonitor;
+    orch.deviceRegistry = &deviceRegistry;
+    orch.learningEngine = &learningEngine;
+    orch.factExtractor = &factExtractor;
+    orch.systemPrompt = &testPrompt;
+
+    std::string orchResponse = orch.respond("what is python");
+    TEST_ASSERT_FALSE(orchResponse.empty(),
+                      "Orchestrator should produce response even without LLM");
 }
 
 // ============================================================

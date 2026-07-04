@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Make MK extremely token-efficient to maximize free API usage. Implement smart context pruning, fact relevance scoring, conversation history compression, and tight prompt construction. The goal: minimize tokens sent per request while maximizing response quality.",
+  "status": "pending",
+  "steps": [
+    "Create MK_OS/orchestrator/context_builder.cpp that implements the ContextBuilder class. This class is responsible for building the smallest effective prompt for each LLM call. It takes: user input, available facts from pattern_graph, conversation history from brain_memory, tool results, and a max_tokens budget (default 1500 tokens for context). It outputs a single prompt string.",
+    "Implement fact pruning in ContextBuilder: use the existing filterRelevantFacts() logic but make it smarter. Score facts by: (a) keyword overlap with user input (existing), (b) recency of access (facts accessed recently are more relevant), (c) biographical relevance (personal facts about Mohammed always rank higher). Cap at 5 most relevant facts. Format them as terse bullet points, not full sentences.",
+    "Implement conversation history compression: instead of including the full last N turns, summarize older turns. Keep the last 2 turns verbatim. For turns 3-6, compress to a single sentence summary (e.g., 'Previously discussed: Python setup, Docker deployment'). This reduces history from ~500 tokens to ~100 tokens.",
+    "Implement a token estimator (rough: chars/4) that ensures the total prompt stays under a budget. If facts + history + system prompt exceed the budget, progressively drop: oldest history first, then lowest-scored facts, then reduce system prompt to a minimal version.",
+    "Refactor MK_SYSTEM_PROMPT to be shorter and more focused. Current prompt is ~60 words. Create a minimal version (~30 words) for when token budget is tight: 'You are MK, Mohammed's personal AI. Be concise, helpful, honest. Use provided facts to answer. Call tools when needed.'",
+    "Wire ContextBuilder into MKOrchestrator::respond() so all LLM calls go through it. Remove the old ad-hoc prompt building code (buildLLMPrompt function, the inline prompt construction in handle_natural_query).",
+    "Add tests: verify token estimator, verify fact pruning drops low-relevance facts, verify history compression produces shorter output, verify budget enforcement."
+  ],
+  "acceptance_criteria": [
+    "'make' succeeds with new context_builder module",
+    "'make test' passes all new token efficiency tests",
+    "Prompts for simple queries use under 800 estimated tokens of context",
+    "Prompts for complex queries with many facts still stay under 2000 estimated tokens",
+    "History compression reduces 6-turn history to under 150 estimated tokens for older turns"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
