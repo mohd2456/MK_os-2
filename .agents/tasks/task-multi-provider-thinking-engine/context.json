@@ -1,0 +1,33 @@
+{
+  "project_type": "C++ AI assistant system with header-only .cpp module includes compiled into a single binary",
+  "language": "C++17",
+  "build_system": "make (clang++ on macOS, single compilation unit via #include in system/mk_entry.cpp)",
+  "test_framework": "Custom test framework in tests/test_main.cpp with TEST_ASSERT macros. Tests compile as separate binary (mk_os_test) that also uses single-compilation-unit #include pattern.",
+  "build_command": "cd MK_OS && make",
+  "test_command": "cd MK_OS && make test",
+  "verification_instructions": "1. Run 'make clean && make' from MK_OS/ directory - should compile with only warnings (no errors). 2. Run 'make test' - all tests should pass (currently 47). 3. New tests for this feature should be added to tests/test_main.cpp or tests/test_integration.cpp.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "No setup needed - dependencies (libcurl, libsqlite3) are pre-installed. Just run 'make' from MK_OS/ directory.",
+  "environment_constraints": "Open internet available. Build uses clang++ with -std=c++17 -O2 -Wall -Wextra -DDARWIN. All modules are header-style .cpp files included directly (no separate .o linking). The project uses libcurl for HTTP and libsqlite3 for database.",
+  "contribution_requirements": "No formal CONTRIBUTING.md. Code follows existing patterns: each module is a single .cpp file with #ifndef guards, included from mk_entry.cpp or test_main.cpp. Classes use MK prefix naming convention.",
+  "key_patterns": "1. All modules are .cpp files with header guards (#ifndef/#define/#endif). 2. Modules are included via #include in mk_entry.cpp (main) and test_main.cpp (tests). 3. MKSystem struct in mk_entry.cpp holds all module instances. 4. Telegram commands are handled in telegram_poll_loop() which parses JSON manually. 5. cloud_llm.cpp already has provider abstraction (CloudProviderConfig) with failover. 6. llm_engine.cpp handles local LLM (llama.cpp/Ollama). 7. The existing conversation pipeline: isConversation? -> local LLM -> cloud LLM -> Genesis -> template fallback.",
+  "relevant_files": [
+    "MK_OS/system/mk_entry.cpp",
+    "MK_OS/llm/cloud_llm.cpp",
+    "MK_OS/llm/llm_engine.cpp",
+    "MK_OS/llm/model_manager.cpp",
+    "MK_OS/plugins/telegram.cpp",
+    "MK_OS/ai_core/smart_router.cpp",
+    "MK_OS/ai_core/conversation_mode.cpp",
+    "MK_OS/ai_core/genesis/genesis_engine.cpp",
+    "MK_OS/ai_core/hre/pattern_graph.cpp",
+    "MK_OS/mk_brain/memory/brain_memory.cpp",
+    "MK_OS/config/mk_config.cpp",
+    "MK_OS/homelab/ssh_controller.cpp",
+    "MK_OS/homelab/docker_manager.cpp",
+    "MK_OS/Makefile",
+    "MK_OS/tests/test_main.cpp",
+    "MK_OS/tests/test_integration.cpp"
+  ],
+  "directory_structure": "MK_OS/ is the main source directory. system/ has mk_entry.cpp (entry point). llm/ has cloud_llm.cpp, llm_engine.cpp, model_manager.cpp. plugins/ has telegram.cpp. ai_core/ has smart_router.cpp, conversation_mode.cpp, genesis/, hre/. mk_brain/ has memory/, personality/. homelab/ has SSH, Docker, device management. config/ has mk_config.cpp. tests/ has test_main.cpp and test_integration.cpp."
+}

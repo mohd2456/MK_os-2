@@ -17,6 +17,7 @@
 #include <vector>
 #include <fstream>
 #include <cstdlib>
+#include <map>
 #include <curl/curl.h>
 
 // Provider types
@@ -24,6 +25,7 @@ enum class CloudProvider {
     GROQ,
     OPENROUTER,
     HUGGINGFACE,
+    NVIDIA_NIM,
     NONE
 };
 
@@ -194,6 +196,7 @@ private:
         const char* groqKey = std::getenv("GROQ_API_KEY");
         const char* openrouterKey = std::getenv("OPENROUTER_API_KEY");
         const char* hfKey = std::getenv("HF_API_KEY");
+        const char* nvidiaKey = std::getenv("NVIDIA_API_KEY");
 
         // Also try config file
         std::string keyFile = configPath_ + "/api_keys.conf";
@@ -214,12 +217,14 @@ private:
             if (key == "GROQ_API_KEY" && !val.empty()) groqKey = nullptr; // use file value
             if (key == "OPENROUTER_API_KEY" && !val.empty()) openrouterKey = nullptr;
             if (key == "HF_API_KEY" && !val.empty()) hfKey = nullptr;
+            if (key == "NVIDIA_API_KEY" && !val.empty()) nvidiaKey = nullptr;
 
             // Store in provider configs
             for (auto& p : providers_) {
                 if (key == "GROQ_API_KEY" && p.type == CloudProvider::GROQ) p.apiKey = val;
                 if (key == "OPENROUTER_API_KEY" && p.type == CloudProvider::OPENROUTER) p.apiKey = val;
                 if (key == "HF_API_KEY" && p.type == CloudProvider::HUGGINGFACE) p.apiKey = val;
+                if (key == "NVIDIA_API_KEY" && p.type == CloudProvider::NVIDIA_NIM) p.apiKey = val;
             }
         }
 
@@ -239,6 +244,15 @@ private:
                 if (p.type == CloudProvider::HUGGINGFACE) p.apiKey = hfKey;
             }
         }
+        if (nvidiaKey) {
+            for (auto& p : providers_) {
+                if (p.type == CloudProvider::NVIDIA_NIM) p.apiKey = nvidiaKey;
+            }
+        }
+
+        // Try encrypted keys file (loaded via MKKeyEncryption externally)
+        // This is handled by loadEncryptedKeys() called after construction
+        // when MKKeyEncryption is available.
 
         // Mark providers as available if they have keys
         for (auto& p : providers_) {
@@ -287,6 +301,14 @@ public:
             "HuggingFace",
             "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3/v1/chat/completions",
             "mistralai/Mistral-7B-Instruct-v0.3",
+            "", true, 0, 5
+        });
+
+        providers_.push_back({
+            CloudProvider::NVIDIA_NIM,
+            "Nvidia NIM",
+            "https://integrate.api.nvidia.com/v1/chat/completions",
+            "nvidia/llama-3.1-8b-instruct",
             "", true, 0, 5
         });
 
@@ -453,7 +475,8 @@ public:
             if (p.name == provider || 
                 (provider == "groq" && p.type == CloudProvider::GROQ) ||
                 (provider == "openrouter" && p.type == CloudProvider::OPENROUTER) ||
-                (provider == "huggingface" && p.type == CloudProvider::HUGGINGFACE)) {
+                (provider == "huggingface" && p.type == CloudProvider::HUGGINGFACE) ||
+                (provider == "nvidia" && p.type == CloudProvider::NVIDIA_NIM)) {
                 p.apiKey = key;
                 p.available = !key.empty();
                 p.failCount = 0;
@@ -479,6 +502,7 @@ public:
         file << "#   Groq: https://console.groq.com (email signup, no card)\n";
         file << "#   OpenRouter: https://openrouter.ai (email signup, no card)\n";
         file << "#   HuggingFace: https://huggingface.co/settings/tokens (email signup, no card)\n";
+        file << "#   Nvidia NIM: https://build.nvidia.com (email signup, no card)\n";
         file << "\n";
 
         for (const auto& p : providers_) {
@@ -486,12 +510,73 @@ public:
             if (p.type == CloudProvider::GROQ) keyName = "GROQ_API_KEY";
             else if (p.type == CloudProvider::OPENROUTER) keyName = "OPENROUTER_API_KEY";
             else if (p.type == CloudProvider::HUGGINGFACE) keyName = "HF_API_KEY";
+            else if (p.type == CloudProvider::NVIDIA_NIM) keyName = "NVIDIA_API_KEY";
 
             if (!keyName.empty()) {
                 file << keyName << "=" << p.apiKey << "\n";
             }
         }
         file.close();
+    }
+
+    // --------------------------------------------------------
+    // Load keys from encrypted_keys.conf (via MKKeyEncryption)
+    // Called externally after MKKeyEncryption is initialized
+    // --------------------------------------------------------
+    void loadEncryptedKey(const std::string& providerName, const std::string& decryptedKey) {
+        if (decryptedKey.empty()) return;
+        for (auto& p : providers_) {
+            if ((providerName == "groq" || providerName == "GROQ_API_KEY") && p.type == CloudProvider::GROQ) {
+                if (p.apiKey.empty()) { p.apiKey = decryptedKey; p.available = true; }
+            } else if ((providerName == "openrouter" || providerName == "OPENROUTER_API_KEY") && p.type == CloudProvider::OPENROUTER) {
+                if (p.apiKey.empty()) { p.apiKey = decryptedKey; p.available = true; }
+            } else if ((providerName == "huggingface" || providerName == "HF_API_KEY") && p.type == CloudProvider::HUGGINGFACE) {
+                if (p.apiKey.empty()) { p.apiKey = decryptedKey; p.available = true; }
+            } else if ((providerName == "nvidia" || providerName == "NVIDIA_API_KEY") && p.type == CloudProvider::NVIDIA_NIM) {
+                if (p.apiKey.empty()) { p.apiKey = decryptedKey; p.available = true; }
+            }
+        }
+        // Re-check if any provider is now available
+        for (const auto& p : providers_) {
+            if (p.available) { enabled_ = true; break; }
+        }
+    }
+
+    // --------------------------------------------------------
+    // Get provider status for all providers
+    // Returns vector of {name, available, failCount, model}
+    // --------------------------------------------------------
+    struct ProviderStatusInfo {
+        std::string name;
+        bool available;
+        int failCount;
+        std::string model;
+    };
+
+    std::vector<ProviderStatusInfo> getProviderStatus() const {
+        std::vector<ProviderStatusInfo> statuses;
+        for (const auto& p : providers_) {
+            statuses.push_back({p.name, p.available, p.failCount, p.model});
+        }
+        return statuses;
+    }
+
+    // --------------------------------------------------------
+    // Save keys in encrypted format (via external MKKeyEncryption)
+    // Returns a map of provider_key_name -> plaintext_key for encryption
+    // --------------------------------------------------------
+    std::map<std::string, std::string> getKeysForEncryption() const {
+        std::map<std::string, std::string> keys;
+        for (const auto& p : providers_) {
+            if (p.apiKey.empty()) continue;
+            std::string keyName;
+            if (p.type == CloudProvider::GROQ) keyName = "groq";
+            else if (p.type == CloudProvider::OPENROUTER) keyName = "openrouter";
+            else if (p.type == CloudProvider::HUGGINGFACE) keyName = "huggingface";
+            else if (p.type == CloudProvider::NVIDIA_NIM) keyName = "nvidia";
+            if (!keyName.empty()) keys[keyName] = p.apiKey;
+        }
+        return keys;
     }
 };
 

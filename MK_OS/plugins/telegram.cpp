@@ -505,6 +505,40 @@ public:
         return "";
     }
 
+    // Check if a message is a /setkey command
+    bool isSetKeyCommand(const std::string& msgText) const {
+        return msgText.size() > 8 && msgText.substr(0, 8) == "/setkey ";
+    }
+
+    // Extract provider and key from /setkey <provider> <key>
+    // Returns {provider, key} pair; key may be empty if format is wrong
+    std::pair<std::string, std::string> extractSetKeyArgs(const std::string& msgText) const {
+        if (!isSetKeyCommand(msgText)) return {"", ""};
+        std::string args = msgText.substr(8);
+        // Trim leading spaces
+        while (!args.empty() && args.front() == ' ') args.erase(args.begin());
+        // Split on first space
+        size_t sp = args.find(' ');
+        if (sp == std::string::npos) return {args, ""};
+        std::string provider = args.substr(0, sp);
+        std::string key = args.substr(sp + 1);
+        // Trim key
+        while (!key.empty() && key.front() == ' ') key.erase(key.begin());
+        while (!key.empty() && (key.back() == ' ' || key.back() == '\n' || key.back() == '\r'))
+            key.pop_back();
+        return {provider, key};
+    }
+
+    // Check if a message is the /key command
+    bool isKeyCommand(const std::string& msgText) const {
+        return msgText == "/key";
+    }
+
+    // Check if a message is the /status command
+    bool isStatusCommand(const std::string& msgText) const {
+        return msgText == "/status";
+    }
+
     // Enhanced autoReply with new commands
     void autoReplyEnhanced(const std::string& chatId, const std::string& msgText) {
         if (msgText == "/start") {
@@ -513,7 +547,7 @@ public:
                 {{"Crypto", "/crypto"}, {"Devices", "/devices"}},
                 {{"Goals", "/goals"}, {"Earn", "/earn"}},
                 {{"Homelab", "/homelab"}, {"Sync", "/sync"}},
-                {{"Help", "/help"}}
+                {{"Status", "/status"}, {"Help", "/help"}}
             };
             sendMessageWithKeyboard(chatId,
                 "<b>Welcome to MK-OS v2.0!</b>\n\n"
@@ -526,7 +560,9 @@ public:
                 "/homelab - Server status\n"
                 "/think - Deep reasoning\n"
                 "/sync - Sync knowledge\n"
-                "/teach - Teach me facts\n\n"
+                "/teach - Teach me facts\n"
+                "/setkey - Set API key\n"
+                "/status - Provider status\n\n"
                 "Use buttons below or type commands:",
                 buttons);
         } else if (msgText == "/help") {
@@ -540,12 +576,15 @@ public:
                 "<b>Crypto & Finance:</b>\n"
                 "/crypto - Portfolio dashboard\n"
                 "/earn - Earnings summary\n\n"
+                "<b>LLM Providers:</b>\n"
+                "/setkey &lt;provider&gt; &lt;key&gt; - Set API key\n"
+                "/status - Provider status & routing\n"
+                "/key - Show active provider\n\n"
                 "<b>System:</b>\n"
                 "/devices - Connected devices\n"
                 "/homelab - Docker/services\n"
                 "/goals - Goals & progress\n"
-                "/sync - Sync knowledge\n"
-                "/status - System diagnostics\n\n"
+                "/sync - Sync knowledge\n\n"
                 "<i>Or just type naturally!</i>");
         } else if (msgText == "/crypto") {
             handleCryptoCommand(chatId);
@@ -568,7 +607,27 @@ public:
         } else if (msgText == "/teach") {
             handleTeachCommand(chatId, "");
         } else if (msgText == "/status") {
+            // Provider status - delegated to caller (mk_entry.cpp has access to router)
             sendMessage(chatId, getSystemStats());
+        } else if (msgText == "/setkey" || msgText.substr(0, 8) == "/setkey ") {
+            // /setkey is handled by the caller (mk_entry.cpp) for provider key management
+            if (msgText == "/setkey") {
+                sendMessage(chatId,
+                    "<b>Usage:</b> /setkey &lt;provider&gt; &lt;key&gt;\n\n"
+                    "<b>Providers:</b> groq, openrouter, nvidia, huggingface\n\n"
+                    "<b>Example:</b>\n"
+                    "<code>/setkey groq gsk_abc123...</code>\n\n"
+                    "<i>Get free keys at:</i>\n"
+                    "- groq.com\n"
+                    "- openrouter.ai\n"
+                    "- build.nvidia.com\n"
+                    "- huggingface.co/settings/tokens");
+            }
+            // Actual key storage is done by the caller
+        } else if (msgText == "/key") {
+            // /key is handled by the caller (mk_entry.cpp) to show active provider
+            // Placeholder - caller overrides
+            sendMessage(chatId, "Checking active provider...");
         } else if (msgText.size() > 6 && msgText.substr(0, 6) == "/learn") {
             std::string fact = msgText.substr(6);
             if (!fact.empty() && fact[0] == ' ') fact = fact.substr(1);
