@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "feat",
   "description": "Make MK extremely token-efficient to maximize free API usage. Implement smart context pruning, fact relevance scoring, conversation history compression, and tight prompt construction. The goal: minimize tokens sent per request while maximizing response quality.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create MK_OS/orchestrator/context_builder.cpp that implements the ContextBuilder class. This class is responsible for building the smallest effective prompt for each LLM call. It takes: user input, available facts from pattern_graph, conversation history from brain_memory, tool results, and a max_tokens budget (default 1500 tokens for context). It outputs a single prompt string.",
     "Implement fact pruning in ContextBuilder: use the existing filterRelevantFacts() logic but make it smarter. Score facts by: (a) keyword overlap with user input (existing), (b) recency of access (facts accessed recently are more relevant), (c) biographical relevance (personal facts about Mohammed always rank higher). Cap at 5 most relevant facts. Format them as terse bullet points, not full sentences.",
@@ -24,5 +24,5 @@
     "cd MK_OS && make test"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Build passes with 6 pre-existing warnings (same as before). Tests: 71 passed, 0 failed, 430 assertions. MKContextBuilder is a pure logic class (no subsystem pointers) making it easy to test. The include order in mk_entry.cpp is: context_builder.cpp -> conversation_loop.cpp (context_builder must come first since the orchestrator uses it). MK_SYSTEM_PROMPT_MINIMAL is defined as a static const in context_builder.cpp (about 20 tokens). The orchestrator's buildPrompt() now delegates to MKContextBuilder, which handles: fact scoring with personal relevance boost, history compression keeping last 2 turns verbatim, token budgeting with progressive dropping, and tool prompt optimization (only included when query seems tool-related). The existing filterRelevantFacts() at file scope in mk_entry.cpp is preserved for other code paths. Tests verify: token estimation linearity, fact scoring with keyword/personal relevance, history compression reducing size, budget enforcement under various limits, tool prompt optimization, and minimal prompt brevity. learned_facts.mk gets modified by test side effects (persistNewFact in test_tool_executor_learn_fact) - do not commit that file."
 }
