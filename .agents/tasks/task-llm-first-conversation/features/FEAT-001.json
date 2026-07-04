@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Wire LLM modules into mk_entry.cpp and refactor the conversation pipeline to use LLM-first with offline fallback. This includes: adding #include directives for cloud_llm.cpp and llm_engine.cpp, adding MKCloudLLM and MKLLMEngine instances to MKSystem struct, adding a getContextString() method to MKBrainMemory, replacing the Genesis->Prometheus->CXN->MCE waterfall in handle_natural_query() with an LLM-first approach that uses RAG context from pattern_graph, and keeping Genesis as the offline-only fallback.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Add a public method getContextString() to MK_OS/mk_brain/memory/brain_memory.cpp that returns the shortTermContext as a formatted string (e.g., 'user: ... \\nmk: ...\\n') suitable for passing to cloud_llm.cpp's generateWithContext() conversationHistory parameter.",
     "Add #include directives for '../llm/cloud_llm.cpp' and '../llm/llm_engine.cpp' in MK_OS/system/mk_entry.cpp in the include section (after the existing module includes, around line 98).",
@@ -33,5 +33,5 @@
     "Run 'cd /projects/sandbox/MK_os-2/MK_OS && make test' and confirm all tests pass"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Build and tests pass cleanly. 42 tests, 339 assertions all pass. The LLM modules (cloud_llm.cpp, llm_engine.cpp) include curl/curl.h but this causes no conflicts since multiple modules already include it. The initializer list order matches struct member declaration order (cloudLLM before llmEngine). The MKCloudLLM default constructor takes an optional configPath string defaulting to empty which maps to '.'. MKLLMEngine has a plain default constructor."
 }
