@@ -1,0 +1,38 @@
+{
+  "id": "FEAT-001",
+  "type": "chore",
+  "description": "Delete all dead engine files (Genesis, Prometheus, CXN, MCE, thinking_engine, decision_engine, safe_parse.h) and update mk_entry.cpp to remove all references to deleted modules. Rewrite handle_natural_query() and generate_ai_response() to use the simplified single-LLM-call flow.",
+  "status": "in_progress",
+  "steps": [
+    "Delete entire directories: MK_OS/ai_core/genesis/ (8 files), MK_OS/ai_core/prometheus/ (5 files), MK_OS/ai_core/cxn/ (4 files), MK_OS/ai_core/mce/ (6 files)",
+    "Delete individual files: MK_OS/llm/thinking_engine.cpp, MK_OS/ai_core/decision_engine.cpp, MK_OS/ai_core/safe_parse.h",
+    "In MK_OS/system/mk_entry.cpp: Remove #include lines for all deleted modules (mce_engine.cpp, cxn_engine.cpp, prometheus_engine.cpp, genesis_engine.cpp, thinking_engine.cpp, decision_engine.cpp)",
+    "In MK_OS/system/mk_entry.cpp: Remove from MKSystem struct: consciousnessEngine, crystalNetwork, prometheus, genesis, thinkingEngine, decisionEngine fields and their types",
+    "In MK_OS/system/mk_entry.cpp constructor: Remove initialization code for thinkingEngine, decisionEngine, consciousnessEngine, crystalNetwork, prometheus, genesis (Steps 4c, 4d, 4e, 4f initialization blocks and related sharedCasualTexts logic)",
+    "In MK_OS/system/mk_entry.cpp: Remove daemon job 'genesis_dream'",
+    "In MK_OS/system/mk_entry.cpp: Remove commands /trace, /echo, /crystals, /prometheus, /genesis, /dream, /identity, /fluid from REPL and from show_slash_suggestions and cmd_help",
+    "In MK_OS/system/mk_entry.cpp: Remove shutdown saves for deleted engines (consciousnessEngine.save(), crystalNetwork.save(), prometheus.save(), genesis.save())",
+    "In MK_OS/system/mk_entry.cpp: Remove all .absorb() calls (prometheus.absorb, genesis.absorb, consciousnessEngine.absorb) throughout the file",
+    "Rewrite handle_natural_query() conversation path: Remove the 3-layer architecture (thinking engine + decision engine). Replace with: greeting detected? -> template response | else -> gather context (graph facts via filterRelevantFacts + conversation history from brainMemory.getContextString() + tool output from a simple getToolOutputIfNeeded helper) -> ONE LLM call via cloudLLM.generateWithContext or llmEngine.generate with good system prompt -> sanitize -> respond. If LLM fails -> honest 'I am offline' message.",
+    "Rewrite generate_ai_response() (Telegram path) with same simplified logic: greeting? -> template | else -> one LLM call with context -> response | LLM down? -> honest offline message",
+    "Add a simple getToolOutputIfNeeded(input, sys) helper function: keyword-checks input for system/docker/device queries and returns tool output string if relevant (uses resourceMonitor, dockerManager, deviceRegistry). Returns empty string if no tool needed.",
+    "Remove mkHonestDegrade() function entirely - replace its usage with a simple inline 'I cannot reach my language model right now' fallback string",
+    "Remove the genesis.isInitialized() and mkLooksCoherent() references since genesis is deleted",
+    "Clean MK_SYSTEM_PROMPT to be simpler and clearer without references to internal engines",
+    "Ensure math_solver path remains untouched (instant math, no LLM needed)",
+    "Ensure /ask, /search, /think, /learn, /weather, /time, /news commands remain functional (they don't depend on deleted engines)"
+  ],
+  "acceptance_criteria": [
+    "Running 'cd MK_OS && make clean && make' succeeds with no errors",
+    "The binary handles: greetings (template response), math (instant), natural language questions (single LLM call), /quit (clean exit)",
+    "No references to MKConsciousnessEngine, MKCrystalNetwork, MKPrometheus, MKGenesisEngine, MKThinkingEngine, MKDecisionEngine remain in mk_entry.cpp",
+    "The deleted directories and files no longer exist on disk",
+    "Running 'printf \"hello\\nwhat is 5 times 3\\nwhat is python\\nbye\\n/quit\\n\" | ./mk_os' does not crash"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && rm -rf prometheus_data genesis_data cxn_crystals.dat && printf 'hello\\nwhat is 5 times 3\\nwhat is python\\nbye\\n/quit\\n' | ./mk_os"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

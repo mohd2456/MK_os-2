@@ -1,0 +1,7 @@
+{
+  "task_id": "task-simplify-to-single-llm",
+  "task_description": "Replace the 7-engine cascade architecture (Genesis, Prometheus, CXN, MCE, thinking engine, decision engine) with a single LLM call per message. Delete all dead code, simplify mk_entry.cpp to: detect message type -> gather context (graph facts + history + tool output) -> one Groq API call -> response. Keep math_solver for instant math, conversation_mode for greeting detection, pattern_graph for RAG context, provider_router for fallback.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}

@@ -84,10 +84,7 @@ namespace Color {
 #include "../ai_core/math_solver.cpp"
 #include "../mk_brain/personality/casual_responses.cpp"
 #include "../ai_core/conversation_mode.cpp"
-#include "../ai_core/mce/mce_engine.cpp"
-#include "../ai_core/cxn/cxn_engine.cpp"
-#include "../ai_core/prometheus/prometheus_engine.cpp"
-#include "../ai_core/genesis/genesis_engine.cpp"
+
 #include "../ai_core/idea_engine.cpp"
 #include "../plugins/pc_helper.cpp"
 #include "../crypto/market_data.cpp"
@@ -103,7 +100,6 @@ namespace Color {
 #include "../llm/cloud_llm.cpp"
 #include "../llm/llm_engine.cpp"
 #include "../llm/provider_router.cpp"
-#include "../llm/thinking_engine.cpp"
 #include "../llm/request_logger.cpp"
 
 // Security subsystem - Key encryption
@@ -123,9 +119,6 @@ namespace Color {
 #include "../homelab/ssh_controller.cpp"
 #include "../homelab/docker_manager.cpp"
 #include "../homelab/service_orchestrator.cpp"
-
-// AI Core - Decision Engine (Layer 2) - must be after homelab includes
-#include "../ai_core/decision_engine.cpp"
 
 // Sync subsystem - Multi-device knowledge and memory synchronization
 #include "../sync/knowledge_sync.cpp"
@@ -272,19 +265,13 @@ struct MKSystem {
     MKMathSolver mathSolver;
     MKCasualResponses casualResponses;
     MKConversationMode conversationMode;
-    MKConsciousnessEngine consciousnessEngine;
-    MKCrystalNetwork crystalNetwork;
-    MKPrometheus prometheus;
     MKIdeaEngine ideaEngine;
     MKPCHelper pcHelper;
-    MKGenesisEngine genesis;
 
     // LLM subsystem
     MKCloudLLM cloudLLM;
     MKLLMEngine llmEngine;
     MKProviderRouter providerRouter;
-    MKThinkingEngine thinkingEngine;
-    MKDecisionEngine decisionEngine;
     MKRequestLogger requestLogger;
 
     // Security subsystem
@@ -411,15 +398,6 @@ struct MKSystem {
             std::string slug = cloudLLM.getModel(pname);
             if (!slug.empty()) providerRouter.setProviderModel(pname, slug);
         }
-
-        // Initialize thinking engine with provider router reference
-        thinkingEngine.setProviderRouter(&providerRouter);
-
-        // Initialize decision engine with tool references
-        decisionEngine.setGraph(&graph);
-        decisionEngine.setSSHController(&sshController);
-        decisionEngine.setDockerManager(&dockerManager);
-        decisionEngine.setResourceMonitor(&resourceMonitor);
     }
 
     ~MKSystem() = default;
@@ -454,15 +432,6 @@ static void cmd_help() {
         << "    " << Color::GREEN << "/weather" << Color::RESET << " <city>   Live weather for any city\n"
         << "    " << Color::GREEN << "/time" << Color::RESET << " [timezone]   Current time in any timezone\n"
         << "    " << Color::GREEN << "/news" << Color::RESET << "              Latest tech headlines\n"
-        << "\n"
-        << Color::BOLD << Color::YELLOW << "  🔥 PROMETHEUS" << Color::RESET << "\n"
-        << "    " << Color::GREEN << "/prometheus" << Color::RESET << "        Show Prometheus engine stats\n"
-        << "    " << Color::GREEN << "/identity" << Color::RESET << "          Show MK's evolved identity state\n"
-        << "    " << Color::GREEN << "/fluid" << Color::RESET << "             Show last fluid resonance trace\n"
-        << "\n"
-        << Color::BOLD << Color::YELLOW << "  🧬 GENESIS" << Color::RESET << "\n"
-        << "    " << Color::GREEN << "/genesis" << Color::RESET << "           Show Genesis engine stats\n"
-        << "    " << Color::GREEN << "/dream" << Color::RESET << "             Show dream insights from idle time\n"
         << "\n"
         << Color::BOLD << Color::YELLOW << "  💡 IDEAS" << Color::RESET << "\n"
         << "    " << Color::GREEN << "/idea" << Color::RESET << "              Generate a random creative idea\n"
@@ -505,13 +474,8 @@ static void show_slash_suggestions(const std::string& partial) {
         {"/shell",    "Run MK shell command"},
         {"/services", "Show service status"},
         {"/sync",     "Sync knowledge with GitHub"},
-        {"/prometheus", "Prometheus engine stats"},
-        {"/genesis",  "Genesis engine stats"},
-        {"/dream",    "Show dream insights"},
         {"/models",   "Show provider model slugs"},
         {"/setmodel", "Set a provider's model slug"},
-        {"/identity", "MK evolved identity state"},
-        {"/fluid",    "Fluid resonance trace"},
         {"/help",     "Show all commands"},
         {"/clear",    "Clear the screen"},
         {"/idea",     "Generate a creative idea"},
@@ -1103,39 +1067,17 @@ static std::string synthesizeResponse(MKSystem& sys, const std::string& input,
         return sys.style.format_response(raw, input, confidence);
     }
 
-    // LLM was configured but failed, or no relevant facts — return empty.
-    // Caller will use mkHonestDegrade() for a clean fallback message.
+    // LLM was configured but failed, or no relevant facts - return empty.
+    // Caller will use mkHonestFallback() for a clean fallback message.
     return "";
 }
 
 // ============================================================
-// Honest degradation helpers (BUG 4)
+// Honest degradation helper
+// When the LLM is unavailable, return a clear honest message.
 // ============================================================
-// When the real LLM providers are unavailable we must degrade HONESTLY rather
-// than emitting incoherent Genesis metamorphic "word-salad" as if it were a real
-// answer. Preference order when the LLM path yields nothing:
-//   1. A grounded answer built from known graph facts (if any).
-//   2. A short, honest "can't reach my language model" message when providers
-//      were configured but failed (404 / 429 / empty).
-//   3. Genesis ONLY as a genuine offline fallback (no LLM configured at all),
-//      and only when it produces something that passes a basic coherence check.
-
-// Basic coherence guard for offline Genesis output. Rejects empty / too-short
-// fragments so obvious word-salad does not get surfaced as a real answer.
-static bool mkLooksCoherent(const std::string& s) {
-    if (s.size() < 8) return false;
-    int words = 0;
-    std::istringstream ss(s);
-    std::string w;
-    while (ss >> w) words++;
-    return words >= 3;
-}
-
-// Build a grounded, honest response when the LLM is unavailable.
-static std::string mkHonestDegrade(MKSystem& sys, const std::string& input,
-                                   const std::vector<std::string>& relevantFacts,
-                                   bool llmConfigured) {
-    // 1. Prefer a fact-grounded answer.
+static std::string mkHonestFallback(const std::vector<std::string>& relevantFacts) {
+    // If we have relevant facts from the graph, present them simply
     if (!relevantFacts.empty()) {
         std::string factBased;
         for (size_t i = 0; i < relevantFacts.size() && i < 3; i++) {
@@ -1143,28 +1085,55 @@ static std::string mkHonestDegrade(MKSystem& sys, const std::string& input,
             factBased += relevantFacts[i];
         }
         factBased += ".";
-        std::string prefix = sys.conversationMode.generateResponse("hmm", sys.casualResponses);
-        if (prefix.empty() || prefix.size() < 3) prefix = "Here's what I know:";
-        return prefix + " " + factBased;
+        return "Here's what I know: " + factBased;
     }
 
-    // 2. Providers were configured but failed -> be honest, don't fake it.
-    if (llmConfigured) {
-        return "I can't reach my language model right now, so I can't answer that "
-               "properly. Try again in a moment, or check /status for provider health.";
+    // No facts, no LLM - be honest
+    return "I can't reach my language model right now, so I can't answer that "
+           "properly. Try again in a moment, or check /status for provider health.";
+}
+
+// ============================================================
+// Tool Output Helper
+// Checks if the user's input mentions system/docker/device topics
+// and returns relevant tool output if so, otherwise empty string.
+// ============================================================
+static std::string getToolOutputIfNeeded(const std::string& input, MKSystem& sys) {
+    std::string lower = input;
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    std::string toolOutput;
+
+    // System/CPU/RAM queries
+    if (lower.find("system") != std::string::npos || lower.find("cpu") != std::string::npos ||
+        lower.find("ram") != std::string::npos || lower.find("memory") != std::string::npos ||
+        lower.find("resource") != std::string::npos || lower.find("temperature") != std::string::npos) {
+        auto localRes = sys.resourceMonitor.getLocalResources();
+        if (localRes.valid) {
+            toolOutput += "System resources: CPU " + std::to_string((int)localRes.cpu_usage_percent) + "%, "
+                        + "RAM " + std::to_string(localRes.available_ram_mb) + "/" 
+                        + std::to_string(localRes.total_ram_mb) + "MB, "
+                        + "Temp " + std::to_string((int)localRes.temperature_celsius) + "C.";
+        }
     }
 
-    // 3. Truly offline (no LLM configured): Genesis is the genuine offline brain.
-    if (sys.genesis.isInitialized()) {
-        std::string g = sys.genesis.generate(input);
-        if (mkLooksCoherent(g)) return g;
+    // Docker/container queries
+    if (lower.find("docker") != std::string::npos || lower.find("container") != std::string::npos) {
+        // Docker manager generates commands; we report its availability
+        toolOutput += " Docker manager is available. Use SSH controller to run docker commands on devices.";
     }
 
-    // Last resort: a casual template, else an honest note.
-    std::string tmpl = sys.conversationMode.generateResponse(input, sys.casualResponses);
-    if (!tmpl.empty() && tmpl.size() >= 3) return tmpl;
-    return "I don't have a language model available right now, so I can only work "
-           "from what I already know.";
+    // Device/homelab queries
+    if (lower.find("device") != std::string::npos || lower.find("homelab") != std::string::npos ||
+        lower.find("server") != std::string::npos) {
+        auto devices = sys.deviceRegistry.getOnlineDevices();
+        int total = sys.deviceRegistry.deviceCount();
+        if (total > 0) {
+            toolOutput += " Homelab: " + std::to_string(total) + " devices registered, "
+                        + std::to_string(devices.size()) + " online.";
+        }
+    }
+
+    return toolOutput;
 }
 
 // ============================================================
@@ -1268,84 +1237,49 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             }
         }
 
-        // === 3-LAYER ARCHITECTURE ===
-        // Layer 3 (Context): Gather graph facts + conversation history + system state
+        // === SINGLE LLM CALL ARCHITECTURE ===
+        // Gather context: graph facts + conversation history + tool output
         std::vector<std::string> relevantFacts;
         auto graphResults = sys.graph.getAll(input);
         for (const auto& e : graphResults) {
             relevantFacts.push_back(e.source + " " + e.relation + " " + e.target);
         }
-        // Filter for relevance to avoid polluting LLM context with random matches
         relevantFacts = filterRelevantFacts(input, relevantFacts, 5);
         std::string history = sys.brainMemory.getContextString();
-        std::string systemState;
-        auto localRes = sys.resourceMonitor.getLocalResources();
-        if (localRes.valid) {
-            systemState = "CPU " + std::to_string((int)localRes.cpu_usage_percent) + "%, "
-                        + "RAM " + std::to_string(localRes.available_ram_mb) + "MB free";
-        }
+        std::string toolOutput = getToolOutputIfNeeded(input, sys);
 
         std::string response;
-        std::string thinkingContext; // Internal reasoning to inform LLM (never shown to user)
-
-        // Layer 1 (Thinking): Call thinking engine for reasoning
-        if (sys.thinkingEngine.isAvailable()) {
-            std::string thinking = sys.thinkingEngine.think(input, relevantFacts, systemState, history);
-
-            if (!thinking.empty()) {
-                // Layer 2 (Decision): Process thinking output through decision engine
-                // Returns non-empty ONLY if real tool results were produced.
-                // Returns EMPTY for pure conversational actions — meaning "no tool
-                // action taken, use LLM to generate the actual user-facing response."
-                response = sys.decisionEngine.process(input, thinking, relevantFacts, history);
-
-                // If decision engine returned empty, preserve thinking as internal
-                // context for the LLM to produce a better response.
-                if (response.empty()) {
-                    thinkingContext = thinking;
-                }
-            }
-        }
-
-        // Fallback: If thinking engine is not available or decision engine returned
-        // empty (conversational action), use LLM generation flow.
-        // Pass the thinking output as additional context so the LLM benefits from
-        // the reasoning WITHOUT showing it raw to the user.
         bool llmConfigured = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
-        if (response.empty()) {
-            if (llmConfigured) {
-                // Build an enhanced system prompt that includes thinking context
-                std::string enhancedSystemPrompt = MK_SYSTEM_PROMPT;
-                if (!thinkingContext.empty()) {
-                    enhancedSystemPrompt += "\n\nInternal reasoning (use this to inform your response, "
-                                            "but do NOT repeat it verbatim to the user): " + thinkingContext;
-                }
 
-                if (sys.llmEngine.isAvailable()) {
-                    std::string fullPrompt = enhancedSystemPrompt + "\n\n";
-                    if (!relevantFacts.empty()) {
-                        fullPrompt += "Known facts:\n";
-                        for (const auto& f : relevantFacts) fullPrompt += "- " + f + "\n";
-                        fullPrompt += "\n";
-                    }
-                    if (!history.empty()) fullPrompt += "Recent conversation:\n" + history + "\n";
-                    fullPrompt += "User: " + input + "\nMK:";
-                    response = sys.llmEngine.generate(fullPrompt);
-                    response = sanitizeLLMResponse(response, input);
-                }
+        if (llmConfigured) {
+            // Build prompt with all available context
+            std::string enhancedPrompt = MK_SYSTEM_PROMPT;
+            if (!toolOutput.empty()) {
+                enhancedPrompt += "\n\nSystem info: " + toolOutput;
+            }
 
-                if (response.empty() && sys.cloudLLM.isAvailable()) {
-                    response = sys.cloudLLM.generateWithContext(input, relevantFacts, history, "", enhancedSystemPrompt);
-                    response = sanitizeLLMResponse(response, input);
+            if (sys.llmEngine.isAvailable()) {
+                std::string fullPrompt = enhancedPrompt + "\n\n";
+                if (!relevantFacts.empty()) {
+                    fullPrompt += "Known facts:\n";
+                    for (const auto& f : relevantFacts) fullPrompt += "- " + f + "\n";
+                    fullPrompt += "\n";
                 }
+                if (!history.empty()) fullPrompt += "Recent conversation:\n" + history + "\n";
+                fullPrompt += "User: " + input + "\nMK:";
+                response = sys.llmEngine.generate(fullPrompt);
+                response = sanitizeLLMResponse(response, input);
+            }
+
+            if (response.empty() && sys.cloudLLM.isAvailable()) {
+                response = sys.cloudLLM.generateWithContext(input, relevantFacts, history, toolOutput, enhancedPrompt);
+                response = sanitizeLLMResponse(response, input);
             }
         }
 
-        // Honest degradation (BUG 4): prefer graph facts / a short honest message.
-        // Genesis is used only as a genuine offline fallback (no LLM configured)
-        // and only when its output passes a basic coherence check.
+        // If LLM failed or not configured, use honest fallback
         if (response.empty()) {
-            response = mkHonestDegrade(sys, input, relevantFacts, llmConfigured);
+            response = mkHonestFallback(relevantFacts);
         }
         
         if (!response.empty()) {
@@ -1355,15 +1289,6 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             sys.brainMemory.commitToShortTerm("user", input);
             sys.brainMemory.commitToShortTerm("mk", response);
             sys.memory.recordInteraction("conversation", input);
-            
-            // Absorb into Prometheus for evolution
-            sys.prometheus.absorb(input, response, true);
-            
-            // Absorb into Genesis for evolution
-            sys.genesis.absorb(input, response, true);
-            
-            // Absorb into consciousness engine for learning
-            sys.consciousnessEngine.absorb(input, response);
             
             // Extract biographical facts passively
             sys.factExtractor.extractFromMessage(input);
@@ -1747,12 +1672,6 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
     sys.memory.recordInteraction("query", input);
     if (answered) {
         sys.memory.recordQA(input, response, confidence);
-        // Absorb into Prometheus for evolution
-        sys.prometheus.absorb(input, response, true);
-        sys.genesis.absorb(input, response, true);
-    } else {
-        sys.prometheus.absorb(input, "", false);
-        sys.genesis.absorb(input, "", false);
     }
 
     // Passively extract biographical facts from user input
@@ -1782,118 +1701,69 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
         }
     }
 
-    // If input is conversational, use 3-layer architecture
+    // If input is conversational, use single LLM call
     if (sys.conversationMode.isConversation(input)) {
         std::string llmResponse;
-        std::string thinkingContext; // Internal reasoning to inform LLM (never shown to user)
 
-        // === 3-LAYER ARCHITECTURE ===
-        // Layer 3 (Context): Gather graph facts + conversation history + system state
+        // Gather context: graph facts + conversation history + tool output
         std::vector<std::string> relevantFacts;
         auto graphResults = sys.graph.getAll(input);
         for (const auto& e : graphResults) {
             relevantFacts.push_back(e.source + " " + e.relation + " " + e.target);
         }
-        // Filter for relevance to avoid polluting LLM context with random matches
         relevantFacts = filterRelevantFacts(input, relevantFacts, 5);
         std::string history = sys.brainMemory.getContextString();
-        std::string systemState;
-        auto localRes = sys.resourceMonitor.getLocalResources();
-        if (localRes.valid) {
-            systemState = "CPU " + std::to_string((int)localRes.cpu_usage_percent) + "%, "
-                        + "RAM " + std::to_string(localRes.available_ram_mb) + "MB free";
-        }
+        std::string toolOutput = getToolOutputIfNeeded(input, sys);
 
-        // Layer 1 (Thinking): Call thinking engine for reasoning
-        if (sys.thinkingEngine.isAvailable()) {
-            auto thinkStart = std::chrono::steady_clock::now();
-            std::string thinking = sys.thinkingEngine.think(input, relevantFacts, systemState, history);
-            auto thinkEnd = std::chrono::steady_clock::now();
-            float thinkLatency = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
-                thinkEnd - thinkStart).count();
-
-            // Log thinking request (use actual provider that was used, not first online)
-            std::string thinkProvider = sys.thinkingEngine.getLastProvider();
-            if (thinkProvider.empty()) thinkProvider = "none";
-            int thinkTokens = (int)input.size() / 4;
-            sys.requestLogger.logRequest(thinkProvider, "thinking: " + input.substr(0, 40),
-                                         thinkTokens, thinkLatency, !thinking.empty());
-
-            if (!thinking.empty()) {
-                // Layer 2 (Decision): Process thinking output through decision engine
-                // Returns non-empty ONLY if real tool results were produced.
-                // Returns EMPTY for pure conversational actions.
-                llmResponse = sys.decisionEngine.process(input, thinking, relevantFacts, history);
-
-                // If decision engine returned empty, preserve thinking as internal
-                // context for the LLM to produce a better response.
-                if (llmResponse.empty()) {
-                    thinkingContext = thinking;
-                }
-            }
-        }
-
-        // Fallback: If thinking engine is not available or decision engine returned
-        // empty (conversational action), use LLM generation flow.
-        // Pass the thinking output as additional context so the LLM benefits from
-        // the reasoning WITHOUT showing it raw to the user.
+        // Single LLM call with gathered context
         bool llmConfigured = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
-        if (llmResponse.empty()) {
-            if (llmConfigured) {
-                // Build an enhanced system prompt that includes thinking context
-                std::string enhancedSystemPrompt = MK_SYSTEM_PROMPT;
-                if (!thinkingContext.empty()) {
-                    enhancedSystemPrompt += "\n\nInternal reasoning (use this to inform your response, "
-                                            "but do NOT repeat it verbatim to the user): " + thinkingContext;
-                }
+        if (llmConfigured) {
+            std::string enhancedPrompt = MK_SYSTEM_PROMPT;
+            if (!toolOutput.empty()) {
+                enhancedPrompt += "\n\nSystem info: " + toolOutput;
+            }
 
-                if (sys.llmEngine.isAvailable()) {
-                    std::string fullPrompt = enhancedSystemPrompt + "\n\n";
-                    if (!relevantFacts.empty()) {
-                        fullPrompt += "Known facts:\n";
-                        for (const auto& f : relevantFacts) fullPrompt += "- " + f + "\n";
-                        fullPrompt += "\n";
-                    }
-                    if (!history.empty()) fullPrompt += "Recent conversation:\n" + history + "\n";
-                    fullPrompt += "User: " + input + "\nMK:";
-                    auto genStart = std::chrono::steady_clock::now();
-                    llmResponse = sys.llmEngine.generate(fullPrompt);
-                    auto genEnd = std::chrono::steady_clock::now();
-                    float genLatency = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
-                        genEnd - genStart).count();
-                    sys.requestLogger.logRequest("local", "generate: " + input.substr(0, 40),
-                                                 (int)fullPrompt.size() / 4, genLatency, !llmResponse.empty());
+            if (sys.llmEngine.isAvailable()) {
+                std::string fullPrompt = enhancedPrompt + "\n\n";
+                if (!relevantFacts.empty()) {
+                    fullPrompt += "Known facts:\n";
+                    for (const auto& f : relevantFacts) fullPrompt += "- " + f + "\n";
+                    fullPrompt += "\n";
                 }
+                if (!history.empty()) fullPrompt += "Recent conversation:\n" + history + "\n";
+                fullPrompt += "User: " + input + "\nMK:";
+                auto genStart = std::chrono::steady_clock::now();
+                llmResponse = sys.llmEngine.generate(fullPrompt);
+                auto genEnd = std::chrono::steady_clock::now();
+                float genLatency = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
+                    genEnd - genStart).count();
+                sys.requestLogger.logRequest("local", "generate: " + input.substr(0, 40),
+                                             (int)fullPrompt.size() / 4, genLatency, !llmResponse.empty());
+                llmResponse = sanitizeLLMResponse(llmResponse, input);
+            }
 
-                if (llmResponse.empty() && sys.cloudLLM.isAvailable()) {
-                    auto genStart = std::chrono::steady_clock::now();
-                    llmResponse = sys.cloudLLM.generateWithContext(input, relevantFacts, history, "", enhancedSystemPrompt);
-                    auto genEnd = std::chrono::steady_clock::now();
-                    float genLatency = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
-                        genEnd - genStart).count();
-                    std::string cloudProvider = sys.cloudLLM.getProviderName();
-                    sys.requestLogger.logRequest(cloudProvider, "cloud: " + input.substr(0, 40),
-                                                 (int)input.size() / 4, genLatency, !llmResponse.empty());
-                }
+            if (llmResponse.empty() && sys.cloudLLM.isAvailable()) {
+                auto genStart = std::chrono::steady_clock::now();
+                llmResponse = sys.cloudLLM.generateWithContext(input, relevantFacts, history, toolOutput, enhancedPrompt);
+                auto genEnd = std::chrono::steady_clock::now();
+                float genLatency = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
+                    genEnd - genStart).count();
+                std::string cloudProvider = sys.cloudLLM.getProviderName();
+                sys.requestLogger.logRequest(cloudProvider, "cloud: " + input.substr(0, 40),
+                                             (int)input.size() / 4, genLatency, !llmResponse.empty());
+                llmResponse = sanitizeLLMResponse(llmResponse, input);
             }
         }
 
-        // Honest degradation (BUG 4): graph facts / honest message first; Genesis
-        // only as a genuine offline fallback with a coherence check.
+        // Honest fallback if LLM failed
         if (llmResponse.empty()) {
-            llmResponse = mkHonestDegrade(sys, input, relevantFacts, llmConfigured);
+            llmResponse = mkHonestFallback(relevantFacts);
         }
 
         if (!llmResponse.empty()) {
             sys.brainMemory.commitToShortTerm("user", input);
             sys.brainMemory.commitToShortTerm("mk", llmResponse);
             sys.memory.recordInteraction("telegram_conversation", input);
-
-            // Absorb into evolution engines
-            sys.prometheus.absorb(input, llmResponse, true);
-            sys.genesis.absorb(input, llmResponse, true);
-            sys.consciousnessEngine.absorb(input, llmResponse);
-
             sys.factExtractor.extractFromMessage(input);
             return llmResponse;
         }
@@ -2273,69 +2143,6 @@ int main(int argc, char* argv[]) {
     // Step 4b: Restore learning engine knowledge
     sys.learningEngine.restore();
 
-    // Step 4b-shared: Collect casual response texts once (shared across engine bootstraps)
-    std::vector<std::string> sharedCasualTexts;
-    {
-        auto appendVec = [&](const std::vector<std::string>& v) {
-            sharedCasualTexts.insert(sharedCasualTexts.end(), v.begin(), v.end());
-        };
-        appendVec(sys.casualResponses.greetings);
-        appendVec(sys.casualResponses.goodbyes);
-        appendVec(sys.casualResponses.acknowledgments);
-        appendVec(sys.casualResponses.reactions_positive);
-        appendVec(sys.casualResponses.reactions_negative);
-        appendVec(sys.casualResponses.encouragements);
-        appendVec(sys.casualResponses.follow_ups);
-        appendVec(sys.casualResponses.mood_happy);
-        appendVec(sys.casualResponses.mood_sad);
-        appendVec(sys.casualResponses.mood_angry);
-        appendVec(sys.casualResponses.mood_chill);
-    }
-
-    // Step 4c: Initialize MK Consciousness Engine
-    sys.consciousnessEngine.initialize(sys.graph, sys.casualResponses);
-
-    // Step 4d: Initialize CXN Crystal Network
-    {
-        // CXN uses fewer knowledge facts (cap at 300)
-        std::vector<std::string> knowledgeFacts;
-        const auto& edges = sys.graph.getAllEdges();
-        for (const auto& e : edges) {
-            knowledgeFacts.push_back(e.source + " " + e.relation + " " + e.target);
-            if (knowledgeFacts.size() > 300) break;
-        }
-
-        sys.crystalNetwork.initialize(sharedCasualTexts, knowledgeFacts);
-    }
-
-    // Step 4e: Initialize Prometheus Engine
-    {
-        // Prometheus uses more knowledge facts (cap at 500)
-        std::vector<std::string> knowledgeFacts;
-        const auto& prometheusEdges = sys.graph.getAllEdges();
-        for (const auto& e : prometheusEdges) {
-            knowledgeFacts.push_back(e.source + " " + e.relation + " " + e.target);
-            if (knowledgeFacts.size() > 500) break;
-        }
-
-        // Get code fragments from bootstrap
-        std::vector<std::string> codeFrags = getCodeFragmentStrings();
-
-        sys.prometheus.initialize(sharedCasualTexts, knowledgeFacts, codeFrags);
-        sys.prometheus.load();  // Restore identity state if saved
-    }
-
-    // Step 4f: Initialize Genesis Engine (next-gen AI)
-    {
-        std::vector<std::string> genesisKnowledge;
-        const auto& genesisEdges = sys.graph.getAllEdges();
-        for (const auto& e : genesisEdges) {
-            genesisKnowledge.push_back(e.source + " " + e.relation + " " + e.target);
-            if (genesisKnowledge.size() > 3000) break;
-        }
-        sys.genesis.initialize(sharedCasualTexts, genesisKnowledge);
-    }
-
     // Step 4c: Check if daily briefing should be generated
     if (sys.dailyBriefing.shouldGenerate()) {
         std::cout << "\n  " << Color::BMAGENTA << "📋" << Color::RESET 
@@ -2387,9 +2194,6 @@ int main(int argc, char* argv[]) {
     // Register telegram polling as a daemon job for monitoring
     sys.daemon.addJob("health_check", 30, [&sys]() {
         sys.serviceManager.run_health_checks();
-    });
-    sys.daemon.addJob("genesis_dream", 10, [&sys]() {
-        sys.genesis.dreamTick();
     });
     if (sys.telegram) {
         sys.daemon.addJob("telegram_poll_monitor", 60, []() {
@@ -2802,26 +2606,6 @@ int main(int argc, char* argv[]) {
                     cmd_think(sys, ""); commandFound = true;
                 } else if (input == "/briefing") {
                     cmd_briefing(sys); commandFound = true;
-                } else if (input == "/trace") {
-                    std::string trace = sys.consciousnessEngine.explain();
-                    std::cout << "\n  " << Color::BOLD << Color::BMAGENTA << "🧠 Thought Trace" << Color::RESET << "\n";
-                    std::cout << "  " << Color::DIM << trace << Color::RESET << "\n";
-                    commandFound = true;
-                } else if (input == "/echo") {
-                    std::string profile = sys.consciousnessEngine.getEchoProfile();
-                    std::cout << "\n  " << Color::BOLD << Color::BCYAN << "🪞 Echo Memory" << Color::RESET << "\n";
-                    std::cout << "  " << Color::DIM << profile << Color::RESET << "\n";
-                    commandFound = true;
-                } else if (input == "/crystals") {
-                    std::string stats = sys.crystalNetwork.getStats();
-                    std::string trace = sys.crystalNetwork.explain();
-                    std::cout << "\n  " << Color::BOLD << Color::BMAGENTA << "💎 Crystal Network" << Color::RESET << "\n";
-                    std::cout << "  " << Color::DIM << stats << Color::RESET << "\n";
-                    if (!trace.empty() && trace != "No CXN trace yet.") {
-                        std::cout << "\n  " << Color::BOLD << "Last trace:" << Color::RESET << "\n";
-                        std::cout << "  " << Color::DIM << trace << Color::RESET << "\n";
-                    }
-                    commandFound = true;
                 } else if (input == "/models") {
                     // Show the current model slug for each provider
                     std::cout << "\n  " << Color::BOLD << Color::BCYAN << "🔧 Provider Models" << Color::RESET << "\n";
@@ -2859,40 +2643,6 @@ int main(int argc, char* argv[]) {
                                       << " " << provider << " model set to " << Color::BOLD
                                       << slug << Color::RESET << " (saved to models.conf)\n";
                         }
-                    }
-                    commandFound = true;
-                } else if (input == "/prometheus") {
-                    std::string stats = sys.prometheus.getStats();
-                    std::cout << "\n  " << Color::BOLD << Color::BRED << "🔥 Prometheus Engine" << Color::RESET << "\n";
-                    std::cout << "  " << Color::DIM << stats << Color::RESET << "\n";
-                    commandFound = true;
-                } else if (input == "/genesis") {
-                    std::string stats = sys.genesis.getStats();
-                    std::cout << "\n  " << Color::BOLD << Color::BGREEN << "🧬 Genesis Engine" << Color::RESET << "\n";
-                    std::cout << "  " << Color::DIM << stats << Color::RESET << "\n";
-                    commandFound = true;
-                } else if (input == "/dream") {
-                    std::string insight = sys.genesis.getUndeliveredInsight();
-                    if (!insight.empty()) {
-                        std::cout << "\n  " << Color::BOLD << Color::BMAGENTA << "💭 Dream Insight" << Color::RESET << "\n";
-                        std::cout << "  " << Color::BCYAN << "→" << Color::RESET << " " << insight << "\n";
-                    } else {
-                        std::cout << "\n  " << Color::DIM << "No new dream insights yet. MK dreams during idle time." << Color::RESET << "\n";
-                    }
-                    commandFound = true;
-                } else if (input == "/identity") {
-                    std::string id = sys.prometheus.getIdentity();
-                    std::cout << "\n  " << Color::BOLD << Color::BMAGENTA << "🪞 Evolved Identity" << Color::RESET << "\n";
-                    std::cout << "  " << Color::DIM << id << Color::RESET << "\n";
-                    commandFound = true;
-                } else if (input == "/fluid") {
-                    std::string trace = sys.prometheus.getFluidTrace();
-                    std::cout << "\n  " << Color::BOLD << Color::BCYAN << "💧 Fluid Resonance Trace" << Color::RESET << "\n";
-                    std::cout << "  " << Color::DIM << trace << Color::RESET << "\n";
-                    std::string thought = sys.prometheus.explain();
-                    if (!thought.empty()) {
-                        std::cout << "\n  " << Color::BOLD << "Thought trace:" << Color::RESET << "\n";
-                        std::cout << "  " << Color::DIM << thought << Color::RESET << "\n";
                     }
                     commandFound = true;
                 } else if (input == "/idea") {
@@ -3075,11 +2825,7 @@ int main(int argc, char* argv[]) {
     sys.memory.saveToDisk();
     sys.improver.saveLog();
     sys.learningEngine.persist();
-    sys.consciousnessEngine.save();
-    sys.crystalNetwork.save("cxn_crystals.dat");
-    sys.prometheus.save();
-    sys.genesis.save();
-    std::cout << "  " << Color::GREEN << "✓" << Color::RESET << " Memory saved. Improvement log saved. Knowledge persisted. Genesis state saved.\n";
+    std::cout << "  " << Color::GREEN << "✓" << Color::RESET << " Memory saved. Improvement log saved. Knowledge persisted.\n";
     std::cout << "  " << Color::BOLD << Color::CYAN << "MK OS shut down cleanly. Goodbye." 
               << Color::RESET << "\n\n";
 

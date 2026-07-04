@@ -1,0 +1,33 @@
+{
+  "project_type": "C++ monolithic AI assistant (single compilation unit)",
+  "language": "C++17",
+  "build_system": "Make with clang++, single-file compilation (mk_entry.cpp #includes all modules)",
+  "test_framework": "Custom test framework in tests/test_main.cpp with TEST_ASSERT macros, includes tests/test_integration.cpp",
+  "build_command": "cd MK_OS && make",
+  "test_command": "cd MK_OS && make test",
+  "verification_instructions": "1. Run 'make clean && make' to ensure build succeeds. 2. Run 'make test' to ensure all tests pass. 3. Run: rm -rf prometheus_data genesis_data cxn_crystals.dat && printf 'hello\\nwhat is 5 times 3\\nwhat is python\\nbye\\n/quit\\n' | ./mk_os to verify runtime behavior.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "No special setup needed. Project uses system libcurl and libsqlite3.",
+  "environment_constraints": "OPEN_INTERNET network mode. macOS/Linux build with clang++ or g++.",
+  "contribution_requirements": "No formal contribution guide. Keep code compiling with -Wall -Wextra.",
+  "key_patterns": "Single compilation unit: mk_entry.cpp #includes all .cpp files. All modules use #ifndef guards. MKSystem struct holds all module instances. Telegram poll loop runs in a separate thread with mutex protection. Each module is a class in its own .cpp file.",
+  "relevant_files": [
+    "MK_OS/system/mk_entry.cpp (main orchestrator, ~3089 lines, must be heavily refactored)",
+    "MK_OS/llm/cloud_llm.cpp (KEEP - cloud LLM provider)",
+    "MK_OS/llm/llm_engine.cpp (KEEP - local LLM engine)",
+    "MK_OS/llm/provider_router.cpp (KEEP - provider routing/fallback)",
+    "MK_OS/ai_core/math_solver.cpp (KEEP - instant math)",
+    "MK_OS/ai_core/conversation_mode.cpp (KEEP - greeting/goodbye detection)",
+    "MK_OS/ai_core/hre/pattern_graph.cpp (KEEP - RAG context/knowledge graph)",
+    "MK_OS/ai_core/genesis/ (DELETE - 8 files)",
+    "MK_OS/ai_core/prometheus/ (DELETE - 5 files)",
+    "MK_OS/ai_core/cxn/ (DELETE - 4 files)",
+    "MK_OS/ai_core/mce/ (DELETE - 6 files)",
+    "MK_OS/llm/thinking_engine.cpp (DELETE)",
+    "MK_OS/ai_core/decision_engine.cpp (DELETE)",
+    "MK_OS/ai_core/safe_parse.h (DELETE)",
+    "MK_OS/tests/test_main.cpp (must update to remove deleted module tests)",
+    "MK_OS/tests/test_integration.cpp (must update to remove thinking/decision tests)"
+  ],
+  "directory_structure": "MK_OS/ is the main build dir. ai_core/ has AI modules. llm/ has LLM integration. system/ has entry point. tests/ has test files. mk_brain/ has memory/personality. homelab/ has device management. crypto/ has trading. plugins/ has telegram. mind/ has goal/mastery."
+}
