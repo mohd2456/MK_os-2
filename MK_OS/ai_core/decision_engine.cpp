@@ -248,32 +248,14 @@ public:
                 return "Resource monitor not available.";
             }
             case MKActionType::GRAPH_LOOKUP: {
-                if (graph_) {
-                    auto results = graph_->getAll(userInput);
-                    if (!results.empty()) {
-                        std::ostringstream facts;
-                        for (const auto& e : results) {
-                            facts << e.source << " " << e.relation << " " << e.target << ". ";
-                        }
-                        return facts.str();
-                    }
-                    return "No facts found in knowledge graph for this query.";
-                }
-                return "Knowledge graph not available.";
+                // Graph facts are used as CONTEXT for LLM response generation,
+                // not returned verbatim. Return empty so the caller routes through
+                // the LLM with graph facts as RAG context.
+                return "";
             }
             case MKActionType::EXPLAIN: {
-                // For explain actions, gather graph facts
-                if (graph_) {
-                    auto results = graph_->getAll(userInput);
-                    if (!results.empty()) {
-                        std::ostringstream explanation;
-                        explanation << "Based on what I know: ";
-                        for (const auto& e : results) {
-                            explanation << e.source << " " << e.relation << " " << e.target << ". ";
-                        }
-                        return explanation.str();
-                    }
-                }
+                // Same as GRAPH_LOOKUP — let the LLM synthesize a natural explanation
+                // from the graph facts rather than dumping raw triples.
                 return "";
             }
             case MKActionType::CONFIRM_DESTRUCTIVE: {
@@ -396,23 +378,17 @@ public:
             }
         }
 
-        // If we got tool results, format them
+        // If we got REAL tool results (system info, docker status, SSH output),
+        // format and return them. These are structured data the user asked for.
         if (!combinedResults.empty()) {
             return formatResponse(combinedResults, thinkingOutput, userInput);
         }
 
-        // For conversational actions with graph facts, return those
-        if (!graphFacts.empty()) {
-            std::ostringstream factResponse;
-            for (const auto& f : graphFacts) {
-                factResponse << f << ". ";
-            }
-            return formatResponse(factResponse.str(), thinkingOutput, userInput);
-        }
-
-        // No tool results and no graph facts — return EMPTY.
-        // The caller should generate a natural response via the LLM, using the
-        // thinking output as internal reasoning context (NOT as the response).
+        // No tool executed — return EMPTY regardless of whether graph facts exist.
+        // Graph facts are CONTEXT for the LLM, NOT a response to show the user.
+        // The caller will pass them to the LLM as RAG context and generate a
+        // natural answer. Dumping raw graph triples ("sandwich_attack is_a
+        // attack_type. nervous_system controls body.") is never appropriate.
         return "";
     }
 

@@ -1088,8 +1088,14 @@ static std::string synthesizeResponse(MKSystem& sys, const std::string& input,
         if (!response.empty()) return response;
     }
 
-    // LLM unavailable or failed: format facts naturally through style engine
-    if (!facts.empty()) {
+    // LLM unavailable or failed: do NOT dump raw facts to the user.
+    // Raw graph triples ("sandwich_attack exploits pending_transactions") are
+    // never an appropriate user-facing response. If the LLM was configured but
+    // failed (rate limit, bad key), return empty so the caller uses honest
+    // degradation. Only format facts through style engine when NO LLM was
+    // ever configured (truly offline mode).
+    if (!llmAvailable && !facts.empty()) {
+        // Truly offline — style engine is the best we can do
         std::string raw;
         for (const auto& f : facts) {
             raw += f + ". ";
@@ -1097,15 +1103,8 @@ static std::string synthesizeResponse(MKSystem& sys, const std::string& input,
         return sys.style.format_response(raw, input, confidence);
     }
 
-    // If filtering removed all facts but we had raw facts, try with raw (style only)
-    if (!rawFacts.empty()) {
-        std::string raw;
-        for (size_t i = 0; i < rawFacts.size() && i < 5; i++) {
-            raw += rawFacts[i] + ". ";
-        }
-        return sys.style.format_response(raw, input, confidence);
-    }
-
+    // LLM was configured but failed, or no relevant facts — return empty.
+    // Caller will use mkHonestDegrade() for a clean fallback message.
     return "";
 }
 
