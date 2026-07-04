@@ -888,6 +888,8 @@ public:
     }
 
     // Check if input contains a basic arithmetic expression (e.g. "1+1", "2*3", "10/2", "5-3")
+    // Guards against false positives on hyphenated text like "the 2019-2020 season" by
+    // requiring the arithmetic expression to be the dominant content of the input.
     bool hasArithmeticPattern(const std::string& input) const {
         std::string lower = toLower(input);
         // Strip "what is" prefix if present
@@ -900,21 +902,52 @@ public:
         if (whatPos != std::string::npos) {
             expr = expr.substr(whatPos + 6);
         }
+        expr = trimStr(expr);
+        // Remove trailing punctuation
+        while (!expr.empty() && (expr.back() == '?' || expr.back() == '.')) expr.pop_back();
+        expr = trimStr(expr);
+
         // Look for digit operator digit pattern (with optional spaces)
         // Patterns: "1+1", "2 + 2", "10*5", "3 - 1", "8/2"
         for (size_t i = 0; i < expr.size(); i++) {
-            if (expr[i] == '+' || expr[i] == '-' || expr[i] == '*' || expr[i] == '/') {
+            char op = expr[i];
+            if (op == '+' || op == '-' || op == '*' || op == '/') {
                 // Check for digit before operator (possibly with spaces)
                 bool hasDigitBefore = false;
                 int j = (int)i - 1;
                 while (j >= 0 && expr[j] == ' ') j--;
-                if (j >= 0 && std::isdigit(expr[j])) hasDigitBefore = true;
+                if (j < 0 || !std::isdigit(expr[j])) continue;
+                hasDigitBefore = true;
+
                 // Check for digit after operator (possibly with spaces)
                 bool hasDigitAfter = false;
                 size_t k = i + 1;
                 while (k < expr.size() && expr[k] == ' ') k++;
-                if (k < expr.size() && std::isdigit(expr[k])) hasDigitAfter = true;
-                if (hasDigitBefore && hasDigitAfter) return true;
+                if (k >= expr.size() || !std::isdigit(expr[k])) continue;
+                hasDigitAfter = true;
+
+                if (hasDigitBefore && hasDigitAfter) {
+                    // For the minus operator specifically, guard against hyphenated text
+                    // like "2019-2020 season". Require the arithmetic expression to be
+                    // the dominant content (most of the characters are digits/operators/spaces).
+                    if (op == '-') {
+                        // Count how many characters in expr are part of the arithmetic
+                        // (digits, operators, spaces). If non-arithmetic chars dominate, reject.
+                        int arithmeticChars = 0;
+                        for (char c : expr) {
+                            if (std::isdigit(c) || c == '+' || c == '-' || c == '*' ||
+                                c == '/' || c == ' ' || c == '.') {
+                                arithmeticChars++;
+                            }
+                        }
+                        // If less than 80% of the expression is arithmetic, it is likely
+                        // embedded in prose (e.g. "the 2019-2020 season").
+                        if ((float)arithmeticChars / (float)expr.size() < 0.8f) {
+                            continue;
+                        }
+                    }
+                    return true;
+                }
             }
         }
         return false;

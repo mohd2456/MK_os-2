@@ -161,8 +161,10 @@ private:
         };
 
         // GRAPH: factual lookups, definitions, relationships
+        // "what is" is safe here because the math solver runs before the router
+        // and will catch arithmetic queries like "what is 1+1" first.
         graphKeywords = {
-            "who is", "define", "meaning", "capital of",
+            "what is", "who is", "define", "meaning", "capital of",
             "population", "president", "inventor", "discovered", "founded",
             "element", "planet", "country", "language", "species",
             "formula", "equation", "theorem", "law of", "fact"

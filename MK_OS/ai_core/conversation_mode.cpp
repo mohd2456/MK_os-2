@@ -842,13 +842,31 @@ public:
                 // Respond in context of last topic
                 std::string lastTopic = getLastTopic();
                 if (!lastTopic.empty()) {
+                    // Truncate and normalize the topic to avoid awkward long interpolations.
+                    // Cap at 40 chars and trim at the last word boundary if needed.
+                    std::string topic = lastTopic;
+                    if (topic.size() > 40) {
+                        topic = topic.substr(0, 40);
+                        size_t lastSpace = topic.rfind(' ');
+                        if (lastSpace != std::string::npos && lastSpace > 10) {
+                            topic = topic.substr(0, lastSpace);
+                        }
+                    }
+                    // Remove trailing punctuation and whitespace
+                    while (!topic.empty() && (topic.back() == '.' || topic.back() == '?' ||
+                           topic.back() == '!' || topic.back() == ' ')) {
+                        topic.pop_back();
+                    }
+                    if (topic.empty()) {
+                        return db.pick(db.acknowledgments);
+                    }
                     // Reference the last topic so user knows context is preserved
                     std::vector<std::string> contextResponses = {
-                        "got it. want me to tell you more about " + lastTopic + "?",
-                        "yeah, " + lastTopic + " is interesting. want to go deeper?",
-                        "I can tell you more about " + lastTopic + " if you want.",
-                        "right. anything else about " + lastTopic + "?",
-                        "cool, let me know if you have more questions about " + lastTopic + "."
+                        "got it. want me to tell you more about " + topic + "?",
+                        "yeah, " + topic + " is interesting. want to go deeper?",
+                        "I can tell you more about " + topic + " if you want.",
+                        "right. anything else about " + topic + "?",
+                        "cool, let me know if you have more questions about " + topic + "."
                     };
                     std::uniform_int_distribution<size_t> dist(0, contextResponses.size() - 1);
                     return contextResponses[dist(rng_)];
