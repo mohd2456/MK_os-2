@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Add unit tests for the new LLM-first conversation pipeline to verify the routing logic works correctly: LLM availability checks, fallback behavior, and RAG context assembly.",
+  "status": "pending",
+  "steps": [
+    "Add #include for '../llm/cloud_llm.cpp' and '../llm/llm_engine.cpp' to MK_OS/tests/test_main.cpp (in the includes section around line 75).",
+    "Add a new test function test_cloud_llm_initialization() that creates a MKCloudLLM instance and verifies: isAvailable() returns false when no API keys are set (the test environment has no keys), getProviderName() returns 'none' or the first configured provider name.",
+    "Add a new test function test_llm_engine_initialization() that creates a MKLLMEngine instance and verifies: isAvailable() returns false when no local server is running (test environment), getServerType() returns 'none'.",
+    "Add a new test function test_llm_fallback_logic() that simulates the conversation pipeline logic: when both LLM engines are unavailable (isAvailable() == false), the code should produce an empty string from LLM, causing fallback to Genesis/template system. Verify this by checking that MKCloudLLM.generate() returns empty when not available, and MKLLMEngine.generate() returns empty when not available.",
+    "Add a new test function test_rag_context_assembly() that creates a MKPatternGraph, adds a fact (e.g., 'python is_a language'), queries it with getAll('python'), and verifies the results can be formatted as a vector<string> suitable for passing to generateWithContext().",
+    "Add a new test function test_brain_memory_context_string() that creates a MKBrainMemory, commits a few turns, and verifies getContextString() returns a properly formatted conversation history string.",
+    "Register all new tests with RUN_TEST() in the main() function of test_main.cpp.",
+    "Verify with 'cd MK_OS && make test' that all tests (existing and new) pass."
+  ],
+  "acceptance_criteria": [
+    "New tests compile as part of 'make test'",
+    "test_cloud_llm_initialization passes (verifies unavailable state without API keys)",
+    "test_llm_engine_initialization passes (verifies unavailable state without local server)",
+    "test_llm_fallback_logic passes (verifies empty returns when unavailable)",
+    "test_rag_context_assembly passes (verifies graph query + formatting)",
+    "test_brain_memory_context_string passes (verifies new getContextString method)",
+    "All existing tests continue to pass",
+    "'cd MK_OS && make test' exits with code 0"
+  ],
+  "verification": [
+    "Run 'cd /projects/sandbox/MK_os-2/MK_OS && make test' and confirm all tests pass with exit code 0"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

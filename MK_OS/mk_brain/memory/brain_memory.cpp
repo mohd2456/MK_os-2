@@ -49,6 +49,15 @@ public:
         }
         std::cout << "-----------------------------\n";
     }
+
+    // Returns conversation history as a formatted string for LLM context
+    std::string getContextString() const {
+        std::string result;
+        for (const auto& turn : shortTermContext) {
+            result += turn.role + ": " + turn.content + "\n";
+        }
+        return result;
+    }
 };
 
 #endif // MK_BRAIN_MEMORY_CPP

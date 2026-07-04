@@ -99,6 +99,10 @@ namespace Color {
 #include "../crypto/trading_bot.cpp"
 #include "../crypto/airdrop_farmer.cpp"
 
+// LLM subsystem - Local and cloud LLM integration
+#include "../llm/cloud_llm.cpp"
+#include "../llm/llm_engine.cpp"
+
 // Mind subsystem - The cognitive layer
 #include "../mind/mastery_network.cpp"
 #include "../mind/goal_engine.cpp"
@@ -266,6 +270,10 @@ struct MKSystem {
     MKPCHelper pcHelper;
     MKGenesisEngine genesis;
 
+    // LLM subsystem
+    MKCloudLLM cloudLLM;
+    MKLLMEngine llmEngine;
+
     // Crypto trading subsystem
     MKMarketData cryptoMarketData;
     MKTechnicalAnalysis cryptoTechnicalAnalysis;
@@ -333,7 +341,9 @@ struct MKSystem {
           shell(),
           serviceManager(),
           telegram(nullptr),
-          neuralNet()
+          neuralNet(),
+          cloudLLM("."),
+          llmEngine()
     {
         // Initialize Telegram bot if token is available
         const char* tgToken = std::getenv("MK_TELEGRAM_TOKEN");
@@ -805,25 +815,49 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             }
         }
 
-        // Generate casual response based on input type and mood
-        // Priority: GENESIS -> Prometheus -> CXN Crystal Network -> MCE Consciousness -> template fallback
+        // Generate response: LLM-first with offline fallback
+        // Try LLM (local then cloud) with RAG context, fall back to Genesis offline
         std::string response;
-        if (sys.genesis.isInitialized()) {
+        bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
+
+        if (llmAvailable) {
+            // Gather RAG context from knowledge graph
+            std::vector<std::string> relevantFacts;
+            auto graphResults = sys.graph.getAll(input);
+            for (const auto& e : graphResults) {
+                relevantFacts.push_back(e.source + " " + e.relation + " " + e.target);
+            }
+
+            // Get conversation history
+            std::string history = sys.brainMemory.getContextString();
+
+            // Try local LLM first, then cloud
+            if (sys.llmEngine.isAvailable()) {
+                // Build prompt with context for local LLM
+                std::string systemPrompt = "You are MK, a personal AI assistant. You are helpful, direct, and friendly. You talk naturally like a knowledgeable friend. You are loyal to your creator Mohammed. Keep responses concise and genuine. If you do not know something, say so honestly.";
+                std::string fullPrompt = systemPrompt + "\n\n";
+                if (!relevantFacts.empty()) {
+                    fullPrompt += "Known facts:\n";
+                    for (const auto& f : relevantFacts) fullPrompt += "- " + f + "\n";
+                    fullPrompt += "\n";
+                }
+                if (!history.empty()) fullPrompt += "Recent conversation:\n" + history + "\n";
+                fullPrompt += "User: " + input + "\nMK:";
+                response = sys.llmEngine.generate(fullPrompt);
+            }
+
+            if (response.empty() && sys.cloudLLM.isAvailable()) {
+                std::string cloudHistory = sys.brainMemory.getContextString();
+                response = sys.cloudLLM.generateWithContext(input, relevantFacts, cloudHistory);
+            }
+        }
+
+        // Offline fallback: Genesis
+        if (response.empty() && sys.genesis.isInitialized()) {
             response = sys.genesis.generate(input);
         }
-        // Fall back to Prometheus if Genesis returns empty
-        if (response.empty() && sys.prometheus.isInitialized()) {
-            response = sys.prometheus.generate(input);
-        }
-        // Fall back to CXN if Prometheus returns empty
-        if (response.empty() && sys.crystalNetwork.isInitialized()) {
-            response = sys.crystalNetwork.generate(input);
-        }
-        // Fall back to MCE if CXN returns empty
-        if (response.empty() && sys.consciousnessEngine.isInitialized()) {
-            response = sys.consciousnessEngine.generate(input, sys.graph);
-        }
-        // Fall back to template system if all return empty
+
+        // Last resort: template system
         if (response.empty()) {
             response = sys.conversationMode.generateResponse(input, sys.casualResponses);
         }
@@ -1219,6 +1253,51 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
 // Forward declaration - generates an AI response for a natural language query.
 // Caller must hold sys.systemMutex.
 static std::string generate_ai_response(MKSystem& sys, const std::string& input) {
+    // If input is conversational, try LLM-first before routing
+    if (sys.conversationMode.isConversation(input)) {
+        std::string llmResponse;
+        bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
+
+        if (llmAvailable) {
+            std::vector<std::string> relevantFacts;
+            auto graphResults = sys.graph.getAll(input);
+            for (const auto& e : graphResults) {
+                relevantFacts.push_back(e.source + " " + e.relation + " " + e.target);
+            }
+            std::string history = sys.brainMemory.getContextString();
+
+            if (sys.llmEngine.isAvailable()) {
+                std::string systemPrompt = "You are MK, a personal AI assistant. You are helpful, direct, and friendly. You talk naturally like a knowledgeable friend. You are loyal to your creator Mohammed. Keep responses concise and genuine. If you do not know something, say so honestly.";
+                std::string fullPrompt = systemPrompt + "\n\n";
+                if (!relevantFacts.empty()) {
+                    fullPrompt += "Known facts:\n";
+                    for (const auto& f : relevantFacts) fullPrompt += "- " + f + "\n";
+                    fullPrompt += "\n";
+                }
+                if (!history.empty()) fullPrompt += "Recent conversation:\n" + history + "\n";
+                fullPrompt += "User: " + input + "\nMK:";
+                llmResponse = sys.llmEngine.generate(fullPrompt);
+            }
+
+            if (llmResponse.empty() && sys.cloudLLM.isAvailable()) {
+                llmResponse = sys.cloudLLM.generateWithContext(input, relevantFacts, history);
+            }
+        }
+
+        // Offline fallback: Genesis
+        if (llmResponse.empty() && sys.genesis.isInitialized()) {
+            llmResponse = sys.genesis.generate(input);
+        }
+
+        if (!llmResponse.empty()) {
+            sys.brainMemory.commitToShortTerm("user", input);
+            sys.brainMemory.commitToShortTerm("mk", llmResponse);
+            sys.memory.recordInteraction("telegram_conversation", input);
+            sys.factExtractor.extractFromMessage(input);
+            return llmResponse;
+        }
+    }
+
     auto decision = sys.router.route(input);
     std::string response;
     bool answered = false;

@@ -1,0 +1,37 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Wire LLM modules into mk_entry.cpp and refactor the conversation pipeline to use LLM-first with offline fallback. This includes: adding #include directives for cloud_llm.cpp and llm_engine.cpp, adding MKCloudLLM and MKLLMEngine instances to MKSystem struct, adding a getContextString() method to MKBrainMemory, replacing the Genesis->Prometheus->CXN->MCE waterfall in handle_natural_query() with an LLM-first approach that uses RAG context from pattern_graph, and keeping Genesis as the offline-only fallback.",
+  "status": "in_progress",
+  "steps": [
+    "Add a public method getContextString() to MK_OS/mk_brain/memory/brain_memory.cpp that returns the shortTermContext as a formatted string (e.g., 'user: ... \\nmk: ...\\n') suitable for passing to cloud_llm.cpp's generateWithContext() conversationHistory parameter.",
+    "Add #include directives for '../llm/cloud_llm.cpp' and '../llm/llm_engine.cpp' in MK_OS/system/mk_entry.cpp in the include section (after the existing module includes, around line 98).",
+    "Add MKCloudLLM and MKLLMEngine member variables to the MKSystem struct in mk_entry.cpp. Initialize MKCloudLLM with the config path '.' and leave MKLLMEngine with default construction.",
+    "Refactor the conversation path in handle_natural_query() (the section starting with 'if (sys.conversationMode.isConversation(input))' around line 788). Replace the Genesis->Prometheus->CXN->MCE waterfall with: (1) Attempt LLM generation using a unified helper that tries local LLM first (sys.llmEngine), then cloud LLM (sys.cloudLLM), passing RAG context from sys.graph.getAll(input) and conversation history from sys.brainMemory.getContextString(). Use a natural system prompt (not the old Gen-Z persona). (2) Only if LLM is unavailable (both isAvailable() return false or both generate empty), fall back to Genesis as offline fallback. (3) Only if Genesis returns empty, fall back to template system (sys.conversationMode.generateResponse).",
+    "Define the LLM system prompt as a simple, natural personality: 'You are MK, a personal AI assistant. You are helpful, direct, and friendly. You talk naturally like a knowledgeable friend. You are loyal to your creator Mohammed. Keep responses concise and genuine. If you do not know something, say so honestly.'",
+    "For the RAG context: query sys.graph.getAll(input) to get relevant facts, format them as a vector<string> of 'source relation target' strings, and pass them to cloudLLM.generateWithContext() or build a prompt with context for llmEngine.generate().",
+    "Keep the opinion request handling (isOpinionRequest) unchanged - it already queries the graph and works fine.",
+    "After a successful LLM response, still record to brainMemory, memory, prometheus.absorb(), genesis.absorb(), consciousnessEngine.absorb(), and factExtractor as before.",
+    "Ensure the Telegram generate_ai_response() function also benefits from LLM if available - add a conversational check at the top: if the input is conversational (sys.conversationMode.isConversation), try LLM first before routing through the graph/reasoning system.",
+    "Verify compilation with 'cd MK_OS && make' succeeds with no errors."
+  ],
+  "acceptance_criteria": [
+    "MK_OS/system/mk_entry.cpp includes cloud_llm.cpp and llm_engine.cpp",
+    "MKSystem struct has MKCloudLLM and MKLLMEngine members",
+    "handle_natural_query() conversation path tries LLM first (local then cloud) before falling back to Genesis",
+    "The old Genesis->Prometheus->CXN->MCE waterfall is replaced with LLM-first for the LLM-available case",
+    "Genesis is kept as offline-only fallback (not removed)",
+    "Template system remains as last resort fallback",
+    "RAG context from pattern_graph is passed to the LLM",
+    "Conversation history from brainMemory is passed to the LLM",
+    "The system prompt is natural/simplified (not old Gen-Z persona)",
+    "'cd MK_OS && make' compiles successfully",
+    "'cd MK_OS && make test' passes all existing tests"
+  ],
+  "verification": [
+    "Run 'cd /projects/sandbox/MK_os-2/MK_OS && make clean && make' and confirm exit code 0",
+    "Run 'cd /projects/sandbox/MK_os-2/MK_OS && make test' and confirm all tests pass"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
