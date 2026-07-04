@@ -1,4 +1,0 @@
-# MK OS Auto-start
-if [ "$(tty)" = "/dev/tty1" ]; then
-    exec /opt/mk-os/mk-os-boot.sh
-fi
