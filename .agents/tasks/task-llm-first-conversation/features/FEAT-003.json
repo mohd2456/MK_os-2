@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "fix",
   "description": "Address code review findings: fix personality split between local/cloud LLM, add template fallback to Telegram handler, add evolution engine absorbs to Telegram, extract duplicated prompt construction into a helper, and remove redundant getContextString() call.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Add a systemPrompt parameter to MKCloudLLM::generateWithContext() so the caller can pass a unified prompt instead of using the hardcoded one.",
     "Extract the prompt construction block into a helper function buildLLMPrompt(input, relevantFacts, history) in mk_entry.cpp to eliminate duplication between handle_natural_query and generate_ai_response.",
@@ -27,5 +27,5 @@
     "Run 'cd /projects/sandbox/MK_os-2/MK_OS && make test' and confirm all tests pass"
   ],
   "blocked_reason": null,
-  "findings": null
+  "findings": "All 5 review issues resolved. Build compiles with 11 pre-existing warnings, 0 errors. All 47 tests pass with 357 assertions. The systemPromptOverride parameter is appended as the last parameter with a default empty value, maintaining backward compatibility with any other callers of generateWithContext()."
 }
