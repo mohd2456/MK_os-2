@@ -103,6 +103,7 @@ namespace Color {
 #include "../llm/cloud_llm.cpp"
 #include "../llm/llm_engine.cpp"
 #include "../llm/provider_router.cpp"
+#include "../llm/thinking_engine.cpp"
 
 // Security subsystem - Key encryption
 #include "../security/key_encryption.cpp"
@@ -121,6 +122,9 @@ namespace Color {
 #include "../homelab/ssh_controller.cpp"
 #include "../homelab/docker_manager.cpp"
 #include "../homelab/service_orchestrator.cpp"
+
+// AI Core - Decision Engine (Layer 2) - must be after homelab includes
+#include "../ai_core/decision_engine.cpp"
 
 // Sync subsystem - Multi-device knowledge and memory synchronization
 #include "../sync/knowledge_sync.cpp"
@@ -278,6 +282,8 @@ struct MKSystem {
     MKCloudLLM cloudLLM;
     MKLLMEngine llmEngine;
     MKProviderRouter providerRouter;
+    MKThinkingEngine thinkingEngine;
+    MKDecisionEngine decisionEngine;
 
     // Security subsystem
     MKKeyEncryption keyEncryption;
@@ -395,6 +401,15 @@ struct MKSystem {
         for (const auto& kv : cloudKeys) {
             providerRouter.setProviderKey(kv.first, kv.second);
         }
+
+        // Initialize thinking engine with provider router reference
+        thinkingEngine.setProviderRouter(&providerRouter);
+
+        // Initialize decision engine with tool references
+        decisionEngine.setGraph(&graph);
+        decisionEngine.setSSHController(&sshController);
+        decisionEngine.setDockerManager(&dockerManager);
+        decisionEngine.setResourceMonitor(&resourceMonitor);
     }
 
     ~MKSystem() = default;
@@ -865,30 +880,47 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             }
         }
 
-        // Generate response: LLM-first with offline fallback
-        // Try LLM (local then cloud) with RAG context, fall back to Genesis offline
+        // === 3-LAYER ARCHITECTURE ===
+        // Layer 3 (Context): Gather graph facts + conversation history + system state
+        std::vector<std::string> relevantFacts;
+        auto graphResults = sys.graph.getAll(input);
+        for (const auto& e : graphResults) {
+            relevantFacts.push_back(e.source + " " + e.relation + " " + e.target);
+        }
+        std::string history = sys.brainMemory.getContextString();
+        std::string systemState;
+        auto localRes = sys.resourceMonitor.getLocalResources();
+        if (localRes.valid) {
+            systemState = "CPU " + std::to_string((int)localRes.cpu_usage_percent) + "%, "
+                        + "RAM " + std::to_string(localRes.available_ram_mb) + "MB free";
+        }
+
         std::string response;
-        bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
 
-        if (llmAvailable) {
-            // Gather RAG context from knowledge graph
-            std::vector<std::string> relevantFacts;
-            auto graphResults = sys.graph.getAll(input);
-            for (const auto& e : graphResults) {
-                relevantFacts.push_back(e.source + " " + e.relation + " " + e.target);
+        // Layer 1 (Thinking): Call thinking engine for reasoning
+        if (sys.thinkingEngine.isAvailable()) {
+            std::string thinking = sys.thinkingEngine.think(input, relevantFacts, systemState, history);
+
+            if (!thinking.empty()) {
+                // Layer 2 (Decision): Process thinking output through decision engine
+                response = sys.decisionEngine.process(input, thinking, relevantFacts, history);
             }
+        }
 
-            // Get conversation history
-            std::string history = sys.brainMemory.getContextString();
+        // Fallback: If thinking engine is not available or returned empty,
+        // use existing full LLM generation flow
+        if (response.empty()) {
+            bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
 
-            // Try local LLM first, then cloud
-            if (sys.llmEngine.isAvailable()) {
-                std::string fullPrompt = buildLLMPrompt(input, relevantFacts, history);
-                response = sys.llmEngine.generate(fullPrompt);
-            }
+            if (llmAvailable) {
+                if (sys.llmEngine.isAvailable()) {
+                    std::string fullPrompt = buildLLMPrompt(input, relevantFacts, history);
+                    response = sys.llmEngine.generate(fullPrompt);
+                }
 
-            if (response.empty() && sys.cloudLLM.isAvailable()) {
-                response = sys.cloudLLM.generateWithContext(input, relevantFacts, history, "", MK_SYSTEM_PROMPT);
+                if (response.empty() && sys.cloudLLM.isAvailable()) {
+                    response = sys.cloudLLM.generateWithContext(input, relevantFacts, history, "", MK_SYSTEM_PROMPT);
+                }
             }
         }
 
@@ -1293,26 +1325,49 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
 // Forward declaration - generates an AI response for a natural language query.
 // Caller must hold sys.systemMutex.
 static std::string generate_ai_response(MKSystem& sys, const std::string& input) {
-    // If input is conversational, try LLM-first before routing
+    // If input is conversational, use 3-layer architecture
     if (sys.conversationMode.isConversation(input)) {
         std::string llmResponse;
-        bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
 
-        if (llmAvailable) {
-            std::vector<std::string> relevantFacts;
-            auto graphResults = sys.graph.getAll(input);
-            for (const auto& e : graphResults) {
-                relevantFacts.push_back(e.source + " " + e.relation + " " + e.target);
+        // === 3-LAYER ARCHITECTURE ===
+        // Layer 3 (Context): Gather graph facts + conversation history + system state
+        std::vector<std::string> relevantFacts;
+        auto graphResults = sys.graph.getAll(input);
+        for (const auto& e : graphResults) {
+            relevantFacts.push_back(e.source + " " + e.relation + " " + e.target);
+        }
+        std::string history = sys.brainMemory.getContextString();
+        std::string systemState;
+        auto localRes = sys.resourceMonitor.getLocalResources();
+        if (localRes.valid) {
+            systemState = "CPU " + std::to_string((int)localRes.cpu_usage_percent) + "%, "
+                        + "RAM " + std::to_string(localRes.available_ram_mb) + "MB free";
+        }
+
+        // Layer 1 (Thinking): Call thinking engine for reasoning
+        if (sys.thinkingEngine.isAvailable()) {
+            std::string thinking = sys.thinkingEngine.think(input, relevantFacts, systemState, history);
+
+            if (!thinking.empty()) {
+                // Layer 2 (Decision): Process thinking output through decision engine
+                llmResponse = sys.decisionEngine.process(input, thinking, relevantFacts, history);
             }
-            std::string history = sys.brainMemory.getContextString();
+        }
 
-            if (sys.llmEngine.isAvailable()) {
-                std::string fullPrompt = buildLLMPrompt(input, relevantFacts, history);
-                llmResponse = sys.llmEngine.generate(fullPrompt);
-            }
+        // Fallback: If thinking engine is not available or returned empty,
+        // use existing full LLM generation flow
+        if (llmResponse.empty()) {
+            bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
 
-            if (llmResponse.empty() && sys.cloudLLM.isAvailable()) {
-                llmResponse = sys.cloudLLM.generateWithContext(input, relevantFacts, history, "", MK_SYSTEM_PROMPT);
+            if (llmAvailable) {
+                if (sys.llmEngine.isAvailable()) {
+                    std::string fullPrompt = buildLLMPrompt(input, relevantFacts, history);
+                    llmResponse = sys.llmEngine.generate(fullPrompt);
+                }
+
+                if (llmResponse.empty() && sys.cloudLLM.isAvailable()) {
+                    llmResponse = sys.cloudLLM.generateWithContext(input, relevantFacts, history, "", MK_SYSTEM_PROMPT);
+                }
             }
         }
 
