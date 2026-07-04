@@ -169,12 +169,14 @@ public:
     }
 
     // Send message with HTML parse mode
+    // NOTE: This function does NOT auto-escape HTML. Callers sending LLM-generated
+    // text must escape it themselves before calling this. MK's own formatted messages
+    // (e.g., /help) are pre-formatted HTML and should NOT be escaped.
     std::string sendMessage(const std::string& chatId, const std::string& message) {
         if (!checkRateLimit()) return "";
 
-        std::string safeMessage = escapeForUser(message);
         std::string postData = "chat_id=" + chatId +
-                               "&text=" + urlEncode(safeMessage) +
+                               "&text=" + urlEncode(message) +
                                "&parse_mode=HTML";
 
         std::string url = "https://api.telegram.org/bot" + token + "/sendMessage";
@@ -205,7 +207,7 @@ public:
         // Check for intentional HTML formatting tags
         static const std::vector<std::string> safeTags = {
             "<b>", "</b>", "<i>", "</i>", "<code>", "</code>",
-            "<pre>", "</pre>", "<a ", "</a>", "&lt;", "&gt;", "&amp;"
+            "<pre>", "</pre>", "<a ", "</a>"
         };
         for (const auto& tag : safeTags) {
             if (text.find(tag) != std::string::npos) return false;

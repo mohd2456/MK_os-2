@@ -2,6 +2,13 @@
   "task_id": "task-fix-mk-bugs",
   "task_description": "Fix system prompt leakage, wire missing Telegram commands, add thinking engine validation, fix empty response bug, add HTML escaping, and fix failing test",
   "status": "in_progress",
-  "feature_order": ["FEAT-001"],
-  "blocked_reason": null
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "pass",
+    "tests": "pass",
+    "test_quality": "pass",
+    "docker_build": "skipped",
+    "summary": "Build succeeds with 0 errors (13 pre-existing warnings). Tests: 67 passed, 0 failed, 484 assertions passed. All 3 previously-failing tests now pass with corrected expectations."
+  }
 }

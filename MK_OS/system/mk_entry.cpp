@@ -801,6 +801,36 @@ static void cmd_briefing(MKSystem& sys) {
 
 // ============================================================
 // LLM Response Sanitizer (Prompt Leakage Prevention)
+// ============================================================
+// HTML Escape Helper for LLM output sent to Telegram
+// Always escapes &, <, > so Telegram's HTML parser won't choke.
+// This should be applied ONLY to LLM-generated replies, not to
+// MK's own pre-formatted HTML messages (e.g., /help, keyboards).
+// ============================================================
+static std::string escapeHtml(const std::string& text) {
+    std::string result;
+    result.reserve(text.size() + 32);
+    for (char c : text) {
+        switch (c) {
+            case '&': result += "&amp;"; break;
+            case '<': result += "&lt;"; break;
+            case '>': result += "&gt;"; break;
+            default: result += c; break;
+        }
+    }
+    return result;
+}
+
+// ============================================================
+// MK System Prompt (single source of truth)
+// ============================================================
+static const std::string MK_SYSTEM_PROMPT =
+    "You are MK, a personal AI assistant. You are helpful, direct, and friendly. "
+    "You talk naturally like a knowledgeable friend. You are loyal to your creator Mohammed. "
+    "Keep responses concise and genuine. If you do not know something, say so honestly.";
+
+// ============================================================
+// LLM Response Sanitizer
 // Strips prompt-leak patterns from LLM responses where weak
 // models echo internal instructions back to the user.
 // ============================================================
@@ -884,9 +914,9 @@ static std::string sanitizeLLMResponse(const std::string& response, const std::s
 
     // Check if response is >80% identical to the system prompt (echo detection)
     if (!result.empty()) {
-        static const std::string sysPrompt = "You are MK, a personal AI assistant. You are helpful, direct, and friendly. "
-            "You talk naturally like a knowledgeable friend. You are loyal to your creator Mohammed. "
-            "Keep responses concise and genuine. If you do not know something, say so honestly.";
+        // Use the actual MK_SYSTEM_PROMPT constant (defined at file scope)
+        // to ensure the similarity check stays in sync with prompt changes.
+        const std::string& sysPrompt = MK_SYSTEM_PROMPT;
         // Simple character overlap check
         int matchChars = 0;
         std::string lowerResult = result;
@@ -916,13 +946,7 @@ static std::string sanitizeLLMResponse(const std::string& response, const std::s
 
 // ============================================================
 // LLM Prompt Construction Helper
-// Single source of truth for building prompts with RAG context
 // ============================================================
-static const std::string MK_SYSTEM_PROMPT =
-    "You are MK, a personal AI assistant. You are helpful, direct, and friendly. "
-    "You talk naturally like a knowledgeable friend. You are loyal to your creator Mohammed. "
-    "Keep responses concise and genuine. If you do not know something, say so honestly.";
-
 static std::string buildLLMPrompt(const std::string& input,
                                    const std::vector<std::string>& relevantFacts,
                                    const std::string& history) {
@@ -2135,6 +2159,10 @@ static void telegram_poll_loop(MKSystem& sys) {
                     if (reply.empty()) {
                         reply = "I'm processing that but couldn't generate a response. Try again or rephrase.";
                     }
+
+                    // Escape HTML in LLM-generated reply so Telegram's HTML parser
+                    // doesn't choke on angle brackets or ampersands in model output.
+                    reply = escapeHtml(reply);
 
                     sys.telegram->sendMessage(chatId, reply);
                 }
