@@ -226,7 +226,10 @@ public:
                 "/ask &lt;query&gt; - Look up knowledge\n"
                 "/think &lt;topic&gt; - Deep reasoning\n"
                 "/learn &lt;s|r|t&gt; - Teach a fact\n"
-                "/status - System diagnostics\n\n"
+                "/setkey &lt;provider&gt; &lt;key&gt; - Set API key\n"
+                "/status - Provider status\n"
+                "/key - Active provider\n"
+                "/logs - LLM request stats\n\n"
                 "<i>Or just send a message and I'll figure it out!</i>");
         } else if (msgText == "/status") {
             sendMessage(chatId, getSystemStats());
@@ -539,6 +542,11 @@ public:
         return msgText == "/status";
     }
 
+    // Check if a message is the /logs command
+    bool isLogsCommand(const std::string& msgText) const {
+        return msgText == "/logs";
+    }
+
     // Enhanced autoReply with new commands
     void autoReplyEnhanced(const std::string& chatId, const std::string& msgText) {
         if (msgText == "/start") {
@@ -579,7 +587,8 @@ public:
                 "<b>LLM Providers:</b>\n"
                 "/setkey &lt;provider&gt; &lt;key&gt; - Set API key\n"
                 "/status - Provider status & routing\n"
-                "/key - Show active provider\n\n"
+                "/key - Show active provider\n"
+                "/logs - Today's LLM request stats\n\n"
                 "<b>System:</b>\n"
                 "/devices - Connected devices\n"
                 "/homelab - Docker/services\n"
@@ -628,6 +637,9 @@ public:
             // /key is handled by the caller (mk_entry.cpp) to show active provider
             // Placeholder - caller overrides
             sendMessage(chatId, "Checking active provider...");
+        } else if (msgText == "/logs") {
+            // /logs is handled by the caller (mk_entry.cpp) for request stats
+            sendMessage(chatId, "Fetching request logs...");
         } else if (msgText.size() > 6 && msgText.substr(0, 6) == "/learn") {
             std::string fact = msgText.substr(6);
             if (!fact.empty() && fact[0] == ' ') fact = fact.substr(1);

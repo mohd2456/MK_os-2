@@ -104,6 +104,7 @@ namespace Color {
 #include "../llm/llm_engine.cpp"
 #include "../llm/provider_router.cpp"
 #include "../llm/thinking_engine.cpp"
+#include "../llm/request_logger.cpp"
 
 // Security subsystem - Key encryption
 #include "../security/key_encryption.cpp"
@@ -284,6 +285,7 @@ struct MKSystem {
     MKProviderRouter providerRouter;
     MKThinkingEngine thinkingEngine;
     MKDecisionEngine decisionEngine;
+    MKRequestLogger requestLogger;
 
     // Security subsystem
     MKKeyEncryption keyEncryption;
@@ -929,9 +931,24 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             response = sys.genesis.generate(input);
         }
 
-        // Last resort: template system
+        // Graceful degradation: when all providers fail and thinking returns empty,
+        // combine graph facts with personality templates for a meaningful response
         if (response.empty()) {
-            response = sys.conversationMode.generateResponse(input, sys.casualResponses);
+            if (!relevantFacts.empty()) {
+                std::string factBased;
+                for (size_t i = 0; i < relevantFacts.size() && i < 3; i++) {
+                    if (!factBased.empty()) factBased += " Also, ";
+                    factBased += relevantFacts[i];
+                }
+                factBased += ".";
+                std::string prefix = sys.conversationMode.generateResponse("hmm", sys.casualResponses);
+                if (prefix.empty() || prefix.size() < 3) {
+                    prefix = "Here's what I know:";
+                }
+                response = prefix + " " + factBased;
+            } else {
+                response = sys.conversationMode.generateResponse(input, sys.casualResponses);
+            }
         }
         
         if (!response.empty()) {
@@ -1346,7 +1363,17 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
 
         // Layer 1 (Thinking): Call thinking engine for reasoning
         if (sys.thinkingEngine.isAvailable()) {
+            auto thinkStart = std::chrono::steady_clock::now();
             std::string thinking = sys.thinkingEngine.think(input, relevantFacts, systemState, history);
+            auto thinkEnd = std::chrono::steady_clock::now();
+            float thinkLatency = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
+                thinkEnd - thinkStart).count();
+
+            // Log thinking request
+            std::string thinkProvider = sys.providerRouter.getActiveProvider();
+            int thinkTokens = (int)input.size() / 4;
+            sys.requestLogger.logRequest(thinkProvider, "thinking: " + input.substr(0, 40),
+                                         thinkTokens, thinkLatency, !thinking.empty());
 
             if (!thinking.empty()) {
                 // Layer 2 (Decision): Process thinking output through decision engine
@@ -1362,11 +1389,24 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
             if (llmAvailable) {
                 if (sys.llmEngine.isAvailable()) {
                     std::string fullPrompt = buildLLMPrompt(input, relevantFacts, history);
+                    auto genStart = std::chrono::steady_clock::now();
                     llmResponse = sys.llmEngine.generate(fullPrompt);
+                    auto genEnd = std::chrono::steady_clock::now();
+                    float genLatency = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
+                        genEnd - genStart).count();
+                    sys.requestLogger.logRequest("local", "generate: " + input.substr(0, 40),
+                                                 (int)fullPrompt.size() / 4, genLatency, !llmResponse.empty());
                 }
 
                 if (llmResponse.empty() && sys.cloudLLM.isAvailable()) {
+                    auto genStart = std::chrono::steady_clock::now();
                     llmResponse = sys.cloudLLM.generateWithContext(input, relevantFacts, history, "", MK_SYSTEM_PROMPT);
+                    auto genEnd = std::chrono::steady_clock::now();
+                    float genLatency = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
+                        genEnd - genStart).count();
+                    std::string cloudProvider = sys.cloudLLM.getProviderName();
+                    sys.requestLogger.logRequest(cloudProvider, "cloud: " + input.substr(0, 40),
+                                                 (int)input.size() / 4, genLatency, !llmResponse.empty());
                 }
             }
         }
@@ -1376,9 +1416,27 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
             llmResponse = sys.genesis.generate(input);
         }
 
-        // Last resort: template system
+        // Graceful degradation: when all providers fail and thinking returns empty,
+        // combine graph facts with personality templates for a meaningful response
         if (llmResponse.empty()) {
-            llmResponse = sys.conversationMode.generateResponse(input, sys.casualResponses);
+            if (!relevantFacts.empty()) {
+                // Build a response from known facts + personality
+                std::string factBased;
+                for (size_t i = 0; i < relevantFacts.size() && i < 3; i++) {
+                    if (!factBased.empty()) factBased += " Also, ";
+                    factBased += relevantFacts[i];
+                }
+                factBased += ".";
+                // Wrap with personality template
+                std::string prefix = sys.conversationMode.generateResponse("hmm", sys.casualResponses);
+                if (prefix.empty() || prefix.size() < 3) {
+                    prefix = "Here's what I know:";
+                }
+                llmResponse = prefix + " " + factBased;
+            } else {
+                // No facts available - use template system as last resort
+                llmResponse = sys.conversationMode.generateResponse(input, sys.casualResponses);
+            }
         }
 
         if (!llmResponse.empty()) {
@@ -1614,8 +1672,10 @@ static void telegram_poll_loop(MKSystem& sys) {
                             }
                         }
                     } else if (sys.telegram->isStatusCommand(msgText)) {
-                        // /status - show provider status report
+                        // /status - show provider status report + request counts
                         std::string statusReport = sys.providerRouter.getStatusReport();
+                        int todayRequests = sys.requestLogger.getTodayCount();
+                        statusReport += "\n<b>Requests today:</b> " + std::to_string(todayRequests);
                         sys.telegram->sendMessage(chatId, statusReport);
                     } else if (sys.telegram->isKeyCommand(msgText)) {
                         // /key - show active provider (without exposing key)
@@ -1626,6 +1686,10 @@ static void telegram_poll_loop(MKSystem& sys) {
                             "<b>Active Provider:</b> " + active + "\n"
                             "<b>Online:</b> " + std::to_string(online) + "/" + std::to_string(total) + "\n\n"
                             "<i>Use /status for full details</i>");
+                    } else if (sys.telegram->isLogsCommand(msgText)) {
+                        // /logs - show today's LLM request statistics
+                        std::string stats = sys.requestLogger.getStats();
+                        sys.telegram->sendMessage(chatId, stats);
                     } else {
                         // Other command-based messages use autoReply
                         sys.telegram->autoReply(chatId, msgText);
@@ -1647,6 +1711,8 @@ static void telegram_poll_loop(MKSystem& sys) {
                     if (!pickedProvider.empty()) {
                         sys.providerRouter.logRequest(pickedProvider, tokenEstimate,
                                                      latencyMs, !reply.empty());
+                        sys.requestLogger.logRequest(pickedProvider, msgText.substr(0, 40),
+                                                     tokenEstimate, latencyMs, !reply.empty());
                     }
 
                     sys.telegram->sendMessage(chatId, reply);

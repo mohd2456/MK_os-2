@@ -955,4 +955,246 @@ void test_autonomous_learner_session() {
     TEST_ASSERT_EQ(learner.totalSessions(), 1, "Should have 1 completed session");
 }
 
+// ============================================================
+// FEAT-004 Integration Tests
+// ============================================================
+
+// ============================================================
+// TEST: Full Pipeline With No LLM - Graceful Degradation
+// ============================================================
+void test_full_pipeline_with_no_llm() {
+    // Simulate the scenario where no LLM is available:
+    // thinking engine returns empty, cloud LLM is unavailable,
+    // but graph has facts. System should produce meaningful response.
+
+    MKPatternGraph graph("ai_core/hre/knowledge_files");
+    graph.loadAllKnowledge();
+    graph.addFact("python", "is_a", "programming_language", 1.0f);
+    graph.addFact("python", "created_by", "guido_van_rossum", 0.95f);
+
+    MKConversationMode convMode;
+    MKCasualResponses casualResponses;
+
+    // Get facts about python
+    auto results = graph.getAll("python");
+    std::vector<std::string> relevantFacts;
+    for (const auto& e : results) {
+        relevantFacts.push_back(e.source + " " + e.relation + " " + e.target);
+    }
+
+    // Simulate graceful degradation: all providers failed, build response from facts
+    std::string response;
+    if (!relevantFacts.empty()) {
+        std::string factBased;
+        for (size_t i = 0; i < relevantFacts.size() && i < 3; i++) {
+            if (!factBased.empty()) factBased += " Also, ";
+            factBased += relevantFacts[i];
+        }
+        factBased += ".";
+        std::string prefix = convMode.generateResponse("hmm", casualResponses);
+        if (prefix.empty() || prefix.size() < 3) {
+            prefix = "Here's what I know:";
+        }
+        response = prefix + " " + factBased;
+    }
+
+    TEST_ASSERT_FALSE(response.empty(),
+                      "Graceful degradation should produce a non-empty response");
+    TEST_ASSERT_TRUE(response.find("python") != std::string::npos,
+                     "Degraded response should contain graph facts (python)");
+    TEST_ASSERT_TRUE(response.size() > 10,
+                     "Degraded response should be meaningful (> 10 chars)");
+
+    // Test with no facts available - should still produce something from templates
+    std::vector<std::string> emptyFacts;
+    std::string emptyResponse = convMode.generateResponse("tell me something", casualResponses);
+    TEST_ASSERT_FALSE(emptyResponse.empty(),
+                      "Template fallback should produce a response even with no facts");
+}
+
+// ============================================================
+// TEST: SetKey Flow
+// ============================================================
+void test_setkey_flow() {
+    MKProviderRouter router;
+    MKKeyEncryption enc("/tmp");
+
+    // Initially no providers should be online
+    TEST_ASSERT_EQ(router.onlineCount(), 0, "No providers online initially");
+
+    // Simulate setting a key for groq
+    std::string provider = "groq";
+    std::string key = "gsk_test_key_12345";
+
+    // Set key in router (simulates what /setkey does)
+    router.setProviderKey(provider, key);
+
+    // Provider should now be online
+    TEST_ASSERT_EQ(router.onlineCount(), 1, "groq should be online after setting key");
+
+    // Verify the router can pick this provider
+    std::string picked = router.pickProvider(MKRoutingUrgency::HIGH, 50);
+    TEST_ASSERT_EQ(picked, std::string("groq"),
+                   "Router should pick groq as the available provider");
+
+    // Verify encrypted key storage works
+    std::string encrypted = enc.encrypt(key);
+    std::string decrypted = enc.decrypt(encrypted);
+    TEST_ASSERT_EQ(decrypted, key,
+                   "Key should survive encrypt/decrypt roundtrip for setkey flow");
+
+    // Setting a key for another provider
+    router.setProviderKey("nvidia", "nvapi-test-456");
+    TEST_ASSERT_EQ(router.onlineCount(), 2, "Two providers should be online now");
+}
+
+// ============================================================
+// TEST: Request Logging
+// ============================================================
+void test_request_logging() {
+    MKRequestLogger logger("/tmp/test_mk_requests.log");
+
+    // Clear any previous entries
+    logger.clear();
+
+    // Log some requests
+    logger.logRequest("groq", "hello world", 25, 150.0f, true);
+    logger.logRequest("nvidia", "what is python", 30, 300.0f, true);
+    logger.logRequest("groq", "tell me about AI", 40, 200.0f, false);
+
+    // Verify total count
+    TEST_ASSERT_EQ(logger.getTotalCount(), 3, "Should have 3 total logged requests");
+
+    // Verify today count
+    TEST_ASSERT_EQ(logger.getTodayCount(), 3, "Should have 3 requests today");
+
+    // Verify stats output
+    std::string stats = logger.getStats();
+    TEST_ASSERT_FALSE(stats.empty(), "Stats should not be empty");
+    TEST_ASSERT_TRUE(stats.find("Total calls") != std::string::npos ||
+                     stats.find("3") != std::string::npos,
+                     "Stats should mention total calls");
+    TEST_ASSERT_TRUE(stats.find("groq") != std::string::npos,
+                     "Stats should mention groq provider");
+    TEST_ASSERT_TRUE(stats.find("nvidia") != std::string::npos,
+                     "Stats should mention nvidia provider");
+
+    // Verify daily usage per provider
+    int groqUsage = logger.getDailyUsage("groq");
+    TEST_ASSERT_EQ(groqUsage, 65, "Groq daily usage should be 25+40=65 tokens");
+
+    int nvidiaUsage = logger.getDailyUsage("nvidia");
+    TEST_ASSERT_EQ(nvidiaUsage, 30, "Nvidia daily usage should be 30 tokens");
+
+    // Verify log file was written (JSON lines format)
+    std::ifstream logFile("/tmp/test_mk_requests.log");
+    TEST_ASSERT_TRUE(logFile.good(), "Log file should exist");
+    std::string line;
+    int lineCount = 0;
+    while (std::getline(logFile, line)) {
+        lineCount++;
+        // Each line should be valid JSON (starts with { and ends with })
+        TEST_ASSERT_TRUE(line.front() == '{' && line.back() == '}',
+                         "Each log line should be a JSON object");
+        // Should contain expected fields
+        TEST_ASSERT_TRUE(line.find("\"provider\"") != std::string::npos,
+                         "Log line should contain provider field");
+        TEST_ASSERT_TRUE(line.find("\"timestamp\"") != std::string::npos,
+                         "Log line should contain timestamp field");
+        TEST_ASSERT_TRUE(line.find("\"tokens_used\"") != std::string::npos,
+                         "Log line should contain tokens_used field");
+        TEST_ASSERT_TRUE(line.find("\"latency_ms\"") != std::string::npos,
+                         "Log line should contain latency_ms field");
+        TEST_ASSERT_TRUE(line.find("\"success\"") != std::string::npos,
+                         "Log line should contain success field");
+    }
+    TEST_ASSERT_EQ(lineCount, 3, "Log file should have 3 lines");
+
+    // Clean up test file
+    std::remove("/tmp/test_mk_requests.log");
+}
+
+// ============================================================
+// TEST: Provider Quota Tracking
+// ============================================================
+void test_provider_quota_tracking() {
+    MKRequestLogger logger("/tmp/test_mk_quota.log");
+    logger.clear();
+
+    // Simulate multiple requests to track daily quota
+    logger.logRequest("groq", "request 1", 100, 150.0f, true);
+    logger.logRequest("groq", "request 2", 200, 160.0f, true);
+    logger.logRequest("groq", "request 3", 150, 140.0f, true);
+    logger.logRequest("openrouter", "request 4", 300, 250.0f, true);
+    logger.logRequest("groq", "request 5", 250, 170.0f, false);
+
+    // Check daily usage per provider
+    int groqDailyTokens = logger.getDailyUsage("groq");
+    TEST_ASSERT_EQ(groqDailyTokens, 700, "Groq daily tokens should be 100+200+150+250=700");
+
+    int openrouterDailyTokens = logger.getDailyUsage("openrouter");
+    TEST_ASSERT_EQ(openrouterDailyTokens, 300, "OpenRouter daily tokens should be 300");
+
+    int nvidiaDailyTokens = logger.getDailyUsage("nvidia");
+    TEST_ASSERT_EQ(nvidiaDailyTokens, 0, "Nvidia daily tokens should be 0 (no requests)");
+
+    // Verify total count
+    TEST_ASSERT_EQ(logger.getTodayCount(), 5, "Should have 5 requests today");
+
+    // Clean up
+    std::remove("/tmp/test_mk_quota.log");
+}
+
+// ============================================================
+// TEST: Thinking to Decision Flow
+// ============================================================
+void test_thinking_to_decision_flow() {
+    MKThinkingEngine thinkingEngine;
+    MKDecisionEngine decisionEngine;
+    MKPatternGraph graph("ai_core/hre/knowledge_files");
+    graph.loadAllKnowledge();
+    MKDockerManager docker;
+    MKSSHController ssh;
+    MKResourceMonitor monitor;
+
+    decisionEngine.setGraph(&graph);
+    decisionEngine.setDockerManager(&docker);
+    decisionEngine.setSSHController(&ssh);
+    decisionEngine.setResourceMonitor(&monitor);
+
+    // Test the thinking prompt construction
+    std::vector<std::string> facts = {"docker runs containers", "homelab has nvidia gpu"};
+    std::string systemState = "CPU 30%, RAM 8192MB free";
+    std::string history = "user: show my system\nmk: CPU is at 30%\n";
+
+    std::string prompt = thinkingEngine.buildThinkingPrompt(
+        "check docker status", facts, systemState);
+    TEST_ASSERT_TRUE(prompt.find("check docker status") != std::string::npos,
+                     "Thinking prompt should contain user input");
+    TEST_ASSERT_TRUE(prompt.find("docker runs containers") != std::string::npos,
+                     "Thinking prompt should contain facts");
+
+    // Simulate a thinking output that mentions docker
+    std::string thinkingOutput = "User wants to check Docker container status. Should list running containers.";
+
+    // Feed thinking output into decision engine
+    std::string decisionResult = decisionEngine.process(
+        "check docker status", thinkingOutput, facts, history);
+
+    // Decision engine should produce a non-empty response for docker keyword
+    TEST_ASSERT_FALSE(decisionResult.empty(),
+                      "Decision engine should produce output from docker thinking");
+    TEST_ASSERT_TRUE(decisionResult.find("Docker") != std::string::npos ||
+                     decisionResult.find("docker") != std::string::npos ||
+                     decisionResult.find("container") != std::string::npos,
+                     "Decision result should relate to docker/containers");
+
+    // Test with a conversational thinking output (no tool keywords)
+    std::string chatThinking = "User is greeting. Should respond warmly.";
+    std::string chatResult = decisionEngine.process(
+        "hey there!", chatThinking, {}, "");
+    TEST_ASSERT_FALSE(chatResult.empty(),
+                      "Decision engine should handle conversational thinking");
+}
+
 #endif // MK_TEST_INTEGRATION_CPP
