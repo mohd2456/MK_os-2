@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Thinking Engine (Layer 1) and Decision/Action Engine (Layer 2) - Replaces the existing conversation pipeline with a 3-layer architecture: Small 3B model for reasoning-only (1-2 sentences), MK's decision/action engine for tool execution and response formatting, and existing memory/context layer.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create MK_OS/llm/thinking_engine.cpp: MKThinkingEngine class. Purpose: send compact reasoning-only prompts to a small model and get back 1-2 sentences of reasoning (NOT a full response). Methods: (a) think(userInput, graphContext, systemState, conversationHistory) -> string (the reasoning output, e.g. 'User wants to check Docker containers. Should use docker ps command and report results.'). (b) buildThinkingPrompt(input, facts, state) -> string that builds a prompt like 'User asked: X. Known facts: Y. System state: Z. In 1-2 sentences, what should MK do?' with max_tokens=100, temperature=0.3. (c) Uses MKProviderRouter to pick a provider, preferring local Ollama for thinking (model phi3:mini or similar 3B model) then Groq for fast inference. (d) Provider preference for thinking: local Ollama (free, model 'phi3:mini') > Groq (fast) > OpenRouter (backup). (e) Fallback if no LLM available: return empty string (lets decision engine use graph-only reasoning).",
     "Create MK_OS/ai_core/decision_engine.cpp: MKDecisionEngine class. Purpose: take thinking output + user input, decide what actions to take, execute them, format the final response. Methods: (a) process(userInput, thinkingOutput, graphFacts, conversationHistory) -> string (final formatted response). (b) Internal flow: parse thinking output for action keywords (check docker, run command, look up fact, explain concept, etc.), execute relevant tools (SSH, Docker, graph query, system info), combine results with personality, format and return. (c) executeToolAction(action, params) -> string: dispatches to SSH controller, Docker manager, graph queries, system commands based on what the thinking engine suggested. (d) formatResponse(actionResults, thinkingReasoning, personality) -> string: combines action results with MK's personality (helpful, technical, honest). (e) shouldConfirm(action) -> bool: returns true for destructive actions (restart, delete, deploy) so MK asks before acting. (f) Tool registry: maps keywords like 'docker', 'ssh', 'container', 'service', 'file', 'system' to tool functions.",
@@ -23,5 +23,5 @@
     "cd MK_OS && make test"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Include order matters: decision_engine.cpp must be included AFTER homelab modules (ssh_controller.cpp, docker_manager.cpp, resource_monitor.cpp) in both mk_entry.cpp and test_main.cpp because it references those types. The thinking_engine.cpp only depends on provider_router.cpp so it can be included right after it. Build produces 12 warnings (all pre-existing except unused-parameter in formatResponse). All 57 tests pass including 5 new tests."
 }
