@@ -63,37 +63,59 @@ private:
     std::vector<KeywordMapping> toolRegistry_;
 
     // Initialize the tool registry
+    // Keywords are ordered from most specific to least specific.
+    // Single common English words (like "system", "tell") require action-intent 
+    // context to avoid false positives.
     void initToolRegistry() {
         toolRegistry_ = {
-            {"docker", MKActionType::DOCKER_STATUS},
-            {"container", MKActionType::DOCKER_STATUS},
-            {"containers", MKActionType::DOCKER_STATUS},
+            // Docker (specific enough to not false-positive)
             {"docker ps", MKActionType::DOCKER_STATUS},
+            {"docker status", MKActionType::DOCKER_STATUS},
+            {"check docker", MKActionType::DOCKER_STATUS},
+            {"check container", MKActionType::DOCKER_STATUS},
+            {"list container", MKActionType::DOCKER_STATUS},
+            {"container status", MKActionType::DOCKER_STATUS},
             {"docker logs", MKActionType::DOCKER_LOGS},
-            {"logs", MKActionType::DOCKER_LOGS},
-            {"ssh", MKActionType::SSH_COMMAND},
+            {"container logs", MKActionType::DOCKER_LOGS},
+            // SSH (multi-word to avoid matching casual uses)
             {"run command", MKActionType::SSH_COMMAND},
-            {"execute", MKActionType::SSH_COMMAND},
-            {"system", MKActionType::SYSTEM_INFO},
-            {"resource", MKActionType::SYSTEM_INFO},
-            {"cpu", MKActionType::SYSTEM_INFO},
-            {"memory", MKActionType::SYSTEM_INFO},
-            {"ram", MKActionType::SYSTEM_INFO},
-            {"temperature", MKActionType::SYSTEM_INFO},
-            {"disk", MKActionType::SYSTEM_INFO},
-            {"fact", MKActionType::GRAPH_LOOKUP},
+            {"ssh into", MKActionType::SSH_COMMAND},
+            {"execute command", MKActionType::SSH_COMMAND},
+            {"ssh command", MKActionType::SSH_COMMAND},
+            {"remote command", MKActionType::SSH_COMMAND},
+            // System info (require context)
+            {"check cpu", MKActionType::SYSTEM_INFO},
+            {"check ram", MKActionType::SYSTEM_INFO},
+            {"check memory", MKActionType::SYSTEM_INFO},
+            {"check disk", MKActionType::SYSTEM_INFO},
+            {"system status", MKActionType::SYSTEM_INFO},
+            {"system resource", MKActionType::SYSTEM_INFO},
+            {"resource usage", MKActionType::SYSTEM_INFO},
+            {"cpu usage", MKActionType::SYSTEM_INFO},
+            {"memory usage", MKActionType::SYSTEM_INFO},
+            {"disk usage", MKActionType::SYSTEM_INFO},
+            {"temperature check", MKActionType::SYSTEM_INFO},
+            // Graph lookup (specific)
             {"look up", MKActionType::GRAPH_LOOKUP},
-            {"knowledge", MKActionType::GRAPH_LOOKUP},
             {"search graph", MKActionType::GRAPH_LOOKUP},
-            {"explain", MKActionType::EXPLAIN},
-            {"describe", MKActionType::EXPLAIN},
-            {"tell", MKActionType::EXPLAIN},
-            {"restart", MKActionType::CONFIRM_DESTRUCTIVE},
-            {"delete", MKActionType::CONFIRM_DESTRUCTIVE},
-            {"remove", MKActionType::CONFIRM_DESTRUCTIVE},
-            {"deploy", MKActionType::CONFIRM_DESTRUCTIVE},
-            {"stop", MKActionType::CONFIRM_DESTRUCTIVE},
-            {"shutdown", MKActionType::CONFIRM_DESTRUCTIVE},
+            {"check knowledge", MKActionType::GRAPH_LOOKUP},
+            {"find fact", MKActionType::GRAPH_LOOKUP},
+            {"knowledge graph", MKActionType::GRAPH_LOOKUP},
+            // Destructive actions (specific intent patterns)
+            {"should restart", MKActionType::CONFIRM_DESTRUCTIVE},
+            {"need to restart", MKActionType::CONFIRM_DESTRUCTIVE},
+            {"restart the", MKActionType::CONFIRM_DESTRUCTIVE},
+            {"should delete", MKActionType::CONFIRM_DESTRUCTIVE},
+            {"need to delete", MKActionType::CONFIRM_DESTRUCTIVE},
+            {"delete the", MKActionType::CONFIRM_DESTRUCTIVE},
+            {"should remove", MKActionType::CONFIRM_DESTRUCTIVE},
+            {"remove the", MKActionType::CONFIRM_DESTRUCTIVE},
+            {"should deploy", MKActionType::CONFIRM_DESTRUCTIVE},
+            {"deploy the", MKActionType::CONFIRM_DESTRUCTIVE},
+            {"should stop", MKActionType::CONFIRM_DESTRUCTIVE},
+            {"stop the", MKActionType::CONFIRM_DESTRUCTIVE},
+            {"shut down", MKActionType::CONFIRM_DESTRUCTIVE},
+            {"shutdown the", MKActionType::CONFIRM_DESTRUCTIVE},
         };
     }
 
@@ -158,18 +180,30 @@ public:
     void setResourceMonitor(MKResourceMonitor* monitor) { resourceMonitor_ = monitor; }
 
     // Check if an action requires user confirmation before executing
+    // Only triggers on intent patterns, not incidental mentions of keywords.
+    // "no need to restart" won't trigger, but "should restart the container" will.
     bool shouldConfirm(const std::string& thinkingOutput) const {
         std::string lower = toLower(thinkingOutput);
 
-        // Destructive keywords that need confirmation
-        static const std::vector<std::string> destructiveKeywords = {
-            "restart", "delete", "remove", "deploy", "stop",
-            "shutdown", "reboot", "kill", "destroy", "wipe",
-            "format", "purge", "drop"
+        // Intent patterns that indicate the thinking engine wants to perform
+        // a destructive action. Must be multi-word to avoid false positives.
+        static const std::vector<std::string> destructiveIntentPatterns = {
+            "should restart", "need to restart", "restart the",
+            "should delete", "need to delete", "delete the",
+            "should remove", "need to remove", "remove the",
+            "should deploy", "need to deploy", "deploy the",
+            "should stop", "need to stop", "stop the",
+            "should shut down", "shut down the", "shutdown the",
+            "should reboot", "need to reboot", "reboot the",
+            "should kill", "need to kill", "kill the",
+            "should destroy", "need to destroy", "destroy the",
+            "should wipe", "need to wipe", "wipe the",
+            "should purge", "need to purge", "purge the",
+            "should drop", "need to drop", "drop the",
         };
 
-        for (const auto& keyword : destructiveKeywords) {
-            if (lower.find(keyword) != std::string::npos) {
+        for (const auto& pattern : destructiveIntentPatterns) {
+            if (lower.find(pattern) != std::string::npos) {
                 return true;
             }
         }
@@ -335,10 +369,12 @@ public:
     }
 
     // Check if a keyword maps to a specific action type
+    // Matches if the input contains the registry keyword OR if the registry keyword contains the input
     MKActionType getActionForKeyword(const std::string& keyword) const {
         std::string lower = toLower(keyword);
         for (const auto& mapping : toolRegistry_) {
-            if (lower.find(mapping.keyword) != std::string::npos) {
+            if (lower.find(mapping.keyword) != std::string::npos ||
+                mapping.keyword.find(lower) != std::string::npos) {
                 return mapping.action;
             }
         }

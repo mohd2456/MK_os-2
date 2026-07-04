@@ -1167,9 +1167,9 @@ void test_decision_engine_tool_dispatch() {
     TEST_ASSERT_EQ(static_cast<int>(dockerAction), static_cast<int>(MKActionType::DOCKER_STATUS),
                    "docker keyword should map to DOCKER_STATUS action");
 
-    MKActionType sshAction = engine.getActionForKeyword("ssh");
+    MKActionType sshAction = engine.getActionForKeyword("ssh into");
     TEST_ASSERT_EQ(static_cast<int>(sshAction), static_cast<int>(MKActionType::SSH_COMMAND),
-                   "ssh keyword should map to SSH_COMMAND action");
+                   "ssh into keyword should map to SSH_COMMAND action");
 
     MKActionType graphAction = engine.getActionForKeyword("look up");
     TEST_ASSERT_EQ(static_cast<int>(graphAction), static_cast<int>(MKActionType::GRAPH_LOOKUP),

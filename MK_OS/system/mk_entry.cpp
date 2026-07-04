@@ -1369,8 +1369,9 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
             float thinkLatency = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
                 thinkEnd - thinkStart).count();
 
-            // Log thinking request
-            std::string thinkProvider = sys.providerRouter.getActiveProvider();
+            // Log thinking request (use actual provider that was used, not first online)
+            std::string thinkProvider = sys.thinkingEngine.getLastProvider();
+            if (thinkProvider.empty()) thinkProvider = "none";
             int thinkTokens = (int)input.size() / 4;
             sys.requestLogger.logRequest(thinkProvider, "thinking: " + input.substr(0, 40),
                                          thinkTokens, thinkLatency, !thinking.empty());
