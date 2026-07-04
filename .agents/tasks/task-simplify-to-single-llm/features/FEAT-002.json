@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "chore",
   "description": "Update test files to remove all tests and includes for deleted modules (thinking_engine, decision_engine, safe_parse, droplet, crystal), and ensure the test suite compiles and passes.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "In MK_OS/tests/test_main.cpp: Remove #include lines for ../llm/thinking_engine.cpp, ../ai_core/safe_parse.h, ../ai_core/prometheus/droplet.cpp, ../ai_core/cxn/crystal.cpp, ../ai_core/decision_engine.cpp",
     "In MK_OS/tests/test_main.cpp: Remove test functions: test_safe_parse_no_throw, test_droplet_pool_corrupt_load, test_crystal_store_corrupt_load, test_thinking_engine_prompt_construction, test_decision_engine_tool_dispatch, test_decision_engine_confirmation_required, test_three_layer_fallback, test_decision_engine_personality",
@@ -20,5 +20,5 @@
     "cd MK_OS && make test"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 8 deleted-module tests removed (thinking_engine, decision_engine, droplet, crystal). safe_parse.h test kept since the file still exists. test_thinking_to_decision_flow removed from integration tests. Final result: 59 tests pass, 0 failures, 443 assertions pass."
 }
