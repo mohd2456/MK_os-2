@@ -823,6 +823,152 @@ static std::string buildLLMPrompt(const std::string& input,
 }
 
 // ============================================================
+// Graph Fact Relevance Filter (BUG C fix)
+// Filters graph results to only include strongly relevant facts.
+// Prevents random keyword matches from polluting LLM context or
+// being dumped raw to the user.
+// ============================================================
+static std::vector<std::string> filterRelevantFacts(
+    const std::string& input,
+    const std::vector<std::string>& rawFacts,
+    size_t maxFacts = 5)
+{
+    if (rawFacts.empty()) return {};
+
+    // Tokenize the input into meaningful words (skip short/common words)
+    std::vector<std::string> queryWords;
+    {
+        std::string lower = input;
+        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+        std::istringstream ss(lower);
+        std::string word;
+        // Common stop words to skip
+        static const std::vector<std::string> stopWords = {
+            "a", "an", "the", "is", "are", "was", "were", "be", "been",
+            "what", "who", "where", "when", "why", "how", "which",
+            "do", "does", "did", "will", "would", "could", "should",
+            "can", "may", "might", "shall", "to", "of", "in", "on",
+            "at", "by", "for", "with", "from", "up", "about", "into",
+            "it", "its", "this", "that", "these", "those", "i", "me",
+            "my", "you", "your", "he", "she", "they", "we", "us",
+            "and", "or", "but", "not", "no", "so", "if", "than"
+        };
+        while (ss >> word) {
+            // Remove trailing punctuation
+            while (!word.empty() && (word.back() == '?' || word.back() == '.' ||
+                   word.back() == '!' || word.back() == ',')) {
+                word.pop_back();
+            }
+            if (word.size() < 2) continue;
+            bool isStop = false;
+            for (const auto& sw : stopWords) {
+                if (word == sw) { isStop = true; break; }
+            }
+            if (!isStop) queryWords.push_back(word);
+        }
+    }
+
+    // If we couldn't extract meaningful words, return nothing (query is too vague)
+    if (queryWords.empty()) return {};
+
+    // Score each fact by keyword overlap with the query
+    struct ScoredFact {
+        std::string fact;
+        int score;
+    };
+    std::vector<ScoredFact> scored;
+    for (const auto& fact : rawFacts) {
+        std::string factLower = fact;
+        std::transform(factLower.begin(), factLower.end(), factLower.begin(), ::tolower);
+        int matchCount = 0;
+        for (const auto& qw : queryWords) {
+            if (factLower.find(qw) != std::string::npos) {
+                matchCount++;
+            }
+        }
+        // Require at least 1 keyword match (for short queries) or
+        // proportional match for longer queries
+        int threshold = (queryWords.size() <= 2) ? 1 : 2;
+        if (matchCount >= threshold) {
+            scored.push_back({fact, matchCount});
+        }
+    }
+
+    // Sort by score descending
+    std::sort(scored.begin(), scored.end(),
+              [](const ScoredFact& a, const ScoredFact& b) {
+                  return a.score > b.score;
+              });
+
+    // Return top N facts
+    std::vector<std::string> filtered;
+    for (size_t i = 0; i < scored.size() && i < maxFacts; i++) {
+        filtered.push_back(scored[i].fact);
+    }
+    return filtered;
+}
+
+// ============================================================
+// LLM Synthesis Helper (BUG A+B fix)
+// Sends gathered facts + user question to LLM for natural synthesis.
+// Falls back to style formatting when LLM is unavailable.
+// This is the single function that replaces ALL raw fact dumps.
+// ============================================================
+static std::string synthesizeResponse(MKSystem& sys, const std::string& input,
+                                       const std::vector<std::string>& rawFacts,
+                                       float confidence) {
+    // First filter facts for relevance
+    std::vector<std::string> facts = filterRelevantFacts(input, rawFacts, 5);
+
+    // If no relevant facts survived filtering, return empty (caller handles fallback)
+    if (facts.empty() && rawFacts.empty()) return "";
+
+    // Check if LLM is available
+    bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
+
+    if (llmAvailable && !facts.empty()) {
+        // Build RAG prompt: user question + relevant facts → LLM → natural answer
+        std::string history = sys.brainMemory.getContextString();
+        std::string prompt = MK_SYSTEM_PROMPT + "\n\n";
+        prompt += "Known facts (use these to answer):\n";
+        for (const auto& f : facts) prompt += "- " + f + "\n";
+        prompt += "\nAnswer the user's question naturally and concisely using the facts above. "
+                  "Do not list the raw facts — synthesize them into a natural response.\n\n";
+        if (!history.empty()) prompt += "Recent conversation:\n" + history + "\n";
+        prompt += "User: " + input + "\nMK:";
+
+        std::string response;
+        if (sys.llmEngine.isAvailable()) {
+            response = sys.llmEngine.generate(prompt);
+        }
+        if (response.empty() && sys.cloudLLM.isAvailable()) {
+            response = sys.cloudLLM.generateWithContext(input, facts, history, "", MK_SYSTEM_PROMPT);
+        }
+        if (!response.empty()) return response;
+    }
+
+    // LLM unavailable or failed: format facts naturally through style engine
+    if (!facts.empty()) {
+        std::string raw;
+        for (const auto& f : facts) {
+            raw += f + ". ";
+        }
+        return sys.style.format_response(raw, input, confidence);
+    }
+
+    // If filtering removed all facts but we had raw facts, try with raw (style only)
+    if (!rawFacts.empty()) {
+        std::string raw;
+        for (size_t i = 0; i < rawFacts.size() && i < 5; i++) {
+            raw += rawFacts[i] + ". ";
+        }
+        return sys.style.format_response(raw, input, confidence);
+    }
+
+    return "";
+}
+
+// ============================================================
 // Honest degradation helpers (BUG 4)
 // ============================================================
 // When the real LLM providers are unavailable we must degrade HONESTLY rather
@@ -962,6 +1108,8 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
         for (const auto& e : graphResults) {
             relevantFacts.push_back(e.source + " " + e.relation + " " + e.target);
         }
+        // Filter for relevance to avoid polluting LLM context with random matches
+        relevantFacts = filterRelevantFacts(input, relevantFacts, 5);
         std::string history = sys.brainMemory.getContextString();
         std::string systemState;
         auto localRes = sys.resourceMonitor.getLocalResources();
@@ -1128,11 +1276,13 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
                 // Fallback to graph if instant route cannot handle it
                 auto results = sys.graph.getAll(input);
                 if (!results.empty()) {
+                    std::vector<std::string> rawFacts;
                     for (const auto& e : results) {
-                        response += e.source + " " + e.relation + " " + e.target + ". ";
+                        rawFacts.push_back(e.source + " " + e.relation + " " + e.target);
                     }
+                    response = synthesizeResponse(sys, input, rawFacts, 0.7f);
                     confidence = 0.7f;
-                    answered = true;
+                    answered = !response.empty();
                 }
             }
             break;
@@ -1141,12 +1291,15 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             // Knowledge graph lookup
             auto results = sys.graph.getAll(input);
             if (!results.empty()) {
+                std::vector<std::string> rawFacts;
                 for (const auto& e : results) {
-                    response += e.source + " " + e.relation + " " + e.target + ". ";
+                    rawFacts.push_back(e.source + " " + e.relation + " " + e.target);
                 }
+                response = synthesizeResponse(sys, input, rawFacts, 0.8f);
                 confidence = 0.8f;
-                answered = true;
-            } else {
+                answered = !response.empty();
+            }
+            if (!answered) {
                 // Try path query
                 auto pathResult = sys.graph.pathQuery(input, "is_a", 5);
                 if (pathResult.found) {
@@ -1157,12 +1310,13 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
                     // Fallback to vector search
                     auto vecResults = sys.vectorSearch.search(input, 3);
                     if (!vecResults.empty() && vecResults[0].score > 0.3f) {
-                        response = "";
+                        std::vector<std::string> rawFacts;
                         for (const auto& vr : vecResults) {
                             if (vr.score > 0.3f) {
-                                response += vr.sourceText + " ";
+                                rawFacts.push_back(vr.sourceText);
                             }
                         }
+                        response = synthesizeResponse(sys, input, rawFacts, vecResults[0].score);
                         confidence = vecResults[0].score;
                         answered = !response.empty();
                     }
@@ -1200,21 +1354,38 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             // The GENERATE route gracefully falls back to MKComposer which provides
             // template-based responses. The neural net exists for future training
             // but is NOT called in the hot path to avoid nonsense output.
-            MKResponseContext ctx;
-            ctx.subject = input;
-            ctx.is_partial = false;
-            ctx.confidence = 0.5f;
 
             auto results = sys.graph.getAll(input);
             if (!results.empty()) {
+                std::vector<std::string> rawFacts;
                 for (const auto& e : results) {
-                    ctx.facts_found.push_back(e.source + " " + e.relation + " " + e.target);
+                    rawFacts.push_back(e.source + " " + e.relation + " " + e.target);
                 }
-                response = sys.composer.composeAnswer(ctx);
+                // Use LLM synthesis (RAG) instead of raw composer output
+                response = synthesizeResponse(sys, input, rawFacts, 0.6f);
                 confidence = 0.6f;
-                answered = true;
-            } else {
-                response = sys.composer.composeAnswer(ctx);
+                answered = !response.empty();
+            }
+            if (!answered) {
+                // No graph facts — try LLM directly or fall back to composer
+                bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
+                if (llmAvailable) {
+                    std::string history = sys.brainMemory.getContextString();
+                    std::string prompt = buildLLMPrompt(input, {}, history);
+                    if (sys.llmEngine.isAvailable()) {
+                        response = sys.llmEngine.generate(prompt);
+                    }
+                    if (response.empty() && sys.cloudLLM.isAvailable()) {
+                        response = sys.cloudLLM.generateWithContext(input, {}, history, "", MK_SYSTEM_PROMPT);
+                    }
+                }
+                if (response.empty()) {
+                    MKResponseContext ctx;
+                    ctx.subject = input;
+                    ctx.is_partial = false;
+                    ctx.confidence = 0.3f;
+                    response = sys.composer.composeAnswer(ctx);
+                }
                 confidence = 0.3f;
                 answered = !response.empty();
             }
@@ -1268,9 +1439,11 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             if (response.empty()) {
                 auto results = sys.graph.getAll(input);
                 if (!results.empty()) {
+                    std::vector<std::string> rawFacts;
                     for (const auto& e : results) {
-                        response += e.source + " " + e.relation + " " + e.target + ". ";
+                        rawFacts.push_back(e.source + " " + e.relation + " " + e.target);
                     }
+                    response = synthesizeResponse(sys, input, rawFacts, 0.7f);
                 }
             }
             confidence = 0.8f;
@@ -1367,11 +1540,13 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             if (fallbackChain[i] == MKRouteType::GRAPH) {
                 auto results = sys.graph.getAll(input);
                 if (!results.empty()) {
+                    std::vector<std::string> rawFacts;
                     for (const auto& e : results) {
-                        response += e.source + " " + e.relation + " " + e.target + ". ";
+                        rawFacts.push_back(e.source + " " + e.relation + " " + e.target);
                     }
+                    response = synthesizeResponse(sys, input, rawFacts, 0.6f);
                     confidence = 0.6f;
-                    answered = true;
+                    answered = !response.empty();
                 }
             } else if (fallbackChain[i] == MKRouteType::SEARCH) {
                 auto answer = sys.integrator.buildCitedAnswer(input);
@@ -1434,6 +1609,8 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
         for (const auto& e : graphResults) {
             relevantFacts.push_back(e.source + " " + e.relation + " " + e.target);
         }
+        // Filter for relevance to avoid polluting LLM context with random matches
+        relevantFacts = filterRelevantFacts(input, relevantFacts, 5);
         std::string history = sys.brainMemory.getContextString();
         std::string systemState;
         auto localRes = sys.resourceMonitor.getLocalResources();
@@ -1545,16 +1722,14 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
         case MKRouteType::GRAPH: {
             auto results = sys.graph.getAll(input);
             if (!results.empty()) {
-                MKResponseContext ctx;
-                ctx.subject = input;
-                ctx.is_partial = false;
-                ctx.confidence = 0.8f;
+                std::vector<std::string> rawFacts;
                 for (const auto& e : results) {
-                    ctx.facts_found.push_back(e.source + " " + e.relation + " " + e.target);
+                    rawFacts.push_back(e.source + " " + e.relation + " " + e.target);
                 }
-                response = sys.composer.composeAnswer(ctx);
-                answered = true;
-            } else {
+                response = synthesizeResponse(sys, input, rawFacts, 0.8f);
+                answered = !response.empty();
+            }
+            if (!answered) {
                 auto pathResult = sys.graph.pathQuery(input, "is_a", 5);
                 if (pathResult.found) {
                     response = input + " is " + pathResult.answer;
@@ -1562,14 +1737,11 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
                 } else {
                     auto vecResults = sys.vectorSearch.search(input, 3);
                     if (!vecResults.empty() && vecResults[0].score > 0.3f) {
-                        MKResponseContext ctx;
-                        ctx.subject = input;
-                        ctx.is_partial = false;
-                        ctx.confidence = vecResults[0].score;
+                        std::vector<std::string> rawFacts;
                         for (const auto& vr : vecResults) {
-                            if (vr.score > 0.3f) ctx.facts_found.push_back(vr.sourceText);
+                            if (vr.score > 0.3f) rawFacts.push_back(vr.sourceText);
                         }
-                        response = sys.composer.composeAnswer(ctx);
+                        response = synthesizeResponse(sys, input, rawFacts, vecResults[0].score);
                         answered = !response.empty();
                     }
                 }
@@ -1592,18 +1764,15 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
         case MKRouteType::HOMELAB:
         case MKRouteType::MIND:
         default: {
-            // For INSTANT/SEARCH/GENERATE, query the graph and compose
+            // For all other routes, query graph and synthesize through LLM/style
             auto results = sys.graph.getAll(input);
             if (!results.empty()) {
-                MKResponseContext ctx;
-                ctx.subject = input;
-                ctx.is_partial = false;
-                ctx.confidence = 0.7f;
+                std::vector<std::string> rawFacts;
                 for (const auto& e : results) {
-                    ctx.facts_found.push_back(e.source + " " + e.relation + " " + e.target);
+                    rawFacts.push_back(e.source + " " + e.relation + " " + e.target);
                 }
-                response = sys.composer.composeAnswer(ctx);
-                answered = true;
+                response = synthesizeResponse(sys, input, rawFacts, 0.7f);
+                answered = !response.empty();
             }
             break;
         }
@@ -1613,14 +1782,25 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
         // Fallback: try vector search for a relevant answer
         auto vecResults = sys.vectorSearch.search(input, 3);
         if (!vecResults.empty() && vecResults[0].score > 0.3f) {
-            MKResponseContext ctx;
-            ctx.subject = input;
-            ctx.is_partial = true;
-            ctx.confidence = vecResults[0].score;
+            std::vector<std::string> rawFacts;
             for (const auto& vr : vecResults) {
-                if (vr.score > 0.3f) ctx.facts_found.push_back(vr.sourceText);
+                if (vr.score > 0.3f) rawFacts.push_back(vr.sourceText);
             }
-            response = sys.composer.composeAnswer(ctx);
+            response = synthesizeResponse(sys, input, rawFacts, vecResults[0].score);
+        }
+        // If still empty, try LLM without facts (general knowledge)
+        if (response.empty()) {
+            bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
+            if (llmAvailable) {
+                std::string history = sys.brainMemory.getContextString();
+                std::string prompt = buildLLMPrompt(input, {}, history);
+                if (sys.llmEngine.isAvailable()) {
+                    response = sys.llmEngine.generate(prompt);
+                }
+                if (response.empty() && sys.cloudLLM.isAvailable()) {
+                    response = sys.cloudLLM.generateWithContext(input, {}, history, "", MK_SYSTEM_PROMPT);
+                }
+            }
         }
         if (response.empty()) {
             response = "I don't have enough knowledge about that yet. Try asking me about science, technology, or programming.";
