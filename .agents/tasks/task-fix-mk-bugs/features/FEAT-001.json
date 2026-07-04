@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "fix",
   "description": "Fix all 6 bugs: natural language math detection, greeting fallback, thinking engine waste, useless confidence messages, provider health routing, and smart router word boundary matching",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "BUG 1 - In MK_OS/ai_core/math_solver.cpp: Add isNaturalLanguageMath() method that detects patterns like 'X times Y', 'X multiplied by Y', 'X divided by Y', 'X plus Y', 'X minus Y' (where X and Y are numbers, possibly surrounded by words like 'what is'). Add evaluateNaturalMath() that extracts the numbers and operator words and computes the result. Call isNaturalLanguageMath() from isMathQuery(). In the math block in handle_natural_query (mk_entry.cpp), call isNaturalLanguageMath + evaluateNaturalMath before falling to solve().",
     "BUG 2 - In MK_OS/system/mk_entry.cpp: In handle_natural_query(), BEFORE the 3-layer architecture block (after the math solver check but before the isConversation block), add a check: classify the input with sys.conversationMode.classifyInput(input). If the type is GREETING, GOODBYE, VAGUE_RESPONSE, or SMALL_TALK, call sys.conversationMode.generateResponse(input, sys.casualResponses) directly and return immediately, bypassing the 3-layer architecture. Do the same in generate_ai_response() for the Telegram path.",
@@ -25,5 +25,5 @@
     "cd /projects/sandbox/MK_os-2/MK_OS && rm -rf prometheus_data genesis_data && printf 'hello\\nwhat is 5 times 3\\nwhat is 10 divided by 2\\n/quit\\n' | timeout 30 ./mk_os 2>&1 | sed 's/\\x1b\\[[0-9;]*m//g' | grep -E '^  [~]|^  .*='"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 6 bugs fixed and verified. Build succeeds with 0 errors (15 pre-existing warnings). All 67 tests pass. Interactive verification confirms: hello produces casual greeting, 5 times 3 returns 15, 10 divided by 2 returns 5."
 }
