@@ -2,7 +2,7 @@
   "id": "FEAT-005",
   "type": "feat",
   "description": "Enhance the personal memory and learning system so MK deeply knows Mohammed. Improve fact extraction from conversations, add biographical context injection, and make the learning engine reliable for long-term fact persistence. MK should remember preferences, patterns, schedule, devices, and personal context without being told twice.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Enhance MK_OS/mk_brain/fact_extractor/biographical.cpp to extract more types of facts from natural conversation: preferences ('I like X', 'I hate Y'), schedule patterns ('I usually work at X time'), device mentions ('my server is called X'), project context ('I am working on X'), corrections ('actually X is Y'). Each extracted fact should be stored via learning_engine with appropriate confidence level.",
     "Enhance MK_OS/mk_brain/memory/brain_memory.cpp to support long-term memory persistence. Currently it only has a rotating short-term buffer of 6-20 turns. Add a saveToDisk/loadFromDisk method that persists important conversation summaries to a SQLite database (the project already links libsqlite3). Store: topic, summary, timestamp, importance_score. Query by recency and relevance.",
@@ -23,5 +23,5 @@
     "cd MK_OS && make test"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Build passes with same 6 pre-existing warnings. Tests: 80 passed, 0 failed, 460 assertions (up from 71/430). The biographical extractor now has 56 patterns (up from 33). The SQLite long-term memory uses a file 'mk_brain_memory.db' in the working directory. The fact extractor receives a pointer to learning_engine via setLearningEngine() called in initOrchestrator(), which avoids circular dependency issues with the include order. Personal facts are injected at the start of relevantFacts in respond(), ensuring they appear in fallback responses even when the LLM is unavailable. The 'i like X and i love Y' pattern extracts both parts since extraction stops at sentence delimiters (period, comma, exclamation) not conjunctions. learned_facts.mk gets modified by test side effects (test_tool_executor_learn_fact) -- do not commit that file."
 }
