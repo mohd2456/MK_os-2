@@ -162,7 +162,7 @@ private:
 
         // GRAPH: factual lookups, definitions, relationships
         graphKeywords = {
-            "what is", "who is", "define", "meaning", "capital of",
+            "who is", "define", "meaning", "capital of",
             "population", "president", "inventor", "discovered", "founded",
             "element", "planet", "country", "language", "species",
             "formula", "equation", "theorem", "law of", "fact"

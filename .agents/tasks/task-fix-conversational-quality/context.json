@@ -1,0 +1,27 @@
+{
+  "project_type": "C++ desktop AI assistant with REPL interface",
+  "language": "C++17",
+  "build_system": "Makefile with clang++ (single compilation unit via #include chain from mk_entry.cpp)",
+  "test_framework": "Custom test framework in tests/test_main.cpp using TEST_ASSERT macros and RUN_TEST",
+  "build_command": "cd /projects/sandbox/MK_os-2/MK_OS && make clean && make",
+  "test_command": "cd /projects/sandbox/MK_os-2/MK_OS && make test",
+  "verification_instructions": "1. Run make to build mk_os binary. 2. Run make test to run the test suite. Both must pass with exit code 0.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "The project requires clang++ with C++17, libcurl, and libsqlite3. Build with 'make' from MK_OS/ directory.",
+  "environment_constraints": "Network is available for cloning/pushing. Build requires libcurl and libsqlite3 headers.",
+  "contribution_requirements": "Push to a new branch and create a PR against main.",
+  "key_patterns": "All .cpp files use header guards (#ifndef). Files are included directly via #include in mk_entry.cpp (single compilation unit pattern). Each module is a class defined in a single .cpp file. The test file independently includes only the modules it tests.",
+  "relevant_files": [
+    "/projects/sandbox/MK_os-2/MK_OS/system/mk_entry.cpp",
+    "/projects/sandbox/MK_os-2/MK_OS/ai_core/smart_router.cpp",
+    "/projects/sandbox/MK_os-2/MK_OS/ai_core/input_preprocessor.cpp",
+    "/projects/sandbox/MK_os-2/MK_OS/ai_core/conversation_mode.cpp",
+    "/projects/sandbox/MK_os-2/MK_OS/ai_core/math_solver.cpp",
+    "/projects/sandbox/MK_os-2/MK_OS/mk_brain/personality/casual_responses.cpp",
+    "/projects/sandbox/MK_os-2/MK_OS/mk_brain/personality/response_style.cpp",
+    "/projects/sandbox/MK_os-2/MK_OS/mk_brain/personality/personality_core.cpp",
+    "/projects/sandbox/MK_os-2/MK_OS/tests/test_main.cpp",
+    "/projects/sandbox/MK_os-2/MK_OS/Makefile"
+  ],
+  "directory_structure": "MK_os-2/MK_OS/ is the main project root. system/ has mk_entry.cpp (main entry). ai_core/ has smart_router, conversation_mode, input_preprocessor, math_solver. mk_brain/personality/ has casual_responses, response_style, personality_core. tests/ has test_main.cpp."
+}
