@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-003",
+  "type": "fix",
+  "description": "Address code review findings: fix personality split between local/cloud LLM, add template fallback to Telegram handler, add evolution engine absorbs to Telegram, extract duplicated prompt construction into a helper, and remove redundant getContextString() call.",
+  "status": "in_progress",
+  "steps": [
+    "Add a systemPrompt parameter to MKCloudLLM::generateWithContext() so the caller can pass a unified prompt instead of using the hardcoded one.",
+    "Extract the prompt construction block into a helper function buildLLMPrompt(input, relevantFacts, history) in mk_entry.cpp to eliminate duplication between handle_natural_query and generate_ai_response.",
+    "In handle_natural_query, remove the redundant cloudHistory = getContextString() call and reuse the existing history variable.",
+    "In generate_ai_response (Telegram handler), add template fallback (conversationMode.generateResponse) if LLM + Genesis both fail.",
+    "In generate_ai_response (Telegram handler), add prometheus.absorb(), genesis.absorb(), and consciousnessEngine.absorb() for successful LLM responses.",
+    "Pass the unified system prompt to generateWithContext() from both call sites.",
+    "Verify build and all tests pass."
+  ],
+  "acceptance_criteria": [
+    "generateWithContext() accepts an optional systemPrompt override parameter",
+    "A single buildLLMPrompt helper function exists (no duplication)",
+    "The redundant getContextString() call is removed",
+    "Telegram handler has template fallback when LLM + Genesis fail",
+    "Telegram handler absorbs into prometheus, genesis, and consciousnessEngine",
+    "Both local and cloud LLM paths use the same personality/system prompt",
+    "Build compiles with no errors",
+    "All tests pass"
+  ],
+  "verification": [
+    "Run 'cd /projects/sandbox/MK_os-2/MK_OS && make clean && make' and confirm exit code 0",
+    "Run 'cd /projects/sandbox/MK_os-2/MK_OS && make test' and confirm all tests pass"
+  ],
+  "blocked_reason": null,
+  "findings": null
+}

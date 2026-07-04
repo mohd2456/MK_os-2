@@ -391,12 +391,18 @@ public:
     std::string generateWithContext(const std::string& userInput,
                                      const std::vector<std::string>& relevantFacts,
                                      const std::string& conversationHistory = "",
-                                     const std::string& mood = "") {
+                                     const std::string& mood = "",
+                                     const std::string& systemPromptOverride = "") {
         // Build context-enriched system prompt
-        std::string system =
-            "You are MK, a living AI. Casual, smart, loyal to Mohammed. "
-            "Use the FACTS below to answer accurately. If facts don't cover it, "
-            "say what you know and be honest about uncertainty. Keep it natural and short.\n\n";
+        std::string system;
+        if (!systemPromptOverride.empty()) {
+            system = systemPromptOverride + "\n\n";
+        } else {
+            system =
+                "You are MK, a living AI. Casual, smart, loyal to Mohammed. "
+                "Use the FACTS below to answer accurately. If facts don't cover it, "
+                "say what you know and be honest about uncertainty. Keep it natural and short.\n\n";
+        }
 
         if (!relevantFacts.empty()) {
             system += "KNOWN FACTS:\n";

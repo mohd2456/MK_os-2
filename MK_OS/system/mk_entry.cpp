@@ -742,6 +742,29 @@ static void cmd_briefing(MKSystem& sys) {
 }
 
 // ============================================================
+// LLM Prompt Construction Helper
+// Single source of truth for building prompts with RAG context
+// ============================================================
+static const std::string MK_SYSTEM_PROMPT =
+    "You are MK, a personal AI assistant. You are helpful, direct, and friendly. "
+    "You talk naturally like a knowledgeable friend. You are loyal to your creator Mohammed. "
+    "Keep responses concise and genuine. If you do not know something, say so honestly.";
+
+static std::string buildLLMPrompt(const std::string& input,
+                                   const std::vector<std::string>& relevantFacts,
+                                   const std::string& history) {
+    std::string fullPrompt = MK_SYSTEM_PROMPT + "\n\n";
+    if (!relevantFacts.empty()) {
+        fullPrompt += "Known facts:\n";
+        for (const auto& f : relevantFacts) fullPrompt += "- " + f + "\n";
+        fullPrompt += "\n";
+    }
+    if (!history.empty()) fullPrompt += "Recent conversation:\n" + history + "\n";
+    fullPrompt += "User: " + input + "\nMK:";
+    return fullPrompt;
+}
+
+// ============================================================
 // Natural Language Routing
 // ============================================================
 static void handle_natural_query(MKSystem& sys, const std::string& input) {
@@ -833,22 +856,12 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
 
             // Try local LLM first, then cloud
             if (sys.llmEngine.isAvailable()) {
-                // Build prompt with context for local LLM
-                std::string systemPrompt = "You are MK, a personal AI assistant. You are helpful, direct, and friendly. You talk naturally like a knowledgeable friend. You are loyal to your creator Mohammed. Keep responses concise and genuine. If you do not know something, say so honestly.";
-                std::string fullPrompt = systemPrompt + "\n\n";
-                if (!relevantFacts.empty()) {
-                    fullPrompt += "Known facts:\n";
-                    for (const auto& f : relevantFacts) fullPrompt += "- " + f + "\n";
-                    fullPrompt += "\n";
-                }
-                if (!history.empty()) fullPrompt += "Recent conversation:\n" + history + "\n";
-                fullPrompt += "User: " + input + "\nMK:";
+                std::string fullPrompt = buildLLMPrompt(input, relevantFacts, history);
                 response = sys.llmEngine.generate(fullPrompt);
             }
 
             if (response.empty() && sys.cloudLLM.isAvailable()) {
-                std::string cloudHistory = sys.brainMemory.getContextString();
-                response = sys.cloudLLM.generateWithContext(input, relevantFacts, cloudHistory);
+                response = sys.cloudLLM.generateWithContext(input, relevantFacts, history, "", MK_SYSTEM_PROMPT);
             }
         }
 
@@ -1267,20 +1280,12 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
             std::string history = sys.brainMemory.getContextString();
 
             if (sys.llmEngine.isAvailable()) {
-                std::string systemPrompt = "You are MK, a personal AI assistant. You are helpful, direct, and friendly. You talk naturally like a knowledgeable friend. You are loyal to your creator Mohammed. Keep responses concise and genuine. If you do not know something, say so honestly.";
-                std::string fullPrompt = systemPrompt + "\n\n";
-                if (!relevantFacts.empty()) {
-                    fullPrompt += "Known facts:\n";
-                    for (const auto& f : relevantFacts) fullPrompt += "- " + f + "\n";
-                    fullPrompt += "\n";
-                }
-                if (!history.empty()) fullPrompt += "Recent conversation:\n" + history + "\n";
-                fullPrompt += "User: " + input + "\nMK:";
+                std::string fullPrompt = buildLLMPrompt(input, relevantFacts, history);
                 llmResponse = sys.llmEngine.generate(fullPrompt);
             }
 
             if (llmResponse.empty() && sys.cloudLLM.isAvailable()) {
-                llmResponse = sys.cloudLLM.generateWithContext(input, relevantFacts, history);
+                llmResponse = sys.cloudLLM.generateWithContext(input, relevantFacts, history, "", MK_SYSTEM_PROMPT);
             }
         }
 
@@ -1289,10 +1294,21 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
             llmResponse = sys.genesis.generate(input);
         }
 
+        // Last resort: template system
+        if (llmResponse.empty()) {
+            llmResponse = sys.conversationMode.generateResponse(input, sys.casualResponses);
+        }
+
         if (!llmResponse.empty()) {
             sys.brainMemory.commitToShortTerm("user", input);
             sys.brainMemory.commitToShortTerm("mk", llmResponse);
             sys.memory.recordInteraction("telegram_conversation", input);
+
+            // Absorb into evolution engines
+            sys.prometheus.absorb(input, llmResponse, true);
+            sys.genesis.absorb(input, llmResponse, true);
+            sys.consciousnessEngine.absorb(input, llmResponse);
+
             sys.factExtractor.extractFromMessage(input);
             return llmResponse;
         }
