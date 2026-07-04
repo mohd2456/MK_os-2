@@ -8,6 +8,7 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include "../safe_parse.h"
 
 // ===================================================================================
 // MK CONSCIOUSNESS ENGINE — LAYER 5: ECHO MEMORY
@@ -256,17 +257,17 @@ public:
                 std::string key = line.substr(0, sep);
                 std::string val = line.substr(sep + 1);
                 if (key == "TONE") profile_.preferredTone = val;
-                else if (key == "LENGTH") profile_.preferredLength = std::stoi(val);
-                else if (key == "MESSAGES") profile_.totalMessages = std::stoi(val);
-                else if (key == "POSITIVE") profile_.positiveReactions = std::stoi(val);
-                else if (key == "NEGATIVE") profile_.negativeReactions = std::stoi(val);
-                else if (key == "ENERGY") profile_.energyLevel = std::stof(val);
+                else if (key == "LENGTH") profile_.preferredLength = mk::safeStoi(val, profile_.preferredLength);
+                else if (key == "MESSAGES") profile_.totalMessages = mk::safeStoi(val, profile_.totalMessages);
+                else if (key == "POSITIVE") profile_.positiveReactions = mk::safeStoi(val, profile_.positiveReactions);
+                else if (key == "NEGATIVE") profile_.negativeReactions = mk::safeStoi(val, profile_.negativeReactions);
+                else if (key == "ENERGY") profile_.energyLevel = mk::safeStof(val, profile_.energyLevel);
             } else if (section == 1) {
                 profile_.slangWords.push_back(line);
             } else if (section == 2) {
                 size_t sep = line.find('|');
                 if (sep != std::string::npos) {
-                    profile_.wordFrequency[line.substr(0, sep)] = std::stoi(line.substr(sep + 1));
+                    profile_.wordFrequency[line.substr(0, sep)] = mk::safeStoi(line.substr(sep + 1), 0);
                 }
             }
         }

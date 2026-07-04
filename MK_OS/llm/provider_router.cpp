@@ -110,6 +110,7 @@ public:
         providers_.push_back({
             "groq",                                          // name
             "https://api.groq.com/openai/v1/chat/completions", // endpoint
+            // Slugs drift; override with /setmodel groq <slug> instead of recompiling.
             "llama-3.1-8b-instant",                          // model
             "",                                              // apiKey (loaded later)
             MKProviderStatus::OFFLINE,                       // status
@@ -127,7 +128,10 @@ public:
         providers_.push_back({
             "openrouter",
             "https://openrouter.ai/api/v1/chat/completions",
-            "meta-llama/llama-3.1-8b-instruct:free",
+            // Slug drift: "meta-llama/llama-3.1-8b-instruct:free" moved to paid (HTTP 404).
+            // Default to a valid free small-3B model. Paid alternative (no :free suffix):
+            // "meta-llama/llama-3.1-8b-instruct". Override at runtime: /setmodel openrouter <slug>
+            "meta-llama/llama-3.2-3b-instruct:free",
             "",
             MKProviderStatus::OFFLINE,
             500,
@@ -144,6 +148,7 @@ public:
         providers_.push_back({
             "nvidia",
             "https://integrate.api.nvidia.com/v1/chat/completions",
+            // Slugs drift; override with /setmodel nvidia <slug> instead of recompiling.
             "nvidia/llama-3.1-8b-instruct",
             "",
             MKProviderStatus::OFFLINE,
@@ -209,6 +214,24 @@ public:
                 return;
             }
         }
+    }
+
+    // Set the model slug for a provider at runtime (mirrors setProviderKey).
+    // Model slugs drift over time; this lets a stale slug be swapped without a
+    // recompile. Returns true if the provider was found.
+    bool setProviderModel(const std::string& providerName, const std::string& modelSlug) {
+        for (auto& p : providers_) {
+            if (p.name == providerName) {
+                p.model = modelSlug;
+                p.failCount = 0;  // give the new slug a fresh chance
+                if (p.status == MKProviderStatus::OFFLINE &&
+                    (!p.apiKey.empty() || p.isLocal)) {
+                    p.status = MKProviderStatus::DEGRADED;
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
     // Get API key for a provider

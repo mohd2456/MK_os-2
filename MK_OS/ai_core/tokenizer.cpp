@@ -10,6 +10,7 @@
 #include <sstream>
 #include <fstream>
 #include <utility>
+#include "safe_parse.h"
 
 // ===================================================================================
 // MK BYTE-PAIR ENCODING (BPE) TOKENIZER
@@ -304,13 +305,14 @@ public:
         
         std::string line;
         std::getline(in, line);
-        int totalTokens = std::stoi(line);
+        int totalTokens = mk::safeStoi(line, 0);
         
         for (int i = 0; i < totalTokens; i++) {
             std::getline(in, line);
             size_t tab = line.find('\t');
             if (tab != std::string::npos) {
-                int id = std::stoi(line.substr(0, tab));
+                int id = mk::safeStoi(line.substr(0, tab), -1);
+                if (id < 0) continue;
                 std::string token = line.substr(tab + 1);
                 tokenToId[token] = id;
                 idToToken[id] = token;

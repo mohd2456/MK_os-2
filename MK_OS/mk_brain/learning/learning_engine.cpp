@@ -10,6 +10,7 @@
 #include <ctime>
 #include <algorithm>
 #include <sstream>
+#include "../../ai_core/safe_parse.h"
 
 // ===================================================================================
 // MK SELF-LEARNING ENGINE
@@ -257,21 +258,22 @@ public:
         
         std::string line;
         while (std::getline(in, line)) {
+            if (line.empty()) continue;  // skip blank/trailing lines
             std::stringstream ss(line);
             MKFact fact;
             std::string field;
-            int confInt, srcInt;
+            int confInt = 0, srcInt = 0;
             
-            std::getline(ss, field, '|'); fact.id = std::stoi(field);
+            std::getline(ss, field, '|'); fact.id = mk::safeStoi(field, fact.id);
             std::getline(ss, fact.subject, '|');
             std::getline(ss, fact.predicate, '|');
             std::getline(ss, fact.object, '|');
-            std::getline(ss, field, '|'); confInt = std::stoi(field);
-            std::getline(ss, field, '|'); srcInt = std::stoi(field);
-            std::getline(ss, field, '|'); fact.learnedAt = std::stol(field);
-            std::getline(ss, field, '|'); fact.lastAccessed = std::stol(field);
-            std::getline(ss, field, '|'); fact.accessCount = std::stoi(field);
-            std::getline(ss, field, '|'); fact.reinforcements = std::stoi(field);
+            std::getline(ss, field, '|'); confInt = mk::safeStoi(field, 0);
+            std::getline(ss, field, '|'); srcInt = mk::safeStoi(field, 0);
+            std::getline(ss, field, '|'); fact.learnedAt = mk::safeStol(field, 0);
+            std::getline(ss, field, '|'); fact.lastAccessed = mk::safeStol(field, 0);
+            std::getline(ss, field, '|'); fact.accessCount = mk::safeStoi(field, 0);
+            std::getline(ss, field, '|'); fact.reinforcements = mk::safeStoi(field, 0);
             
             fact.confidence = (MKFactConfidence)confInt;
             fact.source = (MKLearningSource)srcInt;

@@ -11,6 +11,7 @@
 #include <fstream>
 #include <sstream>
 #include <cmath>
+#include "../safe_parse.h"
 
 // ===================================================================================
 // MK PROMETHEUS — DROPLET
@@ -247,19 +248,21 @@ public:
             std::string line;
             if (!std::getline(f, line)) break;
             // Parse back (simplified — real implementation would be more robust)
+            // Parse defensively — a malformed/partial line must never crash the
+            // loader. Bad numeric tokens fall back to the field's default value.
             MKDroplet d;
             std::istringstream ss(line);
             std::string token;
-            if (std::getline(ss, token, '|')) d.precision = std::stof(token);
-            if (std::getline(ss, token, '|')) d.vitality = std::stof(token);
-            if (std::getline(ss, token, '|')) d.temperature = std::stof(token);
-            if (std::getline(ss, token, '|')) d.generation = std::stoi(token);
-            if (std::getline(ss, token, '|')) d.fitness = std::stof(token);
-            if (std::getline(ss, token, '|')) d.user_resonance = std::stof(token);
-            if (std::getline(ss, token, '|')) d.born_at = std::stoll(token);
-            if (std::getline(ss, token, '|')) d.last_alive = std::stoll(token);
-            if (std::getline(ss, token, '|')) d.offspring_count = std::stoi(token);
-            if (std::getline(ss, token, '|')) d.kill_count = std::stoi(token);
+            if (std::getline(ss, token, '|')) d.precision = mk::safeStof(token, d.precision);
+            if (std::getline(ss, token, '|')) d.vitality = mk::safeStof(token, d.vitality);
+            if (std::getline(ss, token, '|')) d.temperature = mk::safeStof(token, d.temperature);
+            if (std::getline(ss, token, '|')) d.generation = mk::safeStoi(token, d.generation);
+            if (std::getline(ss, token, '|')) d.fitness = mk::safeStof(token, d.fitness);
+            if (std::getline(ss, token, '|')) d.user_resonance = mk::safeStof(token, d.user_resonance);
+            if (std::getline(ss, token, '|')) d.born_at = mk::safeStoll(token, d.born_at);
+            if (std::getline(ss, token, '|')) d.last_alive = mk::safeStoll(token, d.last_alive);
+            if (std::getline(ss, token, '|')) d.offspring_count = mk::safeStoi(token, d.offspring_count);
+            if (std::getline(ss, token, '|')) d.kill_count = mk::safeStoi(token, d.kill_count);
             if (std::getline(ss, token, '|')) d.domain = token;
             if (std::getline(ss, token)) d.content = token;
             int id = (int)droplets_.size();

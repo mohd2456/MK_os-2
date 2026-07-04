@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <iostream>
 #include <cmath>
+#include "../safe_parse.h"
 
 // ===================================================================================
 // MK CONSCIOUSNESS ENGINE — LAYER 2: CHAIN REACTOR
@@ -238,10 +239,10 @@ public:
                 std::getline(ss, weightStr, '|') && std::getline(ss, tsStr, '|') &&
                 std::getline(ss, source, '|')) {
                 MKThoughtAtom atom;
-                atom.type = static_cast<MKAtomType>(std::stoi(typeStr));
+                atom.type = static_cast<MKAtomType>(mk::safeStoi(typeStr, 0));
                 atom.value = value;
-                atom.weight = std::stof(weightStr);
-                atom.timestamp = std::stoll(tsStr);
+                atom.weight = mk::safeStof(weightStr, 0.0f);
+                atom.timestamp = mk::safeStoll(tsStr, 0);
                 atom.source = source;
                 int idx = (int)memory_.size();
                 memory_.push_back(atom);

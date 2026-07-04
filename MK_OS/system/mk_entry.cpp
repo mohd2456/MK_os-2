@@ -404,6 +404,14 @@ struct MKSystem {
             providerRouter.setProviderKey(kv.first, kv.second);
         }
 
+        // Sync persisted model-slug overrides (models.conf, loaded by cloudLLM) into
+        // the provider router so /models and routing reflect the same slugs and a
+        // stale default never lingers after a /setmodel override.
+        for (const std::string& pname : {"groq", "openrouter", "nvidia", "huggingface"}) {
+            std::string slug = cloudLLM.getModel(pname);
+            if (!slug.empty()) providerRouter.setProviderModel(pname, slug);
+        }
+
         // Initialize thinking engine with provider router reference
         thinkingEngine.setProviderRouter(&providerRouter);
 
@@ -461,6 +469,10 @@ static void cmd_help() {
         << "    " << Color::GREEN << "/brainstorm" << Color::RESET << " <topic> Brainstorm 5 ideas about a topic\n"
         << "    " << Color::GREEN << "/invent" << Color::RESET << " <problem>  Invent solutions for a problem\n"
         << "\n"
+        << Color::BOLD << Color::YELLOW << "  🔌 LLM / PROVIDERS" << Color::RESET << "\n"
+        << "    " << Color::GREEN << "/models" << Color::RESET << "            Show the model slug for each provider\n"
+        << "    " << Color::GREEN << "/setmodel" << Color::RESET << " <p> <slug> Change a provider's model slug (persisted)\n"
+        << "\n"
         << Color::BOLD << Color::YELLOW << "  🖥️  SYSTEM" << Color::RESET << "\n"
         << "    " << Color::GREEN << "/status" << Color::RESET << "            Full system diagnostics\n"
         << "    " << Color::GREEN << "/briefing" << Color::RESET << "          Daily system briefing report\n"
@@ -496,6 +508,8 @@ static void show_slash_suggestions(const std::string& partial) {
         {"/prometheus", "Prometheus engine stats"},
         {"/genesis",  "Genesis engine stats"},
         {"/dream",    "Show dream insights"},
+        {"/models",   "Show provider model slugs"},
+        {"/setmodel", "Set a provider's model slug"},
         {"/identity", "MK evolved identity state"},
         {"/fluid",    "Fluid resonance trace"},
         {"/help",     "Show all commands"},
@@ -809,6 +823,65 @@ static std::string buildLLMPrompt(const std::string& input,
 }
 
 // ============================================================
+// Honest degradation helpers (BUG 4)
+// ============================================================
+// When the real LLM providers are unavailable we must degrade HONESTLY rather
+// than emitting incoherent Genesis metamorphic "word-salad" as if it were a real
+// answer. Preference order when the LLM path yields nothing:
+//   1. A grounded answer built from known graph facts (if any).
+//   2. A short, honest "can't reach my language model" message when providers
+//      were configured but failed (404 / 429 / empty).
+//   3. Genesis ONLY as a genuine offline fallback (no LLM configured at all),
+//      and only when it produces something that passes a basic coherence check.
+
+// Basic coherence guard for offline Genesis output. Rejects empty / too-short
+// fragments so obvious word-salad does not get surfaced as a real answer.
+static bool mkLooksCoherent(const std::string& s) {
+    if (s.size() < 8) return false;
+    int words = 0;
+    std::istringstream ss(s);
+    std::string w;
+    while (ss >> w) words++;
+    return words >= 3;
+}
+
+// Build a grounded, honest response when the LLM is unavailable.
+static std::string mkHonestDegrade(MKSystem& sys, const std::string& input,
+                                   const std::vector<std::string>& relevantFacts,
+                                   bool llmConfigured) {
+    // 1. Prefer a fact-grounded answer.
+    if (!relevantFacts.empty()) {
+        std::string factBased;
+        for (size_t i = 0; i < relevantFacts.size() && i < 3; i++) {
+            if (!factBased.empty()) factBased += " Also, ";
+            factBased += relevantFacts[i];
+        }
+        factBased += ".";
+        std::string prefix = sys.conversationMode.generateResponse("hmm", sys.casualResponses);
+        if (prefix.empty() || prefix.size() < 3) prefix = "Here's what I know:";
+        return prefix + " " + factBased;
+    }
+
+    // 2. Providers were configured but failed -> be honest, don't fake it.
+    if (llmConfigured) {
+        return "I can't reach my language model right now, so I can't answer that "
+               "properly. Try again in a moment, or check /status for provider health.";
+    }
+
+    // 3. Truly offline (no LLM configured): Genesis is the genuine offline brain.
+    if (sys.genesis.isInitialized()) {
+        std::string g = sys.genesis.generate(input);
+        if (mkLooksCoherent(g)) return g;
+    }
+
+    // Last resort: a casual template, else an honest note.
+    std::string tmpl = sys.conversationMode.generateResponse(input, sys.casualResponses);
+    if (!tmpl.empty() && tmpl.size() >= 3) return tmpl;
+    return "I don't have a language model available right now, so I can only work "
+           "from what I already know.";
+}
+
+// ============================================================
 // Natural Language Routing
 // ============================================================
 static void handle_natural_query(MKSystem& sys, const std::string& input) {
@@ -911,10 +984,9 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
 
         // Fallback: If thinking engine is not available or returned empty,
         // use existing full LLM generation flow
+        bool llmConfigured = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
         if (response.empty()) {
-            bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
-
-            if (llmAvailable) {
+            if (llmConfigured) {
                 if (sys.llmEngine.isAvailable()) {
                     std::string fullPrompt = buildLLMPrompt(input, relevantFacts, history);
                     response = sys.llmEngine.generate(fullPrompt);
@@ -926,29 +998,11 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             }
         }
 
-        // Offline fallback: Genesis
-        if (response.empty() && sys.genesis.isInitialized()) {
-            response = sys.genesis.generate(input);
-        }
-
-        // Graceful degradation: when all providers fail and thinking returns empty,
-        // combine graph facts with personality templates for a meaningful response
+        // Honest degradation (BUG 4): prefer graph facts / a short honest message.
+        // Genesis is used only as a genuine offline fallback (no LLM configured)
+        // and only when its output passes a basic coherence check.
         if (response.empty()) {
-            if (!relevantFacts.empty()) {
-                std::string factBased;
-                for (size_t i = 0; i < relevantFacts.size() && i < 3; i++) {
-                    if (!factBased.empty()) factBased += " Also, ";
-                    factBased += relevantFacts[i];
-                }
-                factBased += ".";
-                std::string prefix = sys.conversationMode.generateResponse("hmm", sys.casualResponses);
-                if (prefix.empty() || prefix.size() < 3) {
-                    prefix = "Here's what I know:";
-                }
-                response = prefix + " " + factBased;
-            } else {
-                response = sys.conversationMode.generateResponse(input, sys.casualResponses);
-            }
+            response = mkHonestDegrade(sys, input, relevantFacts, llmConfigured);
         }
         
         if (!response.empty()) {
@@ -1384,10 +1438,9 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
 
         // Fallback: If thinking engine is not available or returned empty,
         // use existing full LLM generation flow
+        bool llmConfigured = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
         if (llmResponse.empty()) {
-            bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
-
-            if (llmAvailable) {
+            if (llmConfigured) {
                 if (sys.llmEngine.isAvailable()) {
                     std::string fullPrompt = buildLLMPrompt(input, relevantFacts, history);
                     auto genStart = std::chrono::steady_clock::now();
@@ -1412,32 +1465,10 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
             }
         }
 
-        // Offline fallback: Genesis
-        if (llmResponse.empty() && sys.genesis.isInitialized()) {
-            llmResponse = sys.genesis.generate(input);
-        }
-
-        // Graceful degradation: when all providers fail and thinking returns empty,
-        // combine graph facts with personality templates for a meaningful response
+        // Honest degradation (BUG 4): graph facts / honest message first; Genesis
+        // only as a genuine offline fallback with a coherence check.
         if (llmResponse.empty()) {
-            if (!relevantFacts.empty()) {
-                // Build a response from known facts + personality
-                std::string factBased;
-                for (size_t i = 0; i < relevantFacts.size() && i < 3; i++) {
-                    if (!factBased.empty()) factBased += " Also, ";
-                    factBased += relevantFacts[i];
-                }
-                factBased += ".";
-                // Wrap with personality template
-                std::string prefix = sys.conversationMode.generateResponse("hmm", sys.casualResponses);
-                if (prefix.empty() || prefix.size() < 3) {
-                    prefix = "Here's what I know:";
-                }
-                llmResponse = prefix + " " + factBased;
-            } else {
-                // No facts available - use template system as last resort
-                llmResponse = sys.conversationMode.generateResponse(input, sys.casualResponses);
-            }
+            llmResponse = mkHonestDegrade(sys, input, relevantFacts, llmConfigured);
         }
 
         if (!llmResponse.empty()) {
@@ -1670,6 +1701,32 @@ static void telegram_poll_loop(MKSystem& sys) {
                                     "⚠️ Key saved but test failed for <b>" + provider + "</b>.\n"
                                     "The key may be invalid or the provider may be down.\n"
                                     "It will be retried automatically.");
+                            }
+                        }
+                    } else if (msgText.rfind("/setmodel", 0) == 0) {
+                        // /setmodel <provider> <slug> — swap a stale model slug without recompiling
+                        std::string rest = trim(msgText.substr(9));
+                        size_t sp = rest.find(' ');
+                        if (rest.empty() || sp == std::string::npos) {
+                            sys.telegram->sendMessage(chatId,
+                                "<b>Usage:</b> /setmodel &lt;provider&gt; &lt;slug&gt;\n"
+                                "<b>Providers:</b> groq, openrouter, nvidia, huggingface");
+                        } else {
+                            std::string provider = rest.substr(0, sp);
+                            std::string slug = trim(rest.substr(sp + 1));
+                            std::transform(provider.begin(), provider.end(), provider.begin(), ::tolower);
+                            if (!sys.providerRouter.isValidProvider(provider)) {
+                                sys.telegram->sendMessage(chatId,
+                                    "Unknown provider: <b>" + provider + "</b>\n"
+                                    "Valid: groq, openrouter, nvidia, huggingface");
+                            } else if (slug.empty()) {
+                                sys.telegram->sendMessage(chatId, "Model slug cannot be empty.");
+                            } else {
+                                sys.cloudLLM.setModel(provider, slug);
+                                sys.providerRouter.setProviderModel(provider, slug);
+                                sys.telegram->sendMessage(chatId,
+                                    "✅ <b>" + provider + "</b> model set to <code>" + slug +
+                                    "</code> and saved.");
                             }
                         }
                     } else if (sys.telegram->isStatusCommand(msgText)) {
@@ -1996,30 +2053,33 @@ int main(int argc, char* argv[]) {
                 if ((gk && gk[0]) || (ork && ork[0]) || (hfk && hfk[0])) hasApiKey = true;
             }
         }
-        // Check if local llama.cpp or Ollama is running
+        // Check if local llama.cpp or Ollama is running.
+        // IMPORTANT: a successful transfer (CURLE_OK) is NOT proof a server is
+        // there — any HTTP response (including a 404 from some unrelated process
+        // on :8080) returns CURLE_OK. We must require an actual HTTP 200, mirroring
+        // MKLLMEngine::checkEndpoint(), or MK falsely claims "Local server detected".
         {
-            // Quick TCP check to localhost:8080 (llama.cpp) or :11434 (Ollama)
-            CURL* curl = curl_easy_init();
-            if (curl) {
-                curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8080/health");
+            auto localEndpointHealthy = [](const char* url) -> bool {
+                CURL* curl = curl_easy_init();
+                if (!curl) return false;
+                curl_easy_setopt(curl, CURLOPT_URL, url);
                 curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1L);
                 curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 1L);
                 curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
                 curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
-                if (curl_easy_perform(curl) == CURLE_OK) localLLMRunning = true;
-                curl_easy_cleanup(curl);
-            }
-            if (!localLLMRunning) {
-                curl = curl_easy_init();
-                if (curl) {
-                    curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:11434/api/tags");
-                    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1L);
-                    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 1L);
-                    curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
-                    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
-                    if (curl_easy_perform(curl) == CURLE_OK) localLLMRunning = true;
-                    curl_easy_cleanup(curl);
+                CURLcode res = curl_easy_perform(curl);
+                long httpCode = 0;
+                if (res == CURLE_OK) {
+                    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
                 }
+                curl_easy_cleanup(curl);
+                return (res == CURLE_OK && httpCode == 200);
+            };
+
+            if (localEndpointHealthy("http://localhost:8080/health")) {
+                localLLMRunning = true;
+            } else if (localEndpointHealthy("http://localhost:11434/api/tags")) {
+                localLLMRunning = true;
             }
         }
 
@@ -2327,6 +2387,45 @@ int main(int argc, char* argv[]) {
                     if (!trace.empty() && trace != "No CXN trace yet.") {
                         std::cout << "\n  " << Color::BOLD << "Last trace:" << Color::RESET << "\n";
                         std::cout << "  " << Color::DIM << trace << Color::RESET << "\n";
+                    }
+                    commandFound = true;
+                } else if (input == "/models") {
+                    // Show the current model slug for each provider
+                    std::cout << "\n  " << Color::BOLD << Color::BCYAN << "🔧 Provider Models" << Color::RESET << "\n";
+                    for (const auto& name : sys.providerRouter.getProviderNames()) {
+                        std::cout << "  " << Color::GREEN << "•" << Color::RESET << " "
+                                  << name << ": " << Color::DIM
+                                  << sys.providerRouter.getProviderModel(name) << Color::RESET << "\n";
+                    }
+                    std::cout << "  " << Color::DIM
+                              << "Change with: /setmodel <provider> <slug>" << Color::RESET << "\n";
+                    commandFound = true;
+                } else if (input.size() > 10 && input.substr(0, 10) == "/setmodel ") {
+                    // /setmodel <provider> <slug> — swap a (possibly stale) model slug
+                    // at runtime without recompiling. Persisted to models.conf.
+                    std::string args = trim(input.substr(10));
+                    size_t sp = args.find(' ');
+                    if (sp == std::string::npos) {
+                        std::cout << "\n  " << Color::YELLOW
+                                  << "Usage: /setmodel <provider> <slug>" << Color::RESET << "\n"
+                                  << "  Providers: groq, openrouter, nvidia, huggingface\n";
+                    } else {
+                        std::string provider = args.substr(0, sp);
+                        std::string slug = trim(args.substr(sp + 1));
+                        std::transform(provider.begin(), provider.end(), provider.begin(), ::tolower);
+                        if (!sys.providerRouter.isValidProvider(provider)) {
+                            std::cout << "\n  " << Color::RED << "Unknown provider: " << provider
+                                      << Color::RESET << " (groq, openrouter, nvidia, huggingface)\n";
+                        } else if (slug.empty()) {
+                            std::cout << "\n  " << Color::YELLOW
+                                      << "Model slug cannot be empty." << Color::RESET << "\n";
+                        } else {
+                            sys.cloudLLM.setModel(provider, slug);
+                            sys.providerRouter.setProviderModel(provider, slug);
+                            std::cout << "\n  " << Color::BGREEN << "✓" << Color::RESET
+                                      << " " << provider << " model set to " << Color::BOLD
+                                      << slug << Color::RESET << " (saved to models.conf)\n";
+                        }
                     }
                     commandFound = true;
                 } else if (input == "/prometheus") {

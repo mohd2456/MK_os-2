@@ -87,6 +87,12 @@ static int g_assertions_failed = 0;
 #include "../llm/request_logger.cpp"
 #include "../security/key_encryption.cpp"
 
+// State loaders under test for crash-safety (BUG 1) + safe parse helper
+#include "../ai_core/safe_parse.h"
+#include "../ai_core/prometheus/droplet.cpp"
+#include "../ai_core/cxn/crystal.cpp"
+#include <fstream>
+
 // New module includes for FEAT-005 integration tests
 #include "../crypto/market_data.cpp"
 #include "../crypto/technical_analysis.cpp"
@@ -970,6 +976,112 @@ void test_provider_routing_urgency() {
 }
 
 // ============================================================
+// TEST: Safe numeric parse helpers never throw (BUG 1 foundation)
+// ============================================================
+void test_safe_parse_no_throw() {
+    // Garbage / empty input must return the fallback, never throw.
+    TEST_ASSERT_EQ(mk::safeStoi("", -1), -1, "safeStoi('') returns fallback");
+    TEST_ASSERT_EQ(mk::safeStoi("notanumber", 7), 7, "safeStoi(garbage) returns fallback");
+    TEST_ASSERT_EQ(mk::safeStof("", 1.5f), 1.5f, "safeStof('') returns fallback");
+    TEST_ASSERT_EQ(mk::safeStof("xyz", 2.5f), 2.5f, "safeStof(garbage) returns fallback");
+    TEST_ASSERT_EQ(mk::safeStoll("", 0LL), 0LL, "safeStoll('') returns fallback");
+    // Out-of-range must also be caught (not just invalid_argument).
+    TEST_ASSERT_EQ(mk::safeStoi("999999999999999999999999", 42), 42,
+                   "safeStoi(out-of-range) returns fallback");
+    // Valid input still parses correctly.
+    TEST_ASSERT_EQ(mk::safeStoi("123", -1), 123, "safeStoi valid parses");
+    TEST_ASSERT_TRUE(mk::safeStof("0.5", 0.0f) > 0.49f, "safeStof valid parses");
+}
+
+// ============================================================
+// TEST: Prometheus droplet pool loads corrupt state without crashing (BUG 1)
+// ============================================================
+void test_droplet_pool_corrupt_load() {
+    const std::string path = "/tmp/mk_test_pool_corrupt.dat";
+    {
+        std::ofstream f(path);
+        // count says 3, but the lines have empty/garbage numeric tokens
+        f << "3\n";
+        f << "||||||||||broken|line\n";
+        f << "notanumber|x|y|z|w|v|u|t|s|r|dom|hello content\n";
+        f << "\n";  // partial/empty line
+        f.close();
+    }
+
+    MKDropletPool pool;
+    bool ok = pool.load(path);  // must NOT throw / abort
+    TEST_ASSERT_TRUE(ok, "load() returns true on a readable (if corrupt) file");
+    // It should have skipped/absorbed the bad lines without crashing.
+    TEST_ASSERT_TRUE(pool.size() >= 0, "pool size is sane after corrupt load");
+    std::remove(path.c_str());
+}
+
+// ============================================================
+// TEST: CXN crystal store loads corrupt state without crashing (BUG 1)
+// ============================================================
+void test_crystal_store_corrupt_load() {
+    const std::string path = "/tmp/mk_test_crystal_corrupt.dat";
+    {
+        std::ofstream f(path);
+        f << "2\n";
+        // id/depth/frequency/confidence are all non-numeric here
+        f << "abc|xyz|hi,there|pattern|intent|dom|emo|notfloat|alsobad\n";
+        f << "||||||||\n";  // too few / empty fields
+        f.close();
+    }
+
+    MKCrystalStore store;
+    store.load(path);  // must NOT throw / abort
+    TEST_ASSERT_TRUE(store.size() >= 0, "crystal store size is sane after corrupt load");
+    std::remove(path.c_str());
+}
+
+// ============================================================
+// TEST: Provider model slug is configurable at runtime (BUG 2)
+// ============================================================
+void test_provider_model_configurable() {
+    MKProviderRouter router;
+
+    // Default OpenRouter slug should be the valid free 3B model, not the dead one.
+    std::string defModel = router.getProviderModel("openrouter");
+    TEST_ASSERT_EQ(defModel, std::string("meta-llama/llama-3.2-3b-instruct:free"),
+                   "OpenRouter default should be the valid free 3.2-3b slug");
+
+    // setProviderModel should update the slug without a recompile.
+    bool changed = router.setProviderModel("openrouter", "meta-llama/llama-3.1-8b-instruct");
+    TEST_ASSERT_TRUE(changed, "setProviderModel returns true for a known provider");
+    TEST_ASSERT_EQ(router.getProviderModel("openrouter"),
+                   std::string("meta-llama/llama-3.1-8b-instruct"),
+                   "getProviderModel reflects the new slug");
+
+    // Unknown provider returns false.
+    TEST_ASSERT_FALSE(router.setProviderModel("nope", "x"),
+                      "setProviderModel returns false for unknown provider");
+}
+
+// ============================================================
+// TEST: Failed provider (e.g. HTTP 404/429) is marked failed (BUG 4)
+// ============================================================
+void test_provider_failure_marks_offline() {
+    MKProviderRouter router;
+    router.setProviderKey("openrouter", "test-key");
+    TEST_ASSERT_TRUE(router.isProviderAvailable("openrouter"),
+                     "openrouter available after key set");
+
+    // Simulate repeated failures (what a 404 dead-slug or 429 rate-limit produces).
+    for (int i = 0; i < 5; i++) {
+        router.logRequest("openrouter", 100, 0.0f, /*success=*/false);
+    }
+
+    TEST_ASSERT_FALSE(router.isProviderAvailable("openrouter"),
+                      "openrouter marked unavailable after max failures");
+    // It must not be picked once failed.
+    std::string picked = router.pickProvider(MKRoutingUrgency::MEDIUM, 100);
+    TEST_ASSERT_NE(picked, std::string("openrouter"),
+                   "failed provider is not selected");
+}
+
+// ============================================================
 // TEST: Provider Routing Fallback
 // ============================================================
 void test_provider_routing_fallback() {
@@ -1348,6 +1460,11 @@ int main() {
     RUN_TEST(test_provider_router_initialization);
     RUN_TEST(test_provider_routing_urgency);
     RUN_TEST(test_provider_routing_fallback);
+    RUN_TEST(test_safe_parse_no_throw);
+    RUN_TEST(test_droplet_pool_corrupt_load);
+    RUN_TEST(test_crystal_store_corrupt_load);
+    RUN_TEST(test_provider_model_configurable);
+    RUN_TEST(test_provider_failure_marks_offline);
     RUN_TEST(test_key_encryption_roundtrip);
     RUN_TEST(test_provider_status_report);
 

@@ -8,6 +8,7 @@
 #include <sstream>
 #include <algorithm>
 #include <iostream>
+#include "../safe_parse.h"
 
 // ===================================================================================
 // MK CXN ENGINE - Crystal Data Structures & Store
@@ -248,7 +249,8 @@ public:
         if (!in.is_open()) return;
         std::string line;
         if (!std::getline(in, line)) return;
-        int count = std::stoi(line);
+        // Parse defensively — a corrupt/partial state file must never crash boot.
+        int count = mk::safeStoi(line, 0);
         crystals_.clear();
         triggerIndex_.clear();
         nextId_ = 0;
@@ -261,8 +263,8 @@ public:
             if (parts.size() < 9) continue;
 
             MKCrystal c;
-            c.id = std::stoi(parts[0]);
-            c.depth = std::stoi(parts[1]);
+            c.id = mk::safeStoi(parts[0], c.id);
+            c.depth = mk::safeStoi(parts[1], c.depth);
             // Parse triggers
             std::istringstream trigSS(parts[2]);
             std::string trig;
@@ -273,8 +275,8 @@ public:
             c.intent = parts[4];
             c.domain = parts[5];
             c.emotion = parts[6];
-            c.frequency = std::stof(parts[7]);
-            c.confidence = std::stof(parts[8]);
+            c.frequency = mk::safeStof(parts[7], c.frequency);
+            c.confidence = mk::safeStof(parts[8], c.confidence);
             c.slots = extractSlots(c.pattern);
 
             if (c.id >= nextId_) nextId_ = c.id + 1;

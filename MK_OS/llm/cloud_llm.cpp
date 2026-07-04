@@ -18,6 +18,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <map>
+#include <algorithm>
 #include <curl/curl.h>
 
 // Provider types
@@ -162,11 +163,37 @@ private:
         curl_slist_free_all(headers);
         curl_easy_cleanup(curl);
 
-        if (res != CURLE_OK || httpCode >= 400) {
+        if (res != CURLE_OK) {
+            std::cerr << "[CLOUD LLM] Request failed (network): "
+                      << curl_easy_strerror(res) << "\n";
+            return "";
+        }
+        if (httpCode >= 400) {
+            // Surface the provider error so a stale slug / rate-limit is obvious
+            // instead of silently falling back to incoherent offline output.
+            std::string detail = extractErrorMessage(response);
+            std::cerr << "[CLOUD LLM] HTTP " << httpCode;
+            if (httpCode == 429) std::cerr << " (rate limited)";
+            else if (httpCode == 404) std::cerr << " (model/endpoint not found)";
+            if (!detail.empty()) std::cerr << ": " << detail;
+            std::cerr << "\n";
             return "";
         }
 
         return response;
+    }
+
+    // --------------------------------------------------------
+    // Extract a human-readable error message from a provider error body.
+    // OpenRouter returns e.g. {"error":{"message":"...use this slug instead:
+    // meta-llama/llama-3.1-8b-instruct","code":404}} — surface that message.
+    // --------------------------------------------------------
+    std::string extractErrorMessage(const std::string& json) {
+        std::string msg = parseJsonString(json, "message");
+        if (!msg.empty()) return msg;
+        // Fallback: return a trimmed snippet of the raw body
+        std::string snippet = json.substr(0, 200);
+        return snippet;
     }
 
     // --------------------------------------------------------
@@ -261,6 +288,54 @@ private:
     }
 
     // --------------------------------------------------------
+    // Map a provider name string to its CloudProvider enum
+    // --------------------------------------------------------
+    static CloudProvider providerFromName(const std::string& name) {
+        if (name == "groq" || name == "GROQ_API_KEY") return CloudProvider::GROQ;
+        if (name == "openrouter" || name == "OPENROUTER_API_KEY") return CloudProvider::OPENROUTER;
+        if (name == "huggingface" || name == "HF_API_KEY") return CloudProvider::HUGGINGFACE;
+        if (name == "nvidia" || name == "NVIDIA_API_KEY") return CloudProvider::NVIDIA_NIM;
+        return CloudProvider::NONE;
+    }
+
+    static std::string canonicalProviderName(CloudProvider type) {
+        switch (type) {
+            case CloudProvider::GROQ:        return "groq";
+            case CloudProvider::OPENROUTER:  return "openrouter";
+            case CloudProvider::HUGGINGFACE: return "huggingface";
+            case CloudProvider::NVIDIA_NIM:  return "nvidia";
+            default:                         return "";
+        }
+    }
+
+    // --------------------------------------------------------
+    // Load persisted per-provider model-slug overrides from models.conf.
+    // Format: <provider>=<model_slug>  (e.g. openrouter=meta-llama/llama-3.2-3b-instruct:free)
+    // Keeps stale, recompile-requiring slugs out of the picture.
+    // --------------------------------------------------------
+    void loadModels() {
+        std::string modelFile = configPath_ + "/models.conf";
+        std::ifstream file(modelFile);
+        std::string line;
+        while (file.is_open() && std::getline(file, line)) {
+            if (line.empty() || line[0] == '#') continue;
+            size_t eq = line.find('=');
+            if (eq == std::string::npos) continue;
+            std::string name = line.substr(0, eq);
+            std::string slug = line.substr(eq + 1);
+            while (!slug.empty() && (slug.back() == ' ' || slug.back() == '\n' || slug.back() == '\r'))
+                slug.pop_back();
+            while (!slug.empty() && slug.front() == ' ') slug.erase(slug.begin());
+            std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+            if (slug.empty()) continue;
+            CloudProvider type = providerFromName(name);
+            for (auto& p : providers_) {
+                if (p.type == type) p.model = slug;
+            }
+        }
+    }
+
+    // --------------------------------------------------------
     // Find next available provider (round-robin with fail skip)
     // --------------------------------------------------------
     int findNextProvider() {
@@ -284,6 +359,7 @@ public:
             CloudProvider::GROQ,
             "Groq",
             "https://api.groq.com/openai/v1/chat/completions",
+            // Provider model slugs drift; override at runtime with /setmodel groq <slug>.
             "llama-3.1-8b-instant",
             "", true, 0, 5
         });
@@ -292,7 +368,12 @@ public:
             CloudProvider::OPENROUTER,
             "OpenRouter",
             "https://openrouter.ai/api/v1/chat/completions",
-            "meta-llama/llama-3.1-8b-instruct:free",
+            // NOTE: model slugs on OpenRouter drift over time. The old
+            // "meta-llama/llama-3.1-8b-instruct:free" was moved to paid and now
+            // returns HTTP 404. Use a valid free small-3B slug by default. The paid
+            // alternative is "meta-llama/llama-3.1-8b-instruct" (no :free suffix).
+            // Override at runtime with: /setmodel openrouter <slug>
+            "meta-llama/llama-3.2-3b-instruct:free",
             "", true, 0, 5
         });
 
@@ -308,11 +389,13 @@ public:
             CloudProvider::NVIDIA_NIM,
             "Nvidia NIM",
             "https://integrate.api.nvidia.com/v1/chat/completions",
+            // Provider model slugs drift; override at runtime with /setmodel nvidia <slug>.
             "nvidia/llama-3.1-8b-instruct",
             "", true, 0, 5
         });
 
         loadKeys();
+        loadModels();  // apply any persisted model-slug overrides
 
         // Check if any provider is configured
         for (const auto& p : providers_) {
@@ -487,6 +570,62 @@ public:
             }
         }
         std::cout << "[CLOUD LLM] Unknown provider: " << provider << "\n";
+    }
+
+    // --------------------------------------------------------
+    // Set the model slug for a provider at runtime and persist it.
+    // Lets a stale/dead slug be fixed without recompiling.
+    // --------------------------------------------------------
+    bool setModel(const std::string& provider, const std::string& modelSlug) {
+        std::string name = provider;
+        std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+        CloudProvider type = providerFromName(name);
+        if (type == CloudProvider::NONE) {
+            std::cout << "[CLOUD LLM] Unknown provider: " << provider << "\n";
+            return false;
+        }
+        bool changed = false;
+        for (auto& p : providers_) {
+            if (p.type == type) {
+                p.model = modelSlug;
+                p.failCount = 0;  // give the new slug a fresh chance
+                changed = true;
+            }
+        }
+        if (changed) {
+            saveModels();
+            std::cout << "[CLOUD LLM] " << name << " model set to " << modelSlug << ".\n";
+        }
+        return changed;
+    }
+
+    // Get the current model slug for a provider.
+    std::string getModel(const std::string& provider) const {
+        std::string name = provider;
+        std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+        CloudProvider type = providerFromName(name);
+        for (const auto& p : providers_) {
+            if (p.type == type) return p.model;
+        }
+        return "";
+    }
+
+    // --------------------------------------------------------
+    // Persist per-provider model-slug overrides to models.conf
+    // --------------------------------------------------------
+    void saveModels() {
+        std::string modelFile = configPath_ + "/models.conf";
+        std::ofstream file(modelFile);
+        if (!file.is_open()) return;
+        file << "# MK OS Cloud LLM model slugs (override defaults here)\n";
+        file << "# Slugs drift over time; update with: /setmodel <provider> <slug>\n";
+        file << "# Free OpenRouter example: openrouter=meta-llama/llama-3.2-3b-instruct:free\n";
+        file << "# Paid alternative:        openrouter=meta-llama/llama-3.1-8b-instruct\n\n";
+        for (const auto& p : providers_) {
+            std::string name = canonicalProviderName(p.type);
+            if (!name.empty()) file << name << "=" << p.model << "\n";
+        }
+        file.close();
     }
 
     // --------------------------------------------------------

@@ -16,6 +16,17 @@ bootloader/staging/
 # Runtime data
 mk_memory.dat
 mk_improvement.log
+mk_knowledge_graph.dat
+cxn_crystals.dat
+learning_sessions.log
+prometheus_data/
+genesis_data/
+.model_prompt_dismissed
+
+# Secrets & runtime config (NEVER commit API keys)
+api_keys.conf
+encrypted_keys.conf
+models.conf
 
 # Config (user-specific)
 .mk_os/

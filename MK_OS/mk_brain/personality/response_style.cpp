@@ -11,6 +11,7 @@
 #include <fstream>
 #include <sstream>
 #include <random>
+#include "../../ai_core/safe_parse.h"
 
 // ===================================================================================
 // MK RESPONSE STYLE
@@ -358,7 +359,7 @@ public:
 
             std::string uid = line.substr(0, p1);
             std::string mode_str = line.substr(p1 + 1, p2 - p1 - 1);
-            int count = std::stoi(line.substr(p2 + 1));
+            int count = mk::safeStoi(line.substr(p2 + 1), 0);
 
             user_preferences_[uid] = {uid, mode_from_string(mode_str), count, ""};
         }
