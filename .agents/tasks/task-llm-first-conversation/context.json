@@ -1,0 +1,27 @@
+{
+  "project_type": "C++ AI assistant OS (header-only compilation unit model)",
+  "language": "C++17",
+  "build_system": "make with clang++ - single compilation unit (mk_entry.cpp includes all other .cpp files via #include)",
+  "test_framework": "Custom test framework in tests/test_main.cpp with RUN_TEST macro, TEST_ASSERT macros",
+  "build_command": "cd MK_OS && make",
+  "test_command": "cd MK_OS && make test",
+  "verification_instructions": "1. Run 'cd MK_OS && make' to compile. 2. Run 'cd MK_OS && make test' to run tests. Both must succeed with exit code 0.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "Build requires clang++ with C++17, libcurl, libsqlite3. Run 'cd MK_OS && make' to build.",
+  "environment_constraints": "No Docker daemon. Build must compile on host with available clang++ and libraries. Network available for package installs.",
+  "contribution_requirements": "No formal CONTRIBUTING.md. Code follows header-only .cpp pattern with #ifndef guards. All modules included from mk_entry.cpp.",
+  "key_patterns": "1. Modules are .cpp files with #ifndef guards, included via #include from mk_entry.cpp. 2. MKSystem struct holds all module instances. 3. handle_natural_query() is the main routing hub. 4. The conversation path checks isConversation() then cascades through engines. 5. cloud_llm.cpp and llm_engine.cpp are standalone modules NOT currently included. 6. brainMemory stores dialog turns but has no public getter for history string. 7. graph.getAll(query) returns vector<MKEdge> for RAG context.",
+  "relevant_files": [
+    "MK_OS/system/mk_entry.cpp",
+    "MK_OS/llm/cloud_llm.cpp",
+    "MK_OS/llm/llm_engine.cpp",
+    "MK_OS/llm/model_manager.cpp",
+    "MK_OS/mk_brain/memory/brain_memory.cpp",
+    "MK_OS/ai_core/hre/pattern_graph.cpp",
+    "MK_OS/ai_core/conversation_mode.cpp",
+    "MK_OS/mk_brain/personality/casual_responses.cpp",
+    "MK_OS/tests/test_main.cpp",
+    "MK_OS/tests/test_integration.cpp"
+  ],
+  "directory_structure": "MK_OS/ is the main project. system/mk_entry.cpp is the entry point. llm/ has LLM integration modules. ai_core/ has reasoning engines. mk_brain/ has memory/personality. tests/ has test suite."
+}
