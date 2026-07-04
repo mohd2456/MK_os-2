@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-002",
+  "type": "fix",
+  "description": "Address review feedback: fix hasArithmeticPattern minus-sign false positives, restore 'what is' to graphKeywords, truncate/normalize lastTopic before interpolation, add negative test for non-arithmetic 'what is' queries.",
+  "status": "in_progress",
+  "steps": [
+    "Step 1: Fix hasArithmeticPattern in math_solver.cpp to avoid false positives on hyphenated text like '2019-2020 season'. Require the expression to be the dominant content after stripping 'what is' prefix, not embedded in longer prose.",
+    "Step 2: Add 'what is' back to graphKeywords in smart_router.cpp since the math solver runs before the router and will catch arithmetic first.",
+    "Step 3: In conversation_mode.cpp VAGUE_RESPONSE handler, truncate/normalize lastTopic before interpolation (cap length, trim to key words).",
+    "Step 4: In test_main.cpp, change the router test back to 'what is python' routing to GRAPH, and add a negative test for hasArithmeticPattern with hyphenated text."
+  ],
+  "acceptance_criteria": [
+    "Building with 'make' succeeds with no errors",
+    "Running 'make test' passes all tests",
+    "hasArithmeticPattern returns false for 'the 2019-2020 season'",
+    "hasArithmeticPattern returns true for '1+1' and 'what is 2+2'",
+    "'what is python' routes to GRAPH in the router test",
+    "lastTopic is truncated before being used in VAGUE_RESPONSE templates"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && make clean && make",
+    "cd /projects/sandbox/MK_os-2/MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": null
+}

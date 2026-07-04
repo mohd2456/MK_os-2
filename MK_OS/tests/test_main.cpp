@@ -204,11 +204,11 @@ void test_reasoning_chains() {
 void test_smart_router() {
     MKSmartRouter router;
 
-    // Test: factual query should route to GRAPH (using "define" keyword)
-    auto graphDecision = router.route("define python");
+    // Test: factual query should route to GRAPH (using "what is" keyword)
+    auto graphDecision = router.route("what is python");
     TEST_ASSERT_EQ(static_cast<int>(graphDecision.primaryRoute),
                    static_cast<int>(MKRouteType::GRAPH),
-                   "'define python' should route to GRAPH");
+                   "'what is python' should route to GRAPH");
     TEST_ASSERT_GT(graphDecision.confidence, 0.3f,
                    "GRAPH route confidence should be > 0.3");
 
@@ -691,6 +691,11 @@ void test_math_arithmetic_detection() {
     TEST_ASSERT_TRUE(math.hasArithmeticPattern("what is 1+1"), "hasArithmeticPattern should detect 'what is 1+1'");
     TEST_ASSERT_TRUE(math.hasArithmeticPattern("what is 2 * 3"), "hasArithmeticPattern should detect 'what is 2 * 3'");
     TEST_ASSERT_FALSE(math.hasArithmeticPattern("what is python"), "hasArithmeticPattern should NOT detect 'what is python'");
+    // Negative tests: hyphenated text should NOT trigger arithmetic detection
+    TEST_ASSERT_FALSE(math.hasArithmeticPattern("the 2019-2020 season"), "hasArithmeticPattern should NOT detect 'the 2019-2020 season'");
+    TEST_ASSERT_FALSE(math.hasArithmeticPattern("tell me about the 2019-2020 pandemic"), "hasArithmeticPattern should NOT detect hyphenated text in prose");
+    TEST_ASSERT_TRUE(math.hasArithmeticPattern("5 - 3"), "hasArithmeticPattern should detect '5 - 3' (pure arithmetic)");
+    TEST_ASSERT_TRUE(math.hasArithmeticPattern("what is 10-2"), "hasArithmeticPattern should detect 'what is 10-2'");
 
     // Test evaluateArithmetic
     auto result1 = math.evaluateArithmetic("1+1");
