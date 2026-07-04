@@ -1,25 +1,24 @@
 {
-  "project_type": "C++ single-compilation-unit AI system with Telegram bot interface",
+  "project_type": "C++ header-only AI assistant (single compilation unit)",
   "language": "C++17",
-  "build_system": "make with clang++, single compilation unit (mk_entry.cpp includes all .cpp files)",
-  "test_framework": "Custom test framework in tests/test_main.cpp which includes tests/test_integration.cpp; uses TEST_ASSERT macros, RUN_TEST runner",
-  "build_command": "cd /projects/sandbox/MK_os-2/MK_OS && make",
-  "test_command": "cd /projects/sandbox/MK_os-2/MK_OS && make test",
-  "verification_instructions": "1. Run 'make' from MK_OS directory to compile. 2. Run 'make test' to run test suite. 3. Both must pass (currently 3 tests fail in test_thinking_to_decision_flow).",
+  "build_system": "make - single compilation unit that #includes all .cpp files through system/mk_entry.cpp",
+  "test_framework": "Custom test framework in tests/test_main.cpp",
+  "build_command": "cd MK_OS && make",
+  "test_command": "cd MK_OS && make test",
+  "verification_instructions": "1. Run 'make' to confirm compilation. 2. Run interactive test: printf 'hello\\nwhat is 5 times 3\\nwhat is 10 divided by 2\\n/quit\\n' | ./mk_os 2>&1 | sed 's/\\x1b\\[[0-9;]*m//g' | grep -E '^  [~]'",
   "snapshot_or_generated_files": null,
-  "setup_instructions": "The project compiles with clang++ -std=c++17, requires libcurl and libsqlite3. Build with 'make' from MK_OS directory.",
-  "environment_constraints": "OPEN_INTERNET network mode. Build on Linux (Makefile uses -DDARWIN flag but compiles fine). No Docker needed.",
-  "contribution_requirements": "Push to main branch directly (user needs it live immediately)",
-  "key_patterns": "Single compilation unit: system/mk_entry.cpp #includes all other .cpp files. All classes are header-only style in .cpp files with include guards. Telegram bot uses long-polling loop in telegram_poll_loop(). Command dispatch is in mk_entry.cpp lines 1896-1984. LLM responses are generated via generate_ai_response(). The MK_SYSTEM_PROMPT is a static const at line 806. brainMemory has max 6 turns so it's bounded.",
+  "setup_instructions": "cd /projects/sandbox/MK_os-2/MK_OS && make",
+  "environment_constraints": "OPEN_INTERNET. clang++ with C++17, libcurl, libsqlite3 available.",
+  "contribution_requirements": "Commit directly to main and push.",
+  "key_patterns": "All .cpp files are header-only (guarded with #ifndef). mk_entry.cpp includes all other files. Classes use methods not free functions. No separate .h files.",
   "relevant_files": [
-    "MK_OS/system/mk_entry.cpp",
-    "MK_OS/plugins/telegram.cpp",
+    "MK_OS/ai_core/math_solver.cpp",
+    "MK_OS/ai_core/smart_router.cpp",
+    "MK_OS/ai_core/conversation_mode.cpp",
     "MK_OS/llm/thinking_engine.cpp",
-    "MK_OS/ai_core/decision_engine.cpp",
-    "MK_OS/mk_brain/memory/brain_memory.cpp",
-    "MK_OS/tests/test_main.cpp",
-    "MK_OS/tests/test_integration.cpp",
-    "MK_OS/Makefile"
+    "MK_OS/llm/provider_router.cpp",
+    "MK_OS/mk_brain/personality/response_style.cpp",
+    "MK_OS/system/mk_entry.cpp"
   ],
-  "directory_structure": "MK_OS/ is the main project dir. system/ has mk_entry.cpp (main entry). plugins/ has telegram.cpp. llm/ has thinking_engine.cpp, cloud_llm.cpp, provider_router.cpp. ai_core/ has decision_engine.cpp, smart_router, conversation_mode. mk_brain/ has brain_memory. tests/ has test_main.cpp and test_integration.cpp."
+  "directory_structure": "MK_OS/ is the project root with Makefile. system/mk_entry.cpp is the single compilation unit entry point. ai_core/ has math_solver, smart_router, conversation_mode. llm/ has thinking_engine, provider_router. mk_brain/personality/ has response_style."
 }

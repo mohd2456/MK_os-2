@@ -535,6 +535,21 @@ public:
         return false;
     }
 
+    // Check if a provider is healthy (online, low fail count, not recently erroring)
+    bool isProviderHealthy(const std::string& providerName) const {
+        for (const auto& p : providers_) {
+            if (p.name == providerName) {
+                if (p.status == MKProviderStatus::OFFLINE) return false;
+                if (p.failCount >= p.maxFails) return false;
+                if (p.dailyQuota > 0 && p.usedQuota >= p.dailyQuota) return false;
+                // Additional health check: more than 2 consecutive failures means unhealthy
+                if (p.failCount > 2) return false;
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Check if a provider name is valid
     bool isValidProvider(const std::string& name) const {
         for (const auto& p : providers_) {

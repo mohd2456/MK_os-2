@@ -78,15 +78,15 @@ private:
         if (!providerRouter_) return "";
 
         // Try local Ollama first (free, fast for thinking)
-        if (providerRouter_->isProviderAvailable("ollama")) {
+        if (providerRouter_->isProviderHealthy("ollama")) {
             return "ollama";
         }
         // Groq is fast (good for short reasoning)
-        if (providerRouter_->isProviderAvailable("groq")) {
+        if (providerRouter_->isProviderHealthy("groq")) {
             return "groq";
         }
         // OpenRouter as backup
-        if (providerRouter_->isProviderAvailable("openrouter")) {
+        if (providerRouter_->isProviderHealthy("openrouter")) {
             return "openrouter";
         }
         // Any available provider via normal routing (LOW urgency, short tokens)
@@ -292,6 +292,38 @@ public:
                       const std::vector<std::string>& graphContext,
                       const std::string& systemState,
                       const std::string& conversationHistory) const {
+        // Skip thinking for trivial conversational inputs
+        std::string lowerInput = userInput;
+        std::transform(lowerInput.begin(), lowerInput.end(), lowerInput.begin(), ::tolower);
+        static const std::vector<std::string> skipPatterns = {
+            "hello", "hi", "hey", "yo", "sup", "howdy", "hola",
+            "bye", "goodbye", "see ya", "later", "gotta go", "night",
+            "thanks", "thank you", "thx", "ok", "okay", "sure",
+            "yes", "yeah", "yep", "no", "nah", "nope",
+            "good morning", "good night", "good evening", "good afternoon",
+            "what's up", "whats up", "wassup", "how are you"
+        };
+        for (const auto& pat : skipPatterns) {
+            if (lowerInput == pat || lowerInput == pat + "!" || lowerInput == pat + ".") {
+                return "";
+            }
+        }
+        // Also skip very short inputs (1-2 words) that don't contain question words
+        {
+            int wordCount = 1;
+            for (char c : lowerInput) if (c == ' ') wordCount++;
+            if (wordCount <= 2) {
+                bool hasQuestion = (lowerInput.find("what") != std::string::npos ||
+                                  lowerInput.find("how") != std::string::npos ||
+                                  lowerInput.find("why") != std::string::npos ||
+                                  lowerInput.find("when") != std::string::npos ||
+                                  lowerInput.find("where") != std::string::npos ||
+                                  lowerInput.find("who") != std::string::npos ||
+                                  lowerInput.find('?') != std::string::npos);
+                if (!hasQuestion) return "";
+            }
+        }
+
         // Build the thinking prompt
         std::string prompt = buildThinkingPrompt(userInput, graphContext, systemState);
 

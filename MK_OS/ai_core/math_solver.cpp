@@ -1021,9 +1021,104 @@ public:
         return result;
     }
 
+    // Detect natural language math patterns like "5 times 3", "10 divided by 2"
+    bool isNaturalLanguageMath(const std::string& input) const {
+        std::string lower = toLower(input);
+        // Patterns: "N times N", "N multiplied by N", "N divided by N", "N plus N", "N minus N"
+        // where N is a digit sequence, possibly surrounded by words like "what is"
+        static const std::vector<std::string> nlOps = {
+            " times ", " multiplied by ", " divided by ", " plus ", " minus "
+        };
+        for (const auto& op : nlOps) {
+            size_t opPos = lower.find(op);
+            if (opPos == std::string::npos) continue;
+            // Look for a digit before the operator
+            bool hasDigitBefore = false;
+            int j = (int)opPos - 1;
+            while (j >= 0 && lower[j] == ' ') j--;
+            if (j >= 0 && std::isdigit((unsigned char)lower[j])) hasDigitBefore = true;
+            // Look for a digit after the operator
+            bool hasDigitAfter = false;
+            size_t k = opPos + op.size();
+            while (k < lower.size() && lower[k] == ' ') k++;
+            if (k < lower.size() && std::isdigit((unsigned char)lower[k])) hasDigitAfter = true;
+            if (hasDigitBefore && hasDigitAfter) return true;
+        }
+        return false;
+    }
+
+    // Evaluate natural language math like "what is 5 times 3"
+    MKMathResult evaluateNaturalMath(const std::string& input) const {
+        MKMathResult result;
+        result.success = false;
+        std::string lower = toLower(input);
+
+        struct NLOp {
+            std::string word;
+            char op;
+        };
+        static const std::vector<NLOp> nlOps = {
+            {" times ", '*'},
+            {" multiplied by ", '*'},
+            {" divided by ", '/'},
+            {" plus ", '+'},
+            {" minus ", '-'}
+        };
+
+        for (const auto& nlOp : nlOps) {
+            size_t opPos = lower.find(nlOp.word);
+            if (opPos == std::string::npos) continue;
+
+            // Extract left number: scan backwards from opPos
+            size_t numEnd = opPos;
+            while (numEnd > 0 && lower[numEnd - 1] == ' ') numEnd--;
+            size_t numStart = numEnd;
+            while (numStart > 0 && (std::isdigit((unsigned char)lower[numStart - 1]) || lower[numStart - 1] == '.')) numStart--;
+            if (numStart == numEnd) continue;
+            std::string leftStr = lower.substr(numStart, numEnd - numStart);
+
+            // Extract right number: scan forward from after operator
+            size_t rStart = opPos + nlOp.word.size();
+            while (rStart < lower.size() && lower[rStart] == ' ') rStart++;
+            size_t rEnd = rStart;
+            while (rEnd < lower.size() && (std::isdigit((unsigned char)lower[rEnd]) || lower[rEnd] == '.')) rEnd++;
+            if (rStart == rEnd) continue;
+            std::string rightStr = lower.substr(rStart, rEnd - rStart);
+
+            try {
+                double left = std::stod(leftStr);
+                double right = std::stod(rightStr);
+                double answer = 0;
+                std::string opSymbol;
+                switch (nlOp.op) {
+                    case '+': answer = left + right; opSymbol = " + "; break;
+                    case '-': answer = left - right; opSymbol = " - "; break;
+                    case '*': answer = left * right; opSymbol = " * "; break;
+                    case '/':
+                        if (right == 0) {
+                            result.error = "Division by zero";
+                            return result;
+                        }
+                        answer = left / right;
+                        opSymbol = " / ";
+                        break;
+                }
+                result.answer = formatDouble(left) + opSymbol + formatDouble(right) + " = " + formatDouble(answer);
+                result.success = true;
+                return result;
+            } catch (...) {
+                continue;
+            }
+        }
+        result.error = "Could not parse natural language math";
+        return result;
+    }
+
     // Detect if input is a math query
     bool isMathQuery(const std::string& input) const {
         std::string lower = toLower(input);
+        // Check for natural language math patterns
+        if (isNaturalLanguageMath(input)) return true;
         // Check for basic arithmetic patterns first
         if (hasArithmeticPattern(input)) return true;
         return lower.find("solve") != std::string::npos ||

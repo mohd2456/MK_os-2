@@ -1197,6 +1197,15 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
     // ---- MATH SOLVER: Check for arithmetic/math queries ----
     {
         if (sys.mathSolver.isMathQuery(input)) {
+            // Try natural language math first (e.g., "5 times 3")
+            if (sys.mathSolver.isNaturalLanguageMath(input)) {
+                auto mathResult = sys.mathSolver.evaluateNaturalMath(input);
+                if (mathResult.success) {
+                    std::cout << "\n  " << Color::GREEN << "●" << Color::RESET << " " << mathResult.answer << "\n";
+                    sys.memory.recordInteraction("math", input);
+                    return;
+                }
+            }
             // Try arithmetic evaluation first
             if (sys.mathSolver.hasArithmeticPattern(input)) {
                 auto mathResult = sys.mathSolver.evaluateArithmetic(input);
@@ -1211,6 +1220,24 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
             if (mathResult.success) {
                 std::cout << "\n  " << Color::GREEN << "●" << Color::RESET << " " << mathResult.answer << "\n";
                 sys.memory.recordInteraction("math", input);
+                return;
+            }
+        }
+    }
+
+    // ---- EARLY GREETING/SMALL-TALK INTERCEPT ----
+    // Bypass the 3-layer architecture for trivial conversational inputs
+    // to avoid wasting LLM calls and showing "can't reach language model"
+    {
+        MKInputType inputType = sys.conversationMode.classifyInput(input);
+        if (inputType == MKInputType::GREETING || inputType == MKInputType::GOODBYE ||
+            inputType == MKInputType::VAGUE_RESPONSE || inputType == MKInputType::SMALL_TALK) {
+            std::string response = sys.conversationMode.generateResponse(input, sys.casualResponses);
+            if (!response.empty()) {
+                std::cout << "\n  " << Color::BCYAN << "~" << Color::RESET << " " << response << "\n";
+                sys.brainMemory.commitToShortTerm("user", input);
+                sys.brainMemory.commitToShortTerm("mk", response);
+                sys.memory.recordInteraction("conversation", input);
                 return;
             }
         }
@@ -1739,6 +1766,22 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
 // Forward declaration - generates an AI response for a natural language query.
 // Caller must hold sys.systemMutex.
 static std::string generate_ai_response(MKSystem& sys, const std::string& input) {
+    // Early intercept for trivial conversational inputs (greetings, goodbyes, small talk)
+    // Prevents wasting LLM calls and showing "can't reach language model" for simple greetings
+    {
+        MKInputType inputType = sys.conversationMode.classifyInput(input);
+        if (inputType == MKInputType::GREETING || inputType == MKInputType::GOODBYE ||
+            inputType == MKInputType::VAGUE_RESPONSE || inputType == MKInputType::SMALL_TALK) {
+            std::string response = sys.conversationMode.generateResponse(input, sys.casualResponses);
+            if (!response.empty()) {
+                sys.brainMemory.commitToShortTerm("user", input);
+                sys.brainMemory.commitToShortTerm("mk", response);
+                sys.memory.recordInteraction("conversation", input);
+                return response;
+            }
+        }
+    }
+
     // If input is conversational, use 3-layer architecture
     if (sys.conversationMode.isConversation(input)) {
         std::string llmResponse;

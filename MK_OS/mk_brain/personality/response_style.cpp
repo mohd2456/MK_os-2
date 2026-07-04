@@ -77,13 +77,13 @@ private:
         };
 
         low_confidence_phrases_ = {
-            "I'm not entirely sure, but ",
-            "From limited data, "
+            "From what I can tell, ",
+            "Based on limited info, "
         };
 
         uncertain_phrases_ = {
-            "I'm not sure about this, but ",
-            "I'd recommend verifying this elsewhere. My best guess: "
+            "I'm not fully sure, but here's my best take: ",
+            "I'd need to look into this more. For now: "
         };
 
         // Mode-specific prefixes

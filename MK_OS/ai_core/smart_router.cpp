@@ -84,14 +84,28 @@ private:
         return result;
     }
 
-    // Count keyword matches in query
+    // Count keyword matches in query (with word boundary checking)
     int countKeywordMatches(const std::string& query, const std::vector<std::string>& keywords) {
         std::string lower = toLower(query);
         int matches = 0;
         for (const auto& kw : keywords) {
-            if (lower.find(kw) != std::string::npos) {
-                matches++;
+            size_t pos = 0;
+            bool found = false;
+            while ((pos = lower.find(kw, pos)) != std::string::npos) {
+                // Check word boundary before
+                bool boundaryBefore = (pos == 0) ||
+                                      !std::isalnum((unsigned char)lower[pos - 1]);
+                // Check word boundary after
+                size_t endPos = pos + kw.size();
+                bool boundaryAfter = (endPos >= lower.size()) ||
+                                     !std::isalnum((unsigned char)lower[endPos]);
+                if (boundaryBefore && boundaryAfter) {
+                    found = true;
+                    break;
+                }
+                pos++;
             }
+            if (found) matches++;
         }
         return matches;
     }
