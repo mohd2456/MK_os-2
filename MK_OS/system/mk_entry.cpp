@@ -1056,59 +1056,6 @@ static void initOrchestrator(MKSystem& sys) {
 }
 
 // ============================================================
-// LLM Synthesis Helper
-// Used by command handlers that still need direct LLM synthesis.
-// The orchestrator handles this for natural language; this is
-// a simpler version for /ask and similar commands.
-// ============================================================
-static std::string synthesizeResponse(MKSystem& sys, const std::string& input,
-                                       const std::vector<std::string>& rawFacts,
-                                       float confidence) {
-    // First filter facts for relevance
-    std::vector<std::string> facts = filterRelevantFacts(input, rawFacts, 5);
-
-    // If no relevant facts survived filtering, return empty
-    if (facts.empty() && rawFacts.empty()) return "";
-
-    // Check if LLM is available
-    bool llmAvailable = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
-
-    if (llmAvailable && !facts.empty()) {
-        // Build RAG prompt: user question + relevant facts -> LLM -> natural answer
-        std::string history = sys.brainMemory.getContextString();
-        std::string prompt = MK_SYSTEM_PROMPT + "\n\n";
-        prompt += "Known facts (use these to answer):\n";
-        for (const auto& f : facts) prompt += "- " + f + "\n";
-        prompt += "\nAnswer the user's question naturally and concisely using the facts above. "
-                  "Do not list the raw facts - synthesize them into a natural response.\n\n";
-        if (!history.empty()) prompt += "Recent conversation:\n" + history + "\n";
-        prompt += "User: " + input + "\nMK:";
-
-        std::string response;
-        if (sys.llmEngine.isAvailable()) {
-            response = sys.llmEngine.generate(prompt);
-            response = sanitizeLLMResponse(response, input);
-        }
-        if (response.empty() && sys.cloudLLM.isAvailable()) {
-            response = sys.cloudLLM.generateWithContext(input, facts, history, "", MK_SYSTEM_PROMPT);
-            response = sanitizeLLMResponse(response, input);
-        }
-        if (!response.empty()) return response;
-    }
-
-    // LLM unavailable: format through style engine if truly offline
-    if (!llmAvailable && !facts.empty()) {
-        std::string raw;
-        for (const auto& f : facts) {
-            raw += f + ". ";
-        }
-        return sys.style.format_response(raw, input, confidence);
-    }
-
-    return "";
-}
-
-// ============================================================
 // Natural Language Routing - Now uses MKOrchestrator
 // ============================================================
 static void handle_natural_query(MKSystem& sys, const std::string& input) {
