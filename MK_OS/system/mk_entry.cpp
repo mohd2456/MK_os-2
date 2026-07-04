@@ -971,6 +971,7 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
         }
 
         std::string response;
+        std::string thinkingContext; // Internal reasoning to inform LLM (never shown to user)
 
         // Layer 1 (Thinking): Call thinking engine for reasoning
         if (sys.thinkingEngine.isAvailable()) {
@@ -978,22 +979,47 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
 
             if (!thinking.empty()) {
                 // Layer 2 (Decision): Process thinking output through decision engine
+                // Returns non-empty ONLY if real tool results were produced.
+                // Returns EMPTY for pure conversational actions — meaning "no tool
+                // action taken, use LLM to generate the actual user-facing response."
                 response = sys.decisionEngine.process(input, thinking, relevantFacts, history);
+
+                // If decision engine returned empty, preserve thinking as internal
+                // context for the LLM to produce a better response.
+                if (response.empty()) {
+                    thinkingContext = thinking;
+                }
             }
         }
 
-        // Fallback: If thinking engine is not available or returned empty,
-        // use existing full LLM generation flow
+        // Fallback: If thinking engine is not available or decision engine returned
+        // empty (conversational action), use LLM generation flow.
+        // Pass the thinking output as additional context so the LLM benefits from
+        // the reasoning WITHOUT showing it raw to the user.
         bool llmConfigured = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
         if (response.empty()) {
             if (llmConfigured) {
+                // Build an enhanced system prompt that includes thinking context
+                std::string enhancedSystemPrompt = MK_SYSTEM_PROMPT;
+                if (!thinkingContext.empty()) {
+                    enhancedSystemPrompt += "\n\nInternal reasoning (use this to inform your response, "
+                                            "but do NOT repeat it verbatim to the user): " + thinkingContext;
+                }
+
                 if (sys.llmEngine.isAvailable()) {
-                    std::string fullPrompt = buildLLMPrompt(input, relevantFacts, history);
+                    std::string fullPrompt = enhancedSystemPrompt + "\n\n";
+                    if (!relevantFacts.empty()) {
+                        fullPrompt += "Known facts:\n";
+                        for (const auto& f : relevantFacts) fullPrompt += "- " + f + "\n";
+                        fullPrompt += "\n";
+                    }
+                    if (!history.empty()) fullPrompt += "Recent conversation:\n" + history + "\n";
+                    fullPrompt += "User: " + input + "\nMK:";
                     response = sys.llmEngine.generate(fullPrompt);
                 }
 
                 if (response.empty() && sys.cloudLLM.isAvailable()) {
-                    response = sys.cloudLLM.generateWithContext(input, relevantFacts, history, "", MK_SYSTEM_PROMPT);
+                    response = sys.cloudLLM.generateWithContext(input, relevantFacts, history, "", enhancedSystemPrompt);
                 }
             }
         }
@@ -1399,6 +1425,7 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
     // If input is conversational, use 3-layer architecture
     if (sys.conversationMode.isConversation(input)) {
         std::string llmResponse;
+        std::string thinkingContext; // Internal reasoning to inform LLM (never shown to user)
 
         // === 3-LAYER ARCHITECTURE ===
         // Layer 3 (Context): Gather graph facts + conversation history + system state
@@ -1432,17 +1459,41 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
 
             if (!thinking.empty()) {
                 // Layer 2 (Decision): Process thinking output through decision engine
+                // Returns non-empty ONLY if real tool results were produced.
+                // Returns EMPTY for pure conversational actions.
                 llmResponse = sys.decisionEngine.process(input, thinking, relevantFacts, history);
+
+                // If decision engine returned empty, preserve thinking as internal
+                // context for the LLM to produce a better response.
+                if (llmResponse.empty()) {
+                    thinkingContext = thinking;
+                }
             }
         }
 
-        // Fallback: If thinking engine is not available or returned empty,
-        // use existing full LLM generation flow
+        // Fallback: If thinking engine is not available or decision engine returned
+        // empty (conversational action), use LLM generation flow.
+        // Pass the thinking output as additional context so the LLM benefits from
+        // the reasoning WITHOUT showing it raw to the user.
         bool llmConfigured = sys.llmEngine.isAvailable() || sys.cloudLLM.isAvailable();
         if (llmResponse.empty()) {
             if (llmConfigured) {
+                // Build an enhanced system prompt that includes thinking context
+                std::string enhancedSystemPrompt = MK_SYSTEM_PROMPT;
+                if (!thinkingContext.empty()) {
+                    enhancedSystemPrompt += "\n\nInternal reasoning (use this to inform your response, "
+                                            "but do NOT repeat it verbatim to the user): " + thinkingContext;
+                }
+
                 if (sys.llmEngine.isAvailable()) {
-                    std::string fullPrompt = buildLLMPrompt(input, relevantFacts, history);
+                    std::string fullPrompt = enhancedSystemPrompt + "\n\n";
+                    if (!relevantFacts.empty()) {
+                        fullPrompt += "Known facts:\n";
+                        for (const auto& f : relevantFacts) fullPrompt += "- " + f + "\n";
+                        fullPrompt += "\n";
+                    }
+                    if (!history.empty()) fullPrompt += "Recent conversation:\n" + history + "\n";
+                    fullPrompt += "User: " + input + "\nMK:";
                     auto genStart = std::chrono::steady_clock::now();
                     llmResponse = sys.llmEngine.generate(fullPrompt);
                     auto genEnd = std::chrono::steady_clock::now();
@@ -1454,7 +1505,7 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
 
                 if (llmResponse.empty() && sys.cloudLLM.isAvailable()) {
                     auto genStart = std::chrono::steady_clock::now();
-                    llmResponse = sys.cloudLLM.generateWithContext(input, relevantFacts, history, "", MK_SYSTEM_PROMPT);
+                    llmResponse = sys.cloudLLM.generateWithContext(input, relevantFacts, history, "", enhancedSystemPrompt);
                     auto genEnd = std::chrono::steady_clock::now();
                     float genLatency = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
                         genEnd - genStart).count();
