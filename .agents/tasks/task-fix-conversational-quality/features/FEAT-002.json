@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "fix",
   "description": "Address review feedback: fix hasArithmeticPattern minus-sign false positives, restore 'what is' to graphKeywords, truncate/normalize lastTopic before interpolation, add negative test for non-arithmetic 'what is' queries.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1: Fix hasArithmeticPattern in math_solver.cpp to avoid false positives on hyphenated text like '2019-2020 season'. Require the expression to be the dominant content after stripping 'what is' prefix, not embedded in longer prose.",
     "Step 2: Add 'what is' back to graphKeywords in smart_router.cpp since the math solver runs before the router and will catch arithmetic first.",
@@ -22,5 +22,5 @@
     "cd /projects/sandbox/MK_os-2/MK_OS && make test"
   ],
   "blocked_reason": null,
-  "findings": null
+  "findings": "All 42 tests pass (339 assertions). Build successful with only pre-existing warnings. The 80% threshold for arithmetic character ratio reliably distinguishes pure subtraction ('5-3', 'what is 10-2') from hyphenated prose ('the 2019-2020 season'). Restoring 'what is' to graphKeywords was safe since math solver intercepts arithmetic before the router."
 }
