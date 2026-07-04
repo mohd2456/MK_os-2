@@ -299,17 +299,23 @@ public:
         }
 
         if (!actionResults.empty()) {
+            // We have real tool results — return them as the response
             response << actionResults;
-        } else if (!thinkingReasoning.empty()) {
-            // Use the thinking reasoning as the basis for response
-            // The reasoning tells us what to do; format it naturally
-            response << thinkingReasoning;
         }
+        // If no action results and only thinking reasoning exists, return EMPTY.
+        // The thinking reasoning is INTERNAL context (instructions like "Provide a
+        // friendly response...") and must NOT be shown to the user. Returning empty
+        // signals to the caller that no actionable tool was executed, so the caller
+        // should generate a proper user-facing response via the LLM path.
 
         return response.str();
     }
 
     // Main processing method: takes thinking output and produces final response
+    // Returns non-empty ONLY when there are real tool results or graph facts to show.
+    // Returns EMPTY for pure conversational actions — the caller must then generate
+    // a natural user-facing response via the LLM path, using the thinking output as
+    // internal context (NOT as the response itself).
     std::string process(const std::string& userInput,
                         const std::string& thinkingOutput,
                         const std::vector<std::string>& graphFacts,
@@ -324,6 +330,54 @@ public:
         // Check if confirmation is needed first
         if (shouldConfirm(thinkingOutput)) {
             return formatResponse("CONFIRM_NEEDED", thinkingOutput, userInput);
+        }
+
+        // Heuristic: if the user input is a simple greeting or small-talk, skip
+        // tool dispatch entirely. The thinking engine's output for "Hello" might
+        // incidentally contain words like "check" or "system" that would trigger
+        // SYSTEM_INFO — we don't want that for casual conversation.
+        bool isSimpleConversation = false;
+        {
+            std::string lower = toLower(userInput);
+            int words = 0;
+            bool inWord = false;
+            for (char c : lower) {
+                if (c == ' ' || c == '\t' || c == '\n') inWord = false;
+                else if (!inWord) { inWord = true; words++; }
+            }
+            // Short inputs (<=4 words) without question marks that look like
+            // greetings or small talk should not trigger tool dispatch.
+            static const std::vector<std::string> greetingWords = {
+                "hello", "hi", "hey", "yo", "sup", "what's up", "whats up",
+                "what's good", "whats good", "howdy", "hola", "greetings",
+                "good morning", "good evening", "good night", "heyy", "heyo",
+                "ayy", "ayo"
+            };
+            if (words <= 4 && lower.find('?') == std::string::npos) {
+                for (const auto& g : greetingWords) {
+                    if (lower.find(g) != std::string::npos) {
+                        isSimpleConversation = true;
+                        break;
+                    }
+                }
+            }
+            // Also skip tool dispatch for very short non-question text
+            // that doesn't explicitly ask for system/docker/ssh operations
+            if (!isSimpleConversation && words <= 3 &&
+                lower.find('?') == std::string::npos &&
+                lower.find("docker") == std::string::npos &&
+                lower.find("ssh") == std::string::npos &&
+                lower.find("system") == std::string::npos &&
+                lower.find("status") == std::string::npos) {
+                isSimpleConversation = true;
+            }
+        }
+
+        // For simple conversational inputs, return empty immediately.
+        // This tells the caller: "No tool action needed, generate a natural
+        // response via LLM using the thinking output as internal context."
+        if (isSimpleConversation) {
+            return "";
         }
 
         // Parse thinking output for action keywords
@@ -346,7 +400,7 @@ public:
             return formatResponse(combinedResults, thinkingOutput, userInput);
         }
 
-        // For conversational actions, use graph facts if available
+        // For conversational actions with graph facts, return those
         if (!graphFacts.empty()) {
             std::ostringstream factResponse;
             for (const auto& f : graphFacts) {
@@ -355,8 +409,10 @@ public:
             return formatResponse(factResponse.str(), thinkingOutput, userInput);
         }
 
-        // Return thinking reasoning as-is (the model already told us what to do)
-        return formatResponse("", thinkingOutput, userInput);
+        // No tool results and no graph facts — return EMPTY.
+        // The caller should generate a natural response via the LLM, using the
+        // thinking output as internal reasoning context (NOT as the response).
+        return "";
     }
 
     // Get the list of registered tool keywords
