@@ -83,6 +83,7 @@ static int g_assertions_failed = 0;
 #include "../llm/cloud_llm.cpp"
 #include "../llm/llm_engine.cpp"
 #include "../llm/provider_router.cpp"
+#include "../llm/thinking_engine.cpp"
 #include "../security/key_encryption.cpp"
 
 // New module includes for FEAT-005 integration tests
@@ -96,6 +97,8 @@ static int g_assertions_failed = 0;
 #include "../homelab/device_registry.cpp"
 #include "../homelab/resource_monitor.cpp"
 #include "../homelab/ssh_controller.cpp"
+#include "../homelab/docker_manager.cpp"
+#include "../ai_core/decision_engine.cpp"
 #include "../mind/mastery_network.cpp"
 #include "../mind/goal_engine.cpp"
 #include "../mind/self_funding.cpp"
@@ -1086,6 +1089,199 @@ void test_provider_status_report() {
 }
 
 // ============================================================
+// TEST: Thinking Engine Prompt Construction
+// ============================================================
+void test_thinking_engine_prompt_construction() {
+    MKThinkingEngine engine;
+
+    // Test buildThinkingPrompt produces a well-formed prompt with context
+    std::string input = "check my docker containers";
+    std::vector<std::string> facts = {"homelab has docker", "docker runs containers"};
+    std::string systemState = "CPU 25%, RAM 4096MB free";
+
+    std::string prompt = engine.buildThinkingPrompt(input, facts, systemState);
+
+    // Prompt should contain the user input
+    TEST_ASSERT_TRUE(prompt.find("User asked: check my docker containers") != std::string::npos,
+                     "Prompt should contain user input");
+
+    // Prompt should contain facts
+    TEST_ASSERT_TRUE(prompt.find("Known facts:") != std::string::npos,
+                     "Prompt should contain 'Known facts:' section");
+    TEST_ASSERT_TRUE(prompt.find("homelab has docker") != std::string::npos,
+                     "Prompt should contain the graph facts");
+
+    // Prompt should contain system state
+    TEST_ASSERT_TRUE(prompt.find("System state: CPU 25%") != std::string::npos,
+                     "Prompt should contain system state");
+
+    // Prompt should end with the instruction
+    TEST_ASSERT_TRUE(prompt.find("In 1-2 sentences, what should MK do?") != std::string::npos,
+                     "Prompt should end with reasoning instruction");
+
+    // Test with empty facts
+    std::vector<std::string> emptyFacts;
+    std::string minimalPrompt = engine.buildThinkingPrompt("hello", emptyFacts, "");
+    TEST_ASSERT_TRUE(minimalPrompt.find("User asked: hello") != std::string::npos,
+                     "Minimal prompt should still have user input");
+    TEST_ASSERT_TRUE(minimalPrompt.find("Known facts:") == std::string::npos,
+                     "Minimal prompt should not have facts section when empty");
+
+    // Verify max_tokens and temperature defaults
+    TEST_ASSERT_EQ(engine.getMaxTokens(), 100, "Default max_tokens should be 100");
+    TEST_ASSERT_TRUE(engine.getTemperature() > 0.2f && engine.getTemperature() < 0.4f,
+                     "Default temperature should be ~0.3");
+}
+
+// ============================================================
+// TEST: Decision Engine Tool Dispatch
+// ============================================================
+void test_decision_engine_tool_dispatch() {
+    MKDecisionEngine engine;
+    MKPatternGraph graph("ai_core/hre/knowledge_files");
+    MKDockerManager docker;
+    MKSSHController ssh;
+    MKResourceMonitor monitor;
+
+    engine.setGraph(&graph);
+    engine.setDockerManager(&docker);
+    engine.setSSHController(&ssh);
+    engine.setResourceMonitor(&monitor);
+
+    // Test that thinking output containing 'docker' routes to docker tool
+    std::string thinkingWithDocker = "User wants to check Docker containers. Should use docker ps command.";
+    std::vector<std::string> facts;
+    std::string result = engine.process("show my containers", thinkingWithDocker, facts, "");
+    TEST_ASSERT_TRUE(result.find("Docker") != std::string::npos || result.find("docker") != std::string::npos,
+                     "Docker keyword in thinking should route to docker tool");
+
+    // Test that 'system' keyword routes to resource monitor
+    std::string thinkingWithSystem = "User wants system resource information. Should check CPU and memory.";
+    std::string sysResult = engine.process("how is my system doing", thinkingWithSystem, facts, "");
+    TEST_ASSERT_FALSE(sysResult.empty(),
+                      "System keyword should produce a response");
+
+    // Test keyword-to-action mapping
+    MKActionType dockerAction = engine.getActionForKeyword("docker");
+    TEST_ASSERT_EQ(static_cast<int>(dockerAction), static_cast<int>(MKActionType::DOCKER_STATUS),
+                   "docker keyword should map to DOCKER_STATUS action");
+
+    MKActionType sshAction = engine.getActionForKeyword("ssh");
+    TEST_ASSERT_EQ(static_cast<int>(sshAction), static_cast<int>(MKActionType::SSH_COMMAND),
+                   "ssh keyword should map to SSH_COMMAND action");
+
+    MKActionType graphAction = engine.getActionForKeyword("look up");
+    TEST_ASSERT_EQ(static_cast<int>(graphAction), static_cast<int>(MKActionType::GRAPH_LOOKUP),
+                   "look up keyword should map to GRAPH_LOOKUP action");
+
+    // Test that registered keywords list is non-empty
+    auto keywords = engine.getRegisteredKeywords();
+    TEST_ASSERT_GT((int)keywords.size(), 10, "Should have many registered keywords");
+}
+
+// ============================================================
+// TEST: Decision Engine Confirmation Required
+// ============================================================
+void test_decision_engine_confirmation_required() {
+    MKDecisionEngine engine;
+
+    // Destructive actions should require confirmation
+    TEST_ASSERT_TRUE(engine.shouldConfirm("Need to restart the docker container."),
+                     "restart should require confirmation");
+    TEST_ASSERT_TRUE(engine.shouldConfirm("Should delete the old logs."),
+                     "delete should require confirmation");
+    TEST_ASSERT_TRUE(engine.shouldConfirm("Deploy the new version to production."),
+                     "deploy should require confirmation");
+    TEST_ASSERT_TRUE(engine.shouldConfirm("Stop the running service."),
+                     "stop should require confirmation");
+    TEST_ASSERT_TRUE(engine.shouldConfirm("Shutdown the server."),
+                     "shutdown should require confirmation");
+
+    // Non-destructive actions should NOT require confirmation
+    TEST_ASSERT_FALSE(engine.shouldConfirm("Check docker container status."),
+                      "check status should not require confirmation");
+    TEST_ASSERT_FALSE(engine.shouldConfirm("Look up facts about python."),
+                      "lookup should not require confirmation");
+    TEST_ASSERT_FALSE(engine.shouldConfirm("Show system resources."),
+                      "show resources should not require confirmation");
+    TEST_ASSERT_FALSE(engine.shouldConfirm("User wants to know the time."),
+                      "time query should not require confirmation");
+
+    // Test that process() returns confirmation message for destructive actions
+    std::vector<std::string> facts;
+    std::string result = engine.process("restart my server",
+                                         "Need to restart the docker container.",
+                                         facts, "");
+    TEST_ASSERT_TRUE(result.find("destructive") != std::string::npos ||
+                     result.find("confirm") != std::string::npos,
+                     "Destructive action should ask for confirmation");
+}
+
+// ============================================================
+// TEST: Three-Layer Fallback
+// ============================================================
+void test_three_layer_fallback() {
+    MKThinkingEngine thinkingEngine;
+    MKDecisionEngine decisionEngine;
+
+    // Without a provider router, thinking engine should not be available
+    TEST_ASSERT_FALSE(thinkingEngine.isAvailable(),
+                      "Thinking engine should not be available without provider router");
+
+    // Think should return empty when no provider is available
+    std::vector<std::string> facts = {"test fact"};
+    std::string result = thinkingEngine.think("hello", facts, "", "");
+    TEST_ASSERT_EQ(result, std::string(""),
+                   "think() should return empty when no provider available");
+
+    // Decision engine should return empty when thinking output is empty
+    std::string decisionResult = decisionEngine.process("hello", "", facts, "");
+    TEST_ASSERT_EQ(decisionResult, std::string(""),
+                   "process() should return empty when thinking output is empty");
+
+    // With provider router but no providers online, still falls back
+    MKProviderRouter router;
+    thinkingEngine.setProviderRouter(&router);
+    // Router has no keys set, so all providers are offline
+    TEST_ASSERT_FALSE(thinkingEngine.isAvailable(),
+                      "Thinking engine should not be available when all providers offline");
+}
+
+// ============================================================
+// TEST: Decision Engine Personality
+// ============================================================
+void test_decision_engine_personality() {
+    MKDecisionEngine engine;
+    MKPatternGraph graph("ai_core/hre/knowledge_files");
+    graph.loadAllKnowledge();
+    engine.setGraph(&graph);
+
+    // Test that formatResponse produces non-empty output for various inputs
+    std::string response1 = engine.formatResponse("CPU: 45%, RAM: 2048MB free",
+                                                   "User wants system info.",
+                                                   "how is my system");
+    TEST_ASSERT_GT(response1.size(), 0u,
+                   "formatResponse should produce non-empty output for system info");
+    TEST_ASSERT_TRUE(response1.find("CPU") != std::string::npos,
+                     "Response should include tool results (CPU info)");
+
+    // Test confirmation response formatting
+    std::string confirmResponse = engine.formatResponse("CONFIRM_NEEDED",
+                                                         "Need to restart service.",
+                                                         "restart my server");
+    TEST_ASSERT_TRUE(confirmResponse.find("confirm") != std::string::npos ||
+                     confirmResponse.find("destructive") != std::string::npos,
+                     "Confirmation response should mention confirming");
+
+    // Test conversational response when thinking output has no tool keywords
+    std::string thinkingChat = "User is saying hello. Should respond in a friendly way.";
+    std::vector<std::string> emptyFacts;
+    std::string chatResult = engine.process("hey there", thinkingChat, emptyFacts, "");
+    TEST_ASSERT_GT(chatResult.size(), 0u,
+                   "Conversational thinking should produce a response");
+}
+
+// ============================================================
 // Main: Run all tests
 // ============================================================
 int main() {
@@ -1153,6 +1349,13 @@ int main() {
     RUN_TEST(test_provider_routing_fallback);
     RUN_TEST(test_key_encryption_roundtrip);
     RUN_TEST(test_provider_status_report);
+
+    // Thinking/Decision engine tests (FEAT-003)
+    RUN_TEST(test_thinking_engine_prompt_construction);
+    RUN_TEST(test_decision_engine_tool_dispatch);
+    RUN_TEST(test_decision_engine_confirmation_required);
+    RUN_TEST(test_three_layer_fallback);
+    RUN_TEST(test_decision_engine_personality);
 
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;
