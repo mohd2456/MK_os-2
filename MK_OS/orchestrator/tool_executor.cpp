@@ -15,6 +15,9 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
+#include <climits>
+#include <cstdlib>
+#include <unistd.h>
 
 // Forward declarations - these classes are defined in files included
 // before this one in mk_entry.cpp:
@@ -29,24 +32,62 @@ static const size_t MK_TOOL_MAX_OUTPUT = 2000;
 static const int MK_TOOL_MAX_CALLS_PER_TURN = 3;
 
 // Safe directories for write_file tool
+// Uses realpath() to canonicalize paths, resolving symlinks and relative components.
+// Only allows writes to /tmp/ and ~/.mk_os/data/ after full canonicalization.
 static bool isWritePathAllowed(const std::string& path) {
-    // Allow: ~/.mk_os/data/, /tmp/, and paths within the MK_OS directory
-    if (path.find("/tmp/") == 0 || path.find("/tmp") == 0) return true;
+    if (path.empty()) return false;
 
-    // Expand ~ to HOME
+    // Build the canonical absolute path
+    std::string resolvedPath;
+
+    // Expand ~ to HOME if present
+    std::string expandedPath = path;
     const char* home = std::getenv("HOME");
     std::string homePath = home ? std::string(home) : "";
 
-    if (!homePath.empty()) {
-        std::string mkDataDir = homePath + "/.mk_os/data/";
-        if (path.find(mkDataDir) == 0) return true;
-        // Also allow the tilde form
-        if (path.find("~/.mk_os/data/") == 0) return true;
+    if (!expandedPath.empty() && expandedPath[0] == '~' && !homePath.empty()) {
+        expandedPath = homePath + expandedPath.substr(1);
     }
 
-    // Allow relative paths within MK_OS (no ../ escaping)
-    if (path.find("..") != std::string::npos) return false;
-    if (path[0] != '/') return true; // relative path, assumed within MK_OS
+    // For relative paths, resolve against current working directory
+    // realpath() handles this automatically for existing paths, but the file
+    // may not exist yet. Resolve the parent directory instead.
+    char resolved[PATH_MAX];
+
+    if (expandedPath[0] != '/') {
+        // Relative path: resolve CWD + path's directory component
+        char cwdBuf[PATH_MAX];
+        if (!getcwd(cwdBuf, sizeof(cwdBuf))) return false;
+        expandedPath = std::string(cwdBuf) + "/" + expandedPath;
+    }
+
+    // Extract parent directory to resolve (file may not exist yet)
+    size_t lastSlash = expandedPath.rfind('/');
+    if (lastSlash == std::string::npos) return false;
+
+    std::string parentDir = expandedPath.substr(0, lastSlash);
+    std::string filename = expandedPath.substr(lastSlash + 1);
+
+    if (parentDir.empty()) parentDir = "/";
+
+    // Resolve the parent directory (this resolves symlinks and ..)
+    char* resolvedParent = realpath(parentDir.c_str(), resolved);
+    if (!resolvedParent) {
+        // Parent directory doesn't exist - deny the write
+        return false;
+    }
+
+    resolvedPath = std::string(resolvedParent) + "/" + filename;
+
+    // Check against allowed prefixes (with trailing slash to prevent prefix attacks)
+    // Allow /tmp/ (the trailing slash ensures /tmpevil/ is not matched)
+    if (resolvedPath.find("/tmp/") == 0) return true;
+
+    // Allow ~/.mk_os/data/
+    if (!homePath.empty()) {
+        std::string mkDataDir = homePath + "/.mk_os/data/";
+        if (resolvedPath.find(mkDataDir) == 0) return true;
+    }
 
     return false;
 }

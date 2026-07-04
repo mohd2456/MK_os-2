@@ -266,18 +266,24 @@ private:
     }
 
     // Parse a JSON args object into key-value string pairs
+    // Handles nested objects and arrays by tracking brace/bracket depth.
     std::map<std::string, std::string> parseArgsObject(const std::string& json) const {
         std::map<std::string, std::string> result;
 
-        // Simple approach: find all "key": "value" pairs
+        // Simple approach: find all "key": <value> pairs, handling nested structures
         size_t pos = 1; // skip opening brace
         while (pos < json.size()) {
             // Find next key
             size_t keyStart = json.find('"', pos);
             if (keyStart == std::string::npos || keyStart >= json.size() - 1) break;
             keyStart++;
-            size_t keyEnd = json.find('"', keyStart);
-            if (keyEnd == std::string::npos) break;
+            size_t keyEnd = keyStart;
+            // Handle escaped quotes in key (unusual but safe)
+            while (keyEnd < json.size() && json[keyEnd] != '"') {
+                if (json[keyEnd] == '\\' && keyEnd + 1 < json.size()) keyEnd++;
+                keyEnd++;
+            }
+            if (keyEnd >= json.size()) break;
 
             std::string key = json.substr(keyStart, keyEnd - keyStart);
             pos = keyEnd + 1;
@@ -288,8 +294,9 @@ private:
 
             if (pos >= json.size()) break;
 
-            // Extract value (handle strings and simple values)
+            // Extract value based on its type
             if (json[pos] == '"') {
+                // String value: scan respecting escape sequences
                 pos++; // skip opening quote
                 std::string value;
                 while (pos < json.size() && json[pos] != '"') {
@@ -307,6 +314,27 @@ private:
                 }
                 if (pos < json.size()) pos++; // skip closing quote
                 result[key] = value;
+            } else if (json[pos] == '{' || json[pos] == '[') {
+                // Nested object or array: track depth to find the matching close
+                int depth = 1;
+                size_t valStart = pos;
+                pos++; // skip opening brace/bracket
+                while (pos < json.size() && depth > 0) {
+                    if (json[pos] == '"') {
+                        // Skip over string contents (may contain braces/brackets)
+                        pos++;
+                        while (pos < json.size() && json[pos] != '"') {
+                            if (json[pos] == '\\' && pos + 1 < json.size()) pos++;
+                            pos++;
+                        }
+                        if (pos < json.size()) pos++; // skip closing quote
+                    } else {
+                        if (json[pos] == '{' || json[pos] == '[') depth++;
+                        else if (json[pos] == '}' || json[pos] == ']') depth--;
+                        pos++;
+                    }
+                }
+                result[key] = json.substr(valStart, pos - valStart);
             } else {
                 // Non-string value (number, bool, null)
                 size_t valStart = pos;
@@ -315,8 +343,8 @@ private:
                 result[key] = json.substr(valStart, pos - valStart);
             }
 
-            // Skip comma
-            while (pos < json.size() && (json[pos] == ',' || json[pos] == ' ' || json[pos] == '\t'))
+            // Skip comma and whitespace
+            while (pos < json.size() && (json[pos] == ',' || json[pos] == ' ' || json[pos] == '\t' || json[pos] == '\n' || json[pos] == '\r'))
                 pos++;
         }
 

@@ -201,8 +201,10 @@ public:
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             MKLongTermMemory mem;
             mem.id = sqlite3_column_int(stmt, 0);
-            mem.topic = (const char*)sqlite3_column_text(stmt, 1);
-            mem.summary = (const char*)sqlite3_column_text(stmt, 2);
+            const char* topicVal = (const char*)sqlite3_column_text(stmt, 1);
+            const char* summaryVal = (const char*)sqlite3_column_text(stmt, 2);
+            mem.topic = topicVal ? topicVal : "";
+            mem.summary = summaryVal ? summaryVal : "";
             mem.timestamp = (std::time_t)sqlite3_column_int64(stmt, 3);
             mem.importance = (float)sqlite3_column_double(stmt, 4);
             memories.push_back(mem);
@@ -238,8 +240,10 @@ public:
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             MKLongTermMemory mem;
             mem.id = sqlite3_column_int(stmt, 0);
-            mem.topic = (const char*)sqlite3_column_text(stmt, 1);
-            mem.summary = (const char*)sqlite3_column_text(stmt, 2);
+            const char* topicVal = (const char*)sqlite3_column_text(stmt, 1);
+            const char* summaryVal = (const char*)sqlite3_column_text(stmt, 2);
+            mem.topic = topicVal ? topicVal : "";
+            mem.summary = summaryVal ? summaryVal : "";
             mem.timestamp = (std::time_t)sqlite3_column_int64(stmt, 3);
             mem.importance = (float)sqlite3_column_double(stmt, 4);
             results.push_back(mem);

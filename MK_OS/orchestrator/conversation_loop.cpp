@@ -299,17 +299,10 @@ private:
         }
 
         // Fall back to cloud LLM
+        // Use the same prompt that MKContextBuilder assembled (respects token budget)
         if (cloudLLM && cloudLLM->isAvailable()) {
-            std::string enhancedPrompt;
-            if (systemPrompt) {
-                enhancedPrompt = *systemPrompt;
-                if (toolRegistry && config.enableToolCalls) {
-                    enhancedPrompt += toolRegistry->buildToolPrompt();
-                }
-            }
-
             auto genStart = std::chrono::steady_clock::now();
-            response = cloudLLM->generateWithContext(input, facts, history, "", enhancedPrompt);
+            response = cloudLLM->generateWithContext(input, facts, history, "", prompt);
             auto genEnd = std::chrono::steady_clock::now();
             float genLatency = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
                 genEnd - genStart).count();
