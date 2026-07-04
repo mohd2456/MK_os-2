@@ -433,6 +433,8 @@ static void cmd_help() {
         << "    " << Color::GREEN << "/ask" << Color::RESET << " <query>       Look up facts in knowledge graph\n"
         << "    " << Color::GREEN << "/think" << Color::RESET << " <topic>    Deep multi-hop reasoning\n"
         << "    " << Color::GREEN << "/learn" << Color::RESET << " <s|r|t>    Teach MK a new fact (source|relation|target)\n"
+        << "    " << Color::GREEN << "/remember" << Color::RESET << "          Show what MK knows about you\n"
+        << "    " << Color::GREEN << "/forget" << Color::RESET << " <id>       Remove a personal fact by ID\n"
         << "\n"
         << Color::BOLD << Color::YELLOW << "  🌐 INTERNET" << Color::RESET << "\n"
         << "    " << Color::GREEN << "/search" << Color::RESET << " <query>   Internet search (verified + cited)\n"
@@ -473,6 +475,8 @@ static void show_slash_suggestions(const std::string& partial) {
         {"/search",   "Internet search (cited)"},
         {"/think",    "Deep reasoning"},
         {"/learn",    "Teach MK a fact"},
+        {"/remember", "Show personal facts MK knows"},
+        {"/forget",   "Remove a personal fact by ID"},
         {"/weather",  "Live weather"},
         {"/time",     "Current time"},
         {"/news",     "Tech headlines"},
@@ -1086,6 +1090,9 @@ static void initOrchestrator(MKSystem& sys) {
     sys.toolExecutor.realtimeApis = &sys.realtimeApis;
     sys.toolExecutor.learningEngine = &sys.learningEngine;
     sys.toolExecutor.graph = &sys.graph;
+
+    // Wire fact extractor to learning engine for persistence
+    sys.factExtractor.setLearningEngine(&sys.learningEngine);
 }
 
 // ============================================================
@@ -2031,6 +2038,81 @@ int main(int argc, char* argv[]) {
                                   << sys.serviceManager.total_count() << " running"
                                   << Color::RESET << "\n";
                     }
+                    commandFound = true;
+                } else if (input == "/remember") {
+                    // Show all personal facts MK knows about the user
+                    auto userFacts = sys.learningEngine.queryFacts("user");
+                    auto mohammedFacts = sys.learningEngine.queryFacts("mohammed");
+
+                    // Merge
+                    std::vector<MKFact> allFacts;
+                    allFacts.insert(allFacts.end(), userFacts.begin(), userFacts.end());
+                    allFacts.insert(allFacts.end(), mohammedFacts.begin(), mohammedFacts.end());
+
+                    if (allFacts.empty()) {
+                        std::cout << "\n  " << Color::YELLOW << "○" << Color::RESET
+                                  << " I don't have any personal facts stored yet.\n"
+                                  << "  " << Color::DIM << "Just talk to me naturally and I'll learn about you."
+                                  << Color::RESET << "\n";
+                    } else {
+                        std::cout << "\n  " << Color::BOLD << Color::BCYAN
+                                  << "  ╭─────────────────────────────────────╮\n"
+                                  << "  │      WHAT MK KNOWS ABOUT YOU       │\n"
+                                  << "  ╰─────────────────────────────────────╯\n"
+                                  << Color::RESET;
+
+                        // Group by predicate category
+                        std::map<std::string, std::vector<MKFact>> grouped;
+                        for (const auto& f : allFacts) {
+                            grouped[f.predicate].push_back(f);
+                        }
+
+                        for (const auto& [predicate, facts] : grouped) {
+                            std::cout << "\n    " << Color::BOLD << Color::YELLOW
+                                      << predicate << Color::RESET << "\n";
+                            for (const auto& f : facts) {
+                                std::string confLabel;
+                                switch (f.confidence) {
+                                    case MKFactConfidence::ABSOLUTE: confLabel = "absolute"; break;
+                                    case MKFactConfidence::HIGH: confLabel = "high"; break;
+                                    case MKFactConfidence::MEDIUM: confLabel = "medium"; break;
+                                    case MKFactConfidence::LOW: confLabel = "low"; break;
+                                    default: confLabel = "unverified"; break;
+                                }
+                                std::cout << "      " << Color::GREEN << "#" << f.id << Color::RESET
+                                          << " " << Color::BOLD << f.object << Color::RESET
+                                          << " " << Color::DIM << "(" << confLabel << ")"
+                                          << Color::RESET << "\n";
+                            }
+                        }
+
+                        std::cout << "\n  " << Color::DIM << "Total: " << allFacts.size()
+                                  << " facts | Use /forget <id> to remove one"
+                                  << Color::RESET << "\n";
+                    }
+                    commandFound = true;
+                } else if (input.size() > 8 && input.substr(0, 8) == "/forget ") {
+                    // Remove a fact by ID
+                    std::string idStr = trim(input.substr(8));
+                    int factId = -1;
+                    try { factId = std::stoi(idStr); } catch (...) { factId = -1; }
+
+                    if (factId < 0) {
+                        std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                                  << " /forget <fact_id>\n"
+                                  << "  " << Color::DIM << "Use /remember to see fact IDs."
+                                  << Color::RESET << "\n";
+                    } else {
+                        sys.learningEngine.forgetFact(factId);
+                        std::cout << "\n  " << Color::BGREEN << "✓" << Color::RESET
+                                  << " Forgot fact #" << factId << ".\n";
+                    }
+                    commandFound = true;
+                } else if (input == "/forget") {
+                    std::cout << "\n  " << Color::YELLOW << "Usage:" << Color::RESET
+                              << " /forget <fact_id>\n"
+                              << "  " << Color::DIM << "Use /remember to see fact IDs."
+                              << Color::RESET << "\n";
                     commandFound = true;
                 }
 

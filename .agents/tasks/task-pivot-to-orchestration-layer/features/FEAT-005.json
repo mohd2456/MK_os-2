@@ -2,7 +2,7 @@
   "id": "FEAT-005",
   "type": "feat",
   "description": "Enhance the personal memory and learning system so MK deeply knows Mohammed. Improve fact extraction from conversations, add biographical context injection, and make the learning engine reliable for long-term fact persistence. MK should remember preferences, patterns, schedule, devices, and personal context without being told twice.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Enhance MK_OS/mk_brain/fact_extractor/biographical.cpp to extract more types of facts from natural conversation: preferences ('I like X', 'I hate Y'), schedule patterns ('I usually work at X time'), device mentions ('my server is called X'), project context ('I am working on X'), corrections ('actually X is Y'). Each extracted fact should be stored via learning_engine with appropriate confidence level.",
     "Enhance MK_OS/mk_brain/memory/brain_memory.cpp to support long-term memory persistence. Currently it only has a rotating short-term buffer of 6-20 turns. Add a saveToDisk/loadFromDisk method that persists important conversation summaries to a SQLite database (the project already links libsqlite3). Store: topic, summary, timestamp, importance_score. Query by recency and relevance.",

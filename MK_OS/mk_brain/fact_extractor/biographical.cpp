@@ -45,6 +45,9 @@ private:
     std::map<std::string, std::vector<MKExtractedFact>> extractedFacts;
     int totalExtracted;
 
+    // Pointer to learning engine for persistence (set post-construction)
+    MKLearningEngine* learningEngine;
+
     // Pattern matchers for common biographical statements
     struct PatternRule {
         std::string trigger;       // Keyword to look for
@@ -64,7 +67,9 @@ private:
         
         // Family patterns
         rules.push_back({"my mom", "has_mother", MKBioFactCategory::FAMILY, 0.9f});
+        rules.push_back({"my mother", "has_mother", MKBioFactCategory::FAMILY, 0.9f});
         rules.push_back({"my dad", "has_father", MKBioFactCategory::FAMILY, 0.9f});
+        rules.push_back({"my father", "has_father", MKBioFactCategory::FAMILY, 0.9f});
         rules.push_back({"my brother", "has_brother", MKBioFactCategory::FAMILY, 0.9f});
         rules.push_back({"my sister", "has_sister", MKBioFactCategory::FAMILY, 0.9f});
         rules.push_back({"my wife", "has_spouse", MKBioFactCategory::FAMILY, 0.9f});
@@ -80,30 +85,53 @@ private:
         rules.push_back({"i love", "loves", MKBioFactCategory::PREFERENCE, 0.85f});
         rules.push_back({"i hate", "dislikes", MKBioFactCategory::PREFERENCE, 0.85f});
         rules.push_back({"i don't like", "dislikes", MKBioFactCategory::PREFERENCE, 0.8f});
+        rules.push_back({"i dislike", "dislikes", MKBioFactCategory::PREFERENCE, 0.8f});
         rules.push_back({"my favorite", "has_favorite", MKBioFactCategory::PREFERENCE, 0.9f});
+        rules.push_back({"i prefer", "prefers", MKBioFactCategory::PREFERENCE, 0.85f});
+        rules.push_back({"i enjoy", "enjoys", MKBioFactCategory::PREFERENCE, 0.8f});
         
         // Work patterns
         rules.push_back({"i work at", "works_at", MKBioFactCategory::WORK, 0.9f});
         rules.push_back({"i work as", "works_as", MKBioFactCategory::WORK, 0.9f});
         rules.push_back({"my job is", "works_as", MKBioFactCategory::WORK, 0.9f});
         rules.push_back({"i'm building", "is_building", MKBioFactCategory::WORK, 0.75f});
+        rules.push_back({"i am working on", "working_on", MKBioFactCategory::WORK, 0.85f});
+        rules.push_back({"i'm working on", "working_on", MKBioFactCategory::WORK, 0.85f});
+        rules.push_back({"my project", "has_project", MKBioFactCategory::WORK, 0.8f});
+        rules.push_back({"my project is", "has_project", MKBioFactCategory::WORK, 0.85f});
         
-        // Habit patterns
+        // Habit / schedule patterns
         rules.push_back({"i usually", "usually_does", MKBioFactCategory::HABIT, 0.7f});
         rules.push_back({"every morning", "morning_routine", MKBioFactCategory::HABIT, 0.75f});
         rules.push_back({"every night", "night_routine", MKBioFactCategory::HABIT, 0.75f});
         rules.push_back({"i always", "always_does", MKBioFactCategory::HABIT, 0.8f});
+        rules.push_back({"i wake up at", "wakes_up_at", MKBioFactCategory::HABIT, 0.85f});
+        rules.push_back({"i sleep at", "sleeps_at", MKBioFactCategory::HABIT, 0.85f});
+        rules.push_back({"i go to bed at", "sleeps_at", MKBioFactCategory::HABIT, 0.85f});
+        rules.push_back({"i go to sleep at", "sleeps_at", MKBioFactCategory::HABIT, 0.85f});
+        rules.push_back({"i wake up around", "wakes_up_at", MKBioFactCategory::HABIT, 0.8f});
         
         // Device patterns
         rules.push_back({"my laptop", "owns_device", MKBioFactCategory::DEVICE, 0.85f});
         rules.push_back({"my phone", "owns_device", MKBioFactCategory::DEVICE, 0.85f});
         rules.push_back({"my computer", "owns_device", MKBioFactCategory::DEVICE, 0.85f});
         rules.push_back({"macbook", "owns_device", MKBioFactCategory::DEVICE, 0.8f});
+        rules.push_back({"my server is called", "has_server_named", MKBioFactCategory::DEVICE, 0.9f});
+        rules.push_back({"my server's name is", "has_server_named", MKBioFactCategory::DEVICE, 0.9f});
+        rules.push_back({"my server is named", "has_server_named", MKBioFactCategory::DEVICE, 0.9f});
+        rules.push_back({"my homelab", "has_homelab", MKBioFactCategory::DEVICE, 0.85f});
+        rules.push_back({"my nas", "owns_device", MKBioFactCategory::DEVICE, 0.85f});
+        rules.push_back({"my router", "owns_device", MKBioFactCategory::DEVICE, 0.85f});
         
         // Memory/reminder patterns
         rules.push_back({"remember that", "should_remember", MKBioFactCategory::MEMORY, 0.95f});
         rules.push_back({"don't forget", "should_remember", MKBioFactCategory::MEMORY, 0.95f});
         rules.push_back({"keep in mind", "should_remember", MKBioFactCategory::MEMORY, 0.9f});
+        
+        // Correction patterns (user correcting MK)
+        rules.push_back({"actually", "corrected_to", MKBioFactCategory::MEMORY, 0.9f});
+        rules.push_back({"no,", "corrected_to", MKBioFactCategory::MEMORY, 0.85f});
+        rules.push_back({"that's wrong", "corrected_to", MKBioFactCategory::MEMORY, 0.9f});
     }
 
 
@@ -129,14 +157,34 @@ private:
         return value;
     }
 
+    // Map BioFactCategory to MKLearningSource
+    MKLearningSource categoryToSource(MKBioFactCategory cat) {
+        switch (cat) {
+            case MKBioFactCategory::MEMORY: return MKLearningSource::USER_CORRECTION;
+            default: return MKLearningSource::USER_STATEMENT;
+        }
+    }
+
+    // Map confidence float to MKFactConfidence enum
+    MKFactConfidence floatToConfidence(float conf) {
+        if (conf >= 0.95f) return MKFactConfidence::ABSOLUTE;
+        if (conf >= 0.85f) return MKFactConfidence::HIGH;
+        if (conf >= 0.7f) return MKFactConfidence::MEDIUM;
+        if (conf >= 0.5f) return MKFactConfidence::LOW;
+        return MKFactConfidence::UNVERIFIED;
+    }
+
 public:
-    MKBiographicalExtractor() : userName("user"), totalExtracted(0) {
+    MKBiographicalExtractor() : userName("user"), totalExtracted(0), learningEngine(nullptr) {
         initRules();
         std::cout << "[FACT EXTRACTOR] Biographical parser initialized with " 
                   << rules.size() << " extraction patterns.\n";
     }
     
     void setUserName(const std::string& name) { userName = name; }
+
+    // Set learning engine for persistence (called after construction)
+    void setLearningEngine(MKLearningEngine* engine) { learningEngine = engine; }
     
     // Main extraction function: scans a message for biographical facts
     std::vector<MKExtractedFact> extractFromMessage(const std::string& message) {
@@ -168,6 +216,26 @@ public:
                 std::cout << "[FACT EXTRACTED] " << fact.subject << " " 
                           << fact.predicate << " \"" << fact.object 
                           << "\" (confidence=" << fact.confidence << ")\n";
+
+                // Persist to learning engine if available
+                if (learningEngine) {
+                    MKLearningSource source = categoryToSource(rule.category);
+                    MKFactConfidence confidence = floatToConfidence(rule.baseConfidence);
+
+                    // Use USER_CORRECTION for correction patterns to override existing facts
+                    if (rule.predicate == "corrected_to") {
+                        source = MKLearningSource::USER_CORRECTION;
+                        confidence = MKFactConfidence::ABSOLUTE;
+                    }
+
+                    learningEngine->learnFact(
+                        fact.subject,
+                        fact.predicate,
+                        fact.object,
+                        source,
+                        confidence
+                    );
+                }
             }
         }
         
@@ -229,6 +297,7 @@ public:
     }
     
     int getTotalExtracted() const { return totalExtracted; }
+    int getRuleCount() const { return (int)rules.size(); }
     
     void printStats() const {
         std::cout << "[FACT EXTRACTOR] Total facts extracted: " << totalExtracted

@@ -77,6 +77,19 @@ public:
         // Step 1: Gather relevant facts from knowledge graph
         std::vector<std::string> relevantFacts = gatherFacts(userInput);
 
+        // Step 1b: Inject personal context (top personal facts about the user)
+        std::vector<std::string> personalFacts = gatherPersonalFacts(3);
+        for (const auto& pf : personalFacts) {
+            // Only add if not already in relevant facts
+            bool exists = false;
+            for (const auto& rf : relevantFacts) {
+                if (rf == pf) { exists = true; break; }
+            }
+            if (!exists) {
+                relevantFacts.insert(relevantFacts.begin(), pf);
+            }
+        }
+
         // Step 2: Get conversation history
         std::string history;
         if (brainMemory) {
@@ -164,6 +177,48 @@ public:
     }
 
 private:
+    // ============================================================
+    // gatherPersonalFacts() - Query learning engine for personal facts
+    // Returns top personal facts about Mohammed/user for prompt injection
+    // ============================================================
+    std::vector<std::string> gatherPersonalFacts(size_t maxFacts = 5) {
+        std::vector<std::string> personalFacts;
+        if (!learningEngine) return personalFacts;
+
+        // Query facts indexed under "user" and "mohammed"
+        auto userFacts = learningEngine->queryFacts("user");
+        auto mohammedFacts = learningEngine->queryFacts("mohammed");
+
+        // Merge and deduplicate
+        std::vector<MKFact> allPersonal;
+        allPersonal.insert(allPersonal.end(), userFacts.begin(), userFacts.end());
+        allPersonal.insert(allPersonal.end(), mohammedFacts.begin(), mohammedFacts.end());
+
+        // Sort by confidence (highest first), then by access count
+        std::sort(allPersonal.begin(), allPersonal.end(),
+                  [](const MKFact& a, const MKFact& b) {
+                      if (a.confidence != b.confidence)
+                          return (int)a.confidence > (int)b.confidence;
+                      return a.accessCount > b.accessCount;
+                  });
+
+        // Format as terse strings
+        for (const auto& fact : allPersonal) {
+            if (personalFacts.size() >= maxFacts) break;
+            std::string formatted = fact.subject + " " + fact.predicate + " " + fact.object;
+            // Avoid duplicates
+            bool duplicate = false;
+            for (const auto& existing : personalFacts) {
+                if (existing == formatted) { duplicate = true; break; }
+            }
+            if (!duplicate) {
+                personalFacts.push_back(formatted);
+            }
+        }
+
+        return personalFacts;
+    }
+
     // ============================================================
     // gatherFacts() - Query knowledge graph for relevant context
     // ============================================================
