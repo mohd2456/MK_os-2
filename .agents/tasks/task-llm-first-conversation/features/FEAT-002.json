@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Add unit tests for the new LLM-first conversation pipeline to verify the routing logic works correctly: LLM availability checks, fallback behavior, and RAG context assembly.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Add #include for '../llm/cloud_llm.cpp' and '../llm/llm_engine.cpp' to MK_OS/tests/test_main.cpp (in the includes section around line 75).",
     "Add a new test function test_cloud_llm_initialization() that creates a MKCloudLLM instance and verifies: isAvailable() returns false when no API keys are set (the test environment has no keys), getProviderName() returns 'none' or the first configured provider name.",
@@ -27,5 +27,5 @@
     "Run 'cd /projects/sandbox/MK_os-2/MK_OS && make test' and confirm all tests pass with exit code 0"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 5 new tests pass cleanly. No double-inclusion issues - brain_memory.cpp, cloud_llm.cpp, and llm_engine.cpp all have proper #ifndef guards. The LLM engine constructor triggers a network check (1s timeout) to detect local servers, which adds a small delay to the test but passes fine. Test suite now has 47 tests and 357 assertions, all passing."
 }
