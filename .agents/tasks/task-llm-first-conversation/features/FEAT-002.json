@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Add unit tests for the new LLM-first conversation pipeline to verify the routing logic works correctly: LLM availability checks, fallback behavior, and RAG context assembly.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Add #include for '../llm/cloud_llm.cpp' and '../llm/llm_engine.cpp' to MK_OS/tests/test_main.cpp (in the includes section around line 75).",
     "Add a new test function test_cloud_llm_initialization() that creates a MKCloudLLM instance and verifies: isAvailable() returns false when no API keys are set (the test environment has no keys), getProviderName() returns 'none' or the first configured provider name.",

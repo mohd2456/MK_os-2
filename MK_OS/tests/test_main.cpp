@@ -79,6 +79,9 @@ static int g_assertions_failed = 0;
 #include "../mk_brain/personality/casual_responses.cpp"
 #include "../ai_core/conversation_mode.cpp"
 #include "../ai_core/idea_engine.cpp"
+#include "../mk_brain/memory/brain_memory.cpp"
+#include "../llm/cloud_llm.cpp"
+#include "../llm/llm_engine.cpp"
 
 // New module includes for FEAT-005 integration tests
 #include "../crypto/market_data.cpp"
@@ -779,6 +782,132 @@ void test_idea_engine() {
 }
 
 // ============================================================
+// TEST: Cloud LLM Initialization
+// ============================================================
+void test_cloud_llm_initialization() {
+    MKCloudLLM cloudLLM;
+
+    // No API keys set in test environment, so should be unavailable
+    TEST_ASSERT_FALSE(cloudLLM.isAvailable(), "Cloud LLM should be unavailable without API keys");
+
+    // Provider name should be "none" when disabled
+    std::string provider = cloudLLM.getProviderName();
+    TEST_ASSERT_EQ(provider, std::string("none"),
+                   "Provider name should be 'none' when no keys are set");
+}
+
+// ============================================================
+// TEST: LLM Engine Initialization
+// ============================================================
+void test_llm_engine_initialization() {
+    MKLLMEngine llmEngine;
+
+    // No local LLM server running in test environment
+    TEST_ASSERT_FALSE(llmEngine.isAvailable(), "LLM engine should be unavailable without local server");
+
+    // Server type should be "none" when no server is detected
+    std::string serverType = llmEngine.getServerType();
+    TEST_ASSERT_EQ(serverType, std::string("none"),
+                   "Server type should be 'none' when no local server is running");
+}
+
+// ============================================================
+// TEST: LLM Fallback Logic
+// ============================================================
+void test_llm_fallback_logic() {
+    MKCloudLLM cloudLLM;
+    MKLLMEngine llmEngine;
+
+    // Both engines are unavailable in test environment
+    TEST_ASSERT_FALSE(cloudLLM.isAvailable(), "Cloud LLM should be unavailable");
+    TEST_ASSERT_FALSE(llmEngine.isAvailable(), "LLM engine should be unavailable");
+
+    // When unavailable, generate() should return empty string (triggering fallback)
+    std::string cloudResult = cloudLLM.generate("hello");
+    TEST_ASSERT_EQ(cloudResult, std::string(""),
+                   "Cloud LLM generate() should return empty when unavailable");
+
+    std::string localResult = llmEngine.generate("hello");
+    TEST_ASSERT_EQ(localResult, std::string(""),
+                   "LLM engine generate() should return empty when unavailable");
+
+    // generateWithContext should also return empty when unavailable
+    std::vector<std::string> facts = {"python is_a language"};
+    std::string contextResult = cloudLLM.generateWithContext("what is python", facts, "", "");
+    TEST_ASSERT_EQ(contextResult, std::string(""),
+                   "Cloud LLM generateWithContext() should return empty when unavailable");
+}
+
+// ============================================================
+// TEST: RAG Context Assembly
+// ============================================================
+void test_rag_context_assembly() {
+    MKPatternGraph graph("ai_core/hre/knowledge_files");
+
+    // Add some facts for RAG context
+    graph.addFact("python", "is_a", "language", 0.9f);
+    graph.addFact("python", "used_for", "web development", 0.85f);
+    graph.addFact("python", "created_by", "Guido van Rossum", 0.95f);
+
+    // Query facts about python
+    auto edges = graph.getAll("python");
+    TEST_ASSERT_GT(edges.size(), 0u, "getAll('python') should return facts");
+
+    // Format facts as vector<string> suitable for generateWithContext()
+    std::vector<std::string> formattedFacts;
+    for (const auto& edge : edges) {
+        std::string factStr = edge.source + " " + edge.relation + " " + edge.target;
+        formattedFacts.push_back(factStr);
+    }
+    TEST_ASSERT_GT(formattedFacts.size(), 0u, "Formatted facts should not be empty");
+
+    // Verify the formatted facts contain expected content
+    bool foundLanguageFact = false;
+    for (const auto& fact : formattedFacts) {
+        if (fact.find("python") != std::string::npos &&
+            fact.find("is_a") != std::string::npos &&
+            fact.find("language") != std::string::npos) {
+            foundLanguageFact = true;
+            break;
+        }
+    }
+    TEST_ASSERT_TRUE(foundLanguageFact, "Should find 'python is_a language' in formatted facts");
+}
+
+// ============================================================
+// TEST: Brain Memory Context String
+// ============================================================
+void test_brain_memory_context_string() {
+    MKBrainMemory memory(6);
+
+    // Initially context string should be empty
+    std::string emptyContext = memory.getContextString();
+    TEST_ASSERT_EQ(emptyContext, std::string(""),
+                   "Context string should be empty initially");
+
+    // Commit a few dialog turns
+    memory.commitToShortTerm("user", "hey mk what's up");
+    memory.commitToShortTerm("mk", "hey! just vibing, what's on your mind?");
+    memory.commitToShortTerm("user", "tell me about python");
+
+    // Get context string
+    std::string context = memory.getContextString();
+    TEST_ASSERT_GT(context.size(), 0u, "Context string should not be empty after commits");
+
+    // Verify it contains the dialog turns with correct formatting
+    TEST_ASSERT_TRUE(context.find("user: hey mk what's up") != std::string::npos,
+                     "Context should contain first user turn");
+    TEST_ASSERT_TRUE(context.find("mk: hey! just vibing") != std::string::npos,
+                     "Context should contain MK's response");
+    TEST_ASSERT_TRUE(context.find("user: tell me about python") != std::string::npos,
+                     "Context should contain second user turn");
+
+    // Verify each line ends with newline
+    TEST_ASSERT_TRUE(context.find("user: hey mk what's up\n") != std::string::npos,
+                     "Each turn should end with newline");
+}
+
+// ============================================================
 // Main: Run all tests
 // ============================================================
 int main() {
@@ -832,6 +961,13 @@ int main() {
     RUN_TEST(test_device_comm_auth_validation);
     RUN_TEST(test_ssh_controller_shell_escape);
     RUN_TEST(test_autonomous_learner_session);
+
+    // LLM pipeline tests (FEAT-002)
+    RUN_TEST(test_cloud_llm_initialization);
+    RUN_TEST(test_llm_engine_initialization);
+    RUN_TEST(test_llm_fallback_logic);
+    RUN_TEST(test_rag_context_assembly);
+    RUN_TEST(test_brain_memory_context_string);
 
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;
