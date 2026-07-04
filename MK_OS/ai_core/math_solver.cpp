@@ -887,9 +887,112 @@ public:
         return result;
     }
 
+    // Check if input contains a basic arithmetic expression (e.g. "1+1", "2*3", "10/2", "5-3")
+    bool hasArithmeticPattern(const std::string& input) const {
+        std::string lower = toLower(input);
+        // Strip "what is" prefix if present
+        std::string expr = lower;
+        size_t whatIsPos = expr.find("what is ");
+        if (whatIsPos != std::string::npos) {
+            expr = expr.substr(whatIsPos + 8);
+        }
+        size_t whatPos = expr.find("whats ");
+        if (whatPos != std::string::npos) {
+            expr = expr.substr(whatPos + 6);
+        }
+        // Look for digit operator digit pattern (with optional spaces)
+        // Patterns: "1+1", "2 + 2", "10*5", "3 - 1", "8/2"
+        for (size_t i = 0; i < expr.size(); i++) {
+            if (expr[i] == '+' || expr[i] == '-' || expr[i] == '*' || expr[i] == '/') {
+                // Check for digit before operator (possibly with spaces)
+                bool hasDigitBefore = false;
+                int j = (int)i - 1;
+                while (j >= 0 && expr[j] == ' ') j--;
+                if (j >= 0 && std::isdigit(expr[j])) hasDigitBefore = true;
+                // Check for digit after operator (possibly with spaces)
+                bool hasDigitAfter = false;
+                size_t k = i + 1;
+                while (k < expr.size() && expr[k] == ' ') k++;
+                if (k < expr.size() && std::isdigit(expr[k])) hasDigitAfter = true;
+                if (hasDigitBefore && hasDigitAfter) return true;
+            }
+        }
+        return false;
+    }
+
+    // Evaluate a simple arithmetic expression (single binary operation)
+    MKMathResult evaluateArithmetic(const std::string& input) const {
+        MKMathResult result;
+        result.success = false;
+        std::string lower = toLower(input);
+        // Strip "what is" prefix if present
+        std::string expr = lower;
+        size_t whatIsPos = expr.find("what is ");
+        if (whatIsPos != std::string::npos) {
+            expr = expr.substr(whatIsPos + 8);
+        }
+        size_t whatPos = expr.find("whats ");
+        if (whatPos != std::string::npos) {
+            expr = expr.substr(whatPos + 6);
+        }
+        // Trim
+        expr = trimStr(expr);
+        // Remove trailing '?' or '.'
+        while (!expr.empty() && (expr.back() == '?' || expr.back() == '.')) expr.pop_back();
+        expr = trimStr(expr);
+        // Find operator
+        for (size_t i = 1; i < expr.size(); i++) {
+            char op = expr[i];
+            if (op == '+' || op == '-' || op == '*' || op == '/') {
+                // Check digit before
+                int j = (int)i - 1;
+                while (j >= 0 && expr[j] == ' ') j--;
+                if (j < 0 || !std::isdigit(expr[j])) continue;
+                // Check digit after
+                size_t k = i + 1;
+                while (k < expr.size() && expr[k] == ' ') k++;
+                if (k >= expr.size() || !std::isdigit(expr[k])) continue;
+                // Extract left number
+                int numStart = j;
+                while (numStart > 0 && (std::isdigit(expr[numStart-1]) || expr[numStart-1] == '.')) numStart--;
+                std::string leftStr = expr.substr(numStart, j - numStart + 1);
+                // Extract right number
+                size_t numEnd = k;
+                while (numEnd + 1 < expr.size() && (std::isdigit(expr[numEnd+1]) || expr[numEnd+1] == '.')) numEnd++;
+                std::string rightStr = expr.substr(k, numEnd - k + 1);
+                try {
+                    double left = std::stod(leftStr);
+                    double right = std::stod(rightStr);
+                    double answer = 0;
+                    switch (op) {
+                        case '+': answer = left + right; break;
+                        case '-': answer = left - right; break;
+                        case '*': answer = left * right; break;
+                        case '/':
+                            if (right == 0) {
+                                result.error = "Division by zero";
+                                return result;
+                            }
+                            answer = left / right;
+                            break;
+                    }
+                    result.answer = formatDouble(left) + " " + op + " " + formatDouble(right) + " = " + formatDouble(answer);
+                    result.success = true;
+                    return result;
+                } catch (...) {
+                    continue;
+                }
+            }
+        }
+        result.error = "Could not parse arithmetic expression";
+        return result;
+    }
+
     // Detect if input is a math query
     bool isMathQuery(const std::string& input) const {
         std::string lower = toLower(input);
+        // Check for basic arithmetic patterns first
+        if (hasArithmeticPattern(input)) return true;
         return lower.find("solve") != std::string::npos ||
                lower.find("convert") != std::string::npos ||
                lower.find("calculate") != std::string::npos ||

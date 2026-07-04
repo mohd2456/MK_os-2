@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix acknowledgment routing and add math/conversation intent classifier before graph lookup. Also simplify personality tone.",
+  "status": "in_progress",
+  "steps": [
+    "Step 1: Include math_solver.cpp in mk_entry.cpp. Add '#include \"../ai_core/math_solver.cpp\"' after the neural_net.cpp include (around line 78). Add a MKMathSolver instance to the MKSystem struct.",
+    "Step 2: In handle_natural_query() in mk_entry.cpp, add math detection BEFORE the conversation mode check and BEFORE the smart router. After the idea engine block, add a check: use MKMathSolver::isMathQuery() on the input. Also add a basic arithmetic pattern detector that catches 'what is <number> <op> <number>' patterns (e.g. 'what is 1+1'). If matched, call mathSolver.solve(input) and display the result. This prevents math queries from falling through to the GRAPH route.",
+    "Step 3: Fix the acknowledgment routing in handle_natural_query(). Currently the conversation mode catches 'yea' correctly as VAGUE_RESPONSE but generates a generic random acknowledgment. The fix: in the conversation_mode.cpp generateResponse() method for VAGUE_RESPONSE case, make the response reference the last topic by including it. If lastTopic is non-empty, instead of just picking from acknowledgments, generate a response that references context (e.g. 'got it, I can tell you more about [lastTopic] if you want' or similar). Also add 'yes' to the vague_responses_ list in conversation_mode.cpp so that the preprocessor-expanded 'yea' -> 'yes' is also caught.",
+    "Step 4: In smart_router.cpp, remove 'what is' from graphKeywords since 'what is 1+1' should NOT route to GRAPH. Instead rely on the other graph keywords ('who is', 'define', 'capital of', etc.). This prevents the router from incorrectly catching arithmetic as a graph query.",
+    "Step 5: Simplify the personality tone. In casual_responses.cpp, replace the acknowledgments vector with shorter, less slang-heavy responses that sound natural but not forced (e.g. 'yeah', 'that makes sense', 'I hear you', 'got it', 'right', 'for sure', etc. -- about 15-20 entries). Reduce greetings to ~15 entries that are more neutral ('hey', 'hey, what's up?', 'hi there', 'hello'). Reduce goodbyes to ~10 neutral entries. Keep the mood responses but trim them to ~10 each and remove the heaviest slang.",
+    "Step 6: In response_style.cpp, simplify the confidence phrases. Replace the high_confidence_phrases_ with simpler ones that do not add unnecessary words (e.g. just empty string or very short like 'Yes - '). Remove 'mode prefixes' for FRIENDLY mode or make them empty strings. The goal is that format_response() does not prepend wordy filler before the actual answer.",
+    "Step 7: In conversation_mode.cpp getTimeAwareGreeting(), replace the slang-heavy greetings with natural simple ones (e.g. 'Good morning! What can I help with?' instead of 'good morning g! let's get this bread today').",
+    "Step 8: Update tests in tests/test_main.cpp. Add a test for math routing: verify that MKMathSolver::isMathQuery() returns true for 'what is 1+1' (add a simple arithmetic pattern). Add a test verifying 'yes' is recognized by conversation mode as VAGUE_RESPONSE. Ensure the existing test_smart_router test still passes (may need adjustment since 'what is python' should no longer route to GRAPH -- but actually it should still route to GRAPH because it will match other keywords like 'python' matching graph content; only pure 'what is' was removed, other keywords remain)."
+  ],
+  "acceptance_criteria": [
+    "Building with 'make' succeeds with no errors",
+    "Running 'make test' passes all tests including new ones",
+    "'yes' is classified as VAGUE_RESPONSE by conversation mode",
+    "MKMathSolver::isMathQuery() returns true for basic arithmetic patterns like 'what is 1+1'",
+    "The acknowledgments in casual_responses.cpp are shorter and less slang-heavy (no more 'fr fr', 'no cap', 'deadass', 'fax no printer', etc.)",
+    "The response_style confidence phrases are simplified or empty for high confidence",
+    "The conversation mode time greetings are natural and not slang-heavy"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && make clean && make",
+    "cd /projects/sandbox/MK_os-2/MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

@@ -66,87 +66,67 @@ private:
 
     void init_phrases() {
         high_confidence_phrases_ = {
-            "Based on verified sources, ",
-            "I'm quite confident that ",
-            "The evidence clearly shows that ",
-            "Multiple reliable sources confirm that ",
-            "It's well-established that ",
-            "Based on 3+ verified sources, "
+            ""
         };
 
         medium_confidence_phrases_ = {
-            "Based on available information, ",
-            "From what I understand, ",
-            "The data suggests that ",
-            "It appears that ",
-            "According to my knowledge, "
+            "From what I know, ",
+            "Based on available info, ",
+            ""
         };
 
         low_confidence_phrases_ = {
-            "I believe, though I'm not entirely certain, that ",
-            "From limited data, it seems that ",
-            "My best understanding is that ",
-            "Take this with a grain of salt, but "
+            "I'm not entirely sure, but ",
+            "From limited data, "
         };
 
         uncertain_phrases_ = {
             "I'm not sure about this, but ",
-            "I don't have reliable data on this. However, ",
-            "This is outside my confident knowledge, but ",
-            "I'd recommend verifying this elsewhere. My guess is "
+            "I'd recommend verifying this elsewhere. My best guess: "
         };
 
         // Mode-specific prefixes
         mode_prefixes_[PersonalityMode::CONCISE] = {
-            "", "TL;DR: ", "Short answer: "
+            "", ""
         };
         mode_prefixes_[PersonalityMode::DETAILED] = {
-            "Let me explain in detail. ",
-            "Here's a comprehensive answer: ",
-            "To give you the full picture: "
+            "Here's what I found: ",
+            ""
         };
         mode_prefixes_[PersonalityMode::FRIENDLY] = {
-            "Great question! ",
-            "Oh, I love this topic! ",
-            "Happy to help with that! ",
-            "Sure thing! "
+            "",
+            "",
+            ""
         };
         mode_prefixes_[PersonalityMode::TECHNICAL] = {
-            "Technical breakdown: ",
-            "From an implementation perspective: ",
-            "Architecturally speaking: "
+            "",
+            ""
         };
         mode_prefixes_[PersonalityMode::TEACHER] = {
-            "Let me walk you through this step by step. ",
-            "Think of it this way: ",
-            "Good question! Let's break this down: ",
-            "Here's how to understand this: "
+            "Let me break this down: ",
+            ""
         };
 
         // Mode-specific suffixes
         mode_suffixes_[PersonalityMode::CONCISE] = {
-            "", ".", " (ask if you need more detail)"
+            "", "."
         };
         mode_suffixes_[PersonalityMode::DETAILED] = {
-            " Let me know if you'd like me to elaborate on any part.",
-            " I can provide more context if needed.",
-            " There's more depth to explore if you're interested."
+            " Let me know if you'd like more detail.",
+            ""
         };
         mode_suffixes_[PersonalityMode::FRIENDLY] = {
-            " Hope that helps!",
-            " Let me know if there's anything else!",
-            " Feel free to ask more!",
-            " Always happy to chat about this!"
+            "",
+            "",
+            ""
         };
         mode_suffixes_[PersonalityMode::TECHNICAL] = {
             "",
-            " See relevant documentation for edge cases.",
-            " Consider benchmarking for your specific use case."
+            ""
         };
         mode_suffixes_[PersonalityMode::TEACHER] = {
-            " Does that make sense? Feel free to ask follow-up questions.",
-            " Try applying this concept and let me know how it goes!",
-            " The key takeaway here is the underlying principle."
+            " Let me know if that makes sense.",
+            ""
         };
     }
 

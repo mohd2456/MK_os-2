@@ -81,6 +81,7 @@ namespace Color {
 #include "service_manager.cpp"
 #include "../plugins/telegram.cpp"
 #include "../ai_core/neural_net.cpp"
+#include "../ai_core/math_solver.cpp"
 #include "../mk_brain/personality/casual_responses.cpp"
 #include "../ai_core/conversation_mode.cpp"
 #include "../ai_core/mce/mce_engine.cpp"
@@ -255,6 +256,7 @@ struct MKSystem {
     MK_Services::ServiceManager serviceManager;
     std::unique_ptr<MKTelegram> telegram;
     MKNeuralNet neuralNet;
+    MKMathSolver mathSolver;
     MKCasualResponses casualResponses;
     MKConversationMode conversationMode;
     MKConsciousnessEngine consciousnessEngine;
@@ -751,6 +753,28 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
                 }
                 std::cout << "\n";
                 sys.memory.recordInteraction("idea_generation", input);
+                return;
+            }
+        }
+    }
+
+    // ---- MATH SOLVER: Check for arithmetic/math queries ----
+    {
+        if (sys.mathSolver.isMathQuery(input)) {
+            // Try arithmetic evaluation first
+            if (sys.mathSolver.hasArithmeticPattern(input)) {
+                auto mathResult = sys.mathSolver.evaluateArithmetic(input);
+                if (mathResult.success) {
+                    std::cout << "\n  " << Color::GREEN << "●" << Color::RESET << " " << mathResult.answer << "\n";
+                    sys.memory.recordInteraction("math", input);
+                    return;
+                }
+            }
+            // Fall back to general solve()
+            auto mathResult = sys.mathSolver.solve(input);
+            if (mathResult.success) {
+                std::cout << "\n  " << Color::GREEN << "●" << Color::RESET << " " << mathResult.answer << "\n";
+                sys.memory.recordInteraction("math", input);
                 return;
             }
         }

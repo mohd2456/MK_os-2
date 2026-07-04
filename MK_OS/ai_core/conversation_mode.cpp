@@ -165,7 +165,7 @@ private:
 
     // Vague response words (continues last topic)
     std::vector<std::string> vague_responses_ = {
-        "yeah", "true", "exactly", "fr", "facts", "real",
+        "yeah", "yes", "true", "exactly", "fr", "facts", "real",
         "right", "yep", "mhm", "ikr", "same", "literally",
         "lol", "lmao", "haha", "bruh", "ong", "no cap"
     };
@@ -644,17 +644,17 @@ public:
         MKTimeOfDay tod = getTimeOfDay();
         switch (tod) {
             case MKTimeOfDay::EARLY_MORNING:
-                return "yo you're up early. respect the grind bro";
+                return "you're up early! what can I help with?";
             case MKTimeOfDay::MORNING:
-                return "good morning g! let's get this bread today";
+                return "good morning! what's on your mind?";
             case MKTimeOfDay::AFTERNOON:
-                return "afternoon bro, how's the day going?";
+                return "hey, how's your afternoon going?";
             case MKTimeOfDay::EVENING:
-                return "evening vibes. you winding down or just getting started?";
+                return "good evening. what can I do for you?";
             case MKTimeOfDay::NIGHT:
-                return "what's good bro, you're up late. what's on your mind?";
+                return "hey, you're up late. what's on your mind?";
             case MKTimeOfDay::LATE_NIGHT:
-                return "bro it's late late. you good? can't sleep or grinding?";
+                return "it's pretty late. everything good?";
         }
         return db.pick(db.greetings);
     }
@@ -842,7 +842,16 @@ public:
                 // Respond in context of last topic
                 std::string lastTopic = getLastTopic();
                 if (!lastTopic.empty()) {
-                    return db.pick(db.acknowledgments);
+                    // Reference the last topic so user knows context is preserved
+                    std::vector<std::string> contextResponses = {
+                        "got it. want me to tell you more about " + lastTopic + "?",
+                        "yeah, " + lastTopic + " is interesting. want to go deeper?",
+                        "I can tell you more about " + lastTopic + " if you want.",
+                        "right. anything else about " + lastTopic + "?",
+                        "cool, let me know if you have more questions about " + lastTopic + "."
+                    };
+                    std::uniform_int_distribution<size_t> dist(0, contextResponses.size() - 1);
+                    return contextResponses[dist(rng_)];
                 }
                 return db.pick(db.acknowledgments);
             }

@@ -204,11 +204,11 @@ void test_reasoning_chains() {
 void test_smart_router() {
     MKSmartRouter router;
 
-    // Test: factual query should route to GRAPH
-    auto graphDecision = router.route("what is python");
+    // Test: factual query should route to GRAPH (using "define" keyword)
+    auto graphDecision = router.route("define python");
     TEST_ASSERT_EQ(static_cast<int>(graphDecision.primaryRoute),
                    static_cast<int>(MKRouteType::GRAPH),
-                   "'what is python' should route to GRAPH");
+                   "'define python' should route to GRAPH");
     TEST_ASSERT_GT(graphDecision.confidence, 0.3f,
                    "GRAPH route confidence should be > 0.3");
 
@@ -672,6 +672,56 @@ void test_conversation_mode() {
 }
 
 // ============================================================
+// TEST: Math Solver - Arithmetic Pattern Detection
+// ============================================================
+void test_math_arithmetic_detection() {
+    MKMathSolver math;
+
+    // Test isMathQuery for basic arithmetic
+    TEST_ASSERT_TRUE(math.isMathQuery("what is 1+1"), "isMathQuery should detect 'what is 1+1'");
+    TEST_ASSERT_TRUE(math.isMathQuery("1+1"), "isMathQuery should detect '1+1'");
+    TEST_ASSERT_TRUE(math.isMathQuery("2*3"), "isMathQuery should detect '2*3'");
+    TEST_ASSERT_TRUE(math.isMathQuery("10/2"), "isMathQuery should detect '10/2'");
+    TEST_ASSERT_TRUE(math.isMathQuery("5 - 3"), "isMathQuery should detect '5 - 3'");
+    TEST_ASSERT_TRUE(math.isMathQuery("what is 2 + 2"), "isMathQuery should detect 'what is 2 + 2'");
+    TEST_ASSERT_FALSE(math.isMathQuery("hello there"), "isMathQuery should NOT detect 'hello there'");
+
+    // Test hasArithmeticPattern
+    TEST_ASSERT_TRUE(math.hasArithmeticPattern("1+1"), "hasArithmeticPattern should detect '1+1'");
+    TEST_ASSERT_TRUE(math.hasArithmeticPattern("what is 1+1"), "hasArithmeticPattern should detect 'what is 1+1'");
+    TEST_ASSERT_TRUE(math.hasArithmeticPattern("what is 2 * 3"), "hasArithmeticPattern should detect 'what is 2 * 3'");
+    TEST_ASSERT_FALSE(math.hasArithmeticPattern("what is python"), "hasArithmeticPattern should NOT detect 'what is python'");
+
+    // Test evaluateArithmetic
+    auto result1 = math.evaluateArithmetic("1+1");
+    TEST_ASSERT_TRUE(result1.success, "evaluateArithmetic('1+1') should succeed");
+    TEST_ASSERT_TRUE(result1.answer.find("2") != std::string::npos, "1+1 should equal 2");
+
+    auto result2 = math.evaluateArithmetic("what is 2*3");
+    TEST_ASSERT_TRUE(result2.success, "evaluateArithmetic('what is 2*3') should succeed");
+    TEST_ASSERT_TRUE(result2.answer.find("6") != std::string::npos, "2*3 should equal 6");
+
+    auto result3 = math.evaluateArithmetic("10/2");
+    TEST_ASSERT_TRUE(result3.success, "evaluateArithmetic('10/2') should succeed");
+    TEST_ASSERT_TRUE(result3.answer.find("5") != std::string::npos, "10/2 should equal 5");
+}
+
+// ============================================================
+// TEST: Conversation Mode - 'yes' as VAGUE_RESPONSE
+// ============================================================
+void test_conversation_yes_vague() {
+    MKConversationMode conv;
+
+    // 'yes' should classify as VAGUE_RESPONSE
+    auto yesType = conv.classifyInput("yes");
+    TEST_ASSERT_EQ(static_cast<int>(yesType), static_cast<int>(MKInputType::VAGUE_RESPONSE),
+                   "'yes' should classify as VAGUE_RESPONSE");
+
+    // 'yes' should be identified as conversation
+    TEST_ASSERT_TRUE(conv.isConversation("yes"), "'yes' should be identified as conversation");
+}
+
+// ============================================================
 // TEST: Idea Engine (idea generation, brainstorm)
 // ============================================================
 void test_idea_engine() {
@@ -743,6 +793,8 @@ int main() {
     RUN_TEST(test_math_solver);
     RUN_TEST(test_code_runner_sanitization);
     RUN_TEST(test_conversation_mode);
+    RUN_TEST(test_math_arithmetic_detection);
+    RUN_TEST(test_conversation_yes_vague);
     RUN_TEST(test_idea_engine);
 
     // Integration tests (FEAT-005)

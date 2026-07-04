@@ -1,0 +1,7 @@
+{
+  "task_id": "task-fix-conversational-quality",
+  "task_description": "Fix MK's conversational quality: route acknowledgments as conversation continuations, add math/conversation intent classification before graph lookup, and simplify the forced slang personality to be more natural and direct.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}
