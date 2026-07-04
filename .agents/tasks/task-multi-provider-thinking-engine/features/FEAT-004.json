@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "feat",
   "description": "Integration, polish, and end-to-end testing. Wire everything together, add request logging, graceful degradation when all providers are down, and comprehensive integration tests.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create MK_OS/llm/request_logger.cpp: MKRequestLogger class. Methods: (a) logRequest(provider, input_summary, tokens_used, latency_ms, success) - appends to llm_requests.log with timestamp. (b) getStats() -> string summary of today's requests (total calls, per-provider breakdown, avg latency, success rate). (c) getDailyUsage(provider) -> int tokens used today for quota tracking. File format: one JSON line per request.",
     "Modify MK_OS/system/mk_entry.cpp: (a) Add #include for request_logger.cpp. (b) Add MKRequestLogger to MKSystem. (c) In the conversation pipeline (both REPL and Telegram), after every LLM call (thinking or full generation), call requestLogger.logRequest(). (d) Add /logs command to Telegram that shows today's request stats. (e) Update the /status Telegram command to include provider request counts from the logger. (f) Add graceful degradation: when all cloud providers fail AND no local LLM AND thinking returns empty, use a meaningful response combining graph facts with personality templates (not just 'I don't know').",

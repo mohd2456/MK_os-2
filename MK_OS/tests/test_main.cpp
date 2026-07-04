@@ -84,6 +84,7 @@ static int g_assertions_failed = 0;
 #include "../llm/llm_engine.cpp"
 #include "../llm/provider_router.cpp"
 #include "../llm/thinking_engine.cpp"
+#include "../llm/request_logger.cpp"
 #include "../security/key_encryption.cpp"
 
 // New module includes for FEAT-005 integration tests
@@ -1356,6 +1357,13 @@ int main() {
     RUN_TEST(test_decision_engine_confirmation_required);
     RUN_TEST(test_three_layer_fallback);
     RUN_TEST(test_decision_engine_personality);
+
+    // Integration tests (FEAT-004)
+    RUN_TEST(test_full_pipeline_with_no_llm);
+    RUN_TEST(test_setkey_flow);
+    RUN_TEST(test_request_logging);
+    RUN_TEST(test_provider_quota_tracking);
+    RUN_TEST(test_thinking_to_decision_flow);
 
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;
