@@ -1231,7 +1231,7 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
     {
         MKInputType inputType = sys.conversationMode.classifyInput(input);
         if (inputType == MKInputType::GREETING || inputType == MKInputType::GOODBYE ||
-            inputType == MKInputType::VAGUE_RESPONSE || inputType == MKInputType::SMALL_TALK) {
+            inputType == MKInputType::VAGUE_RESPONSE) {
             std::string response = sys.conversationMode.generateResponse(input, sys.casualResponses);
             if (!response.empty()) {
                 std::cout << "\n  " << Color::BCYAN << "~" << Color::RESET << " " << response << "\n";
@@ -1771,7 +1771,7 @@ static std::string generate_ai_response(MKSystem& sys, const std::string& input)
     {
         MKInputType inputType = sys.conversationMode.classifyInput(input);
         if (inputType == MKInputType::GREETING || inputType == MKInputType::GOODBYE ||
-            inputType == MKInputType::VAGUE_RESPONSE || inputType == MKInputType::SMALL_TALK) {
+            inputType == MKInputType::VAGUE_RESPONSE) {
             std::string response = sys.conversationMode.generateResponse(input, sys.casualResponses);
             if (!response.empty()) {
                 sys.brainMemory.commitToShortTerm("user", input);

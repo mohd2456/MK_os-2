@@ -1,0 +1,23 @@
+{
+  "id": "FEAT-003",
+  "type": "fix",
+  "description": "Remove SMALL_TALK from early intercept guards in mk_entry.cpp to avoid swallowing short imperative commands and bare math via Telegram",
+  "status": "completed",
+  "steps": [
+    "Step 1 - Remove '|| inputType == MKInputType::SMALL_TALK' from the early intercept condition in handle_natural_query (around line 1234) in mk_entry.cpp",
+    "Step 2 - Remove '|| inputType == MKInputType::SMALL_TALK' from the early intercept condition in generate_ai_response (around line 1774) in mk_entry.cpp"
+  ],
+  "acceptance_criteria": [
+    "Both early intercept blocks only check GREETING, GOODBYE, and VAGUE_RESPONSE",
+    "Build succeeds with make",
+    "Tests pass with make test",
+    "Short imperative commands like 'tell me about docker' are no longer swallowed by casual response",
+    "Bare math like '5 times 3' via Telegram path is no longer intercepted"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && make",
+    "cd /projects/sandbox/MK_os-2/MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": "SMALL_TALK removed from both intercept guards. Build: 0 errors (15 pre-existing warnings). Tests: 67 passed, 0 failed, 484 assertions. Short imperative commands and bare math via Telegram are no longer swallowed."
+}
