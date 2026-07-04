@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "fix",
   "description": "Fix system prompt leakage, wire /crypto /devices /goals commands, add thinking engine validation, fix empty response bug, add HTML escaping, prevent double responses",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1 - Add sanitizeLLMResponse() helper in system/mk_entry.cpp (before generate_ai_response around line 800): Create a static function that strips prompt-leak patterns from LLM responses. Patterns to strip: 'Known facts (use these to answer):', 'Answer the user\\'s question naturally', 'Do not list the raw facts', 'Internal reasoning (use this to inform your response, but do NOT repeat it verbatim to the user):', 'Known facts:', 'Recent conversation:', lines starting with 'User:' or 'MK:' at the end (the prompt template), any line containing 'synthesize them into a natural response'. Also strip responses that are >80% identical to the system prompt text. Trim leading/trailing whitespace after stripping.",
     "Step 2 - Apply sanitizeLLMResponse() to ALL LLM response paths: In synthesizeResponse() after line ~941 (after sys.llmEngine.generate(prompt)), wrap: response = sanitizeLLMResponse(response, input). Same for the cloudLLM.generateWithContext response at line ~944. In generate_ai_response() conversation path: after sys.llmEngine.generate(fullPrompt) at line ~1163, wrap llmResponse = sanitizeLLMResponse(llmResponse, input). After sys.cloudLLM.generateWithContext at line ~1171, same. In the non-conversation fallback path around line 1795-1800 (the buildLLMPrompt path), wrap response = sanitizeLLMResponse(response, input) after each generate call.",
@@ -27,5 +27,5 @@
     "Run 'cd /projects/sandbox/MK_os-2/MK_OS && make test' and confirm all tests pass"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Fixed all 3 pre-existing test failures (2 in test_main.cpp, 1 in test_integration.cpp). The test assertions incorrectly expected non-empty results from the decision engine for conversational inputs, but the engine intentionally returns empty so the LLM handles them. Also fixed decision_engine.cpp heuristic that was incorrectly skipping 'show my containers' (3-word input without explicit docker/ssh/system keywords). Added 'container' to the keyword check. All 67 tests now pass with 0 failures. Build produces 13 warnings (same as baseline), 0 errors."
 }
