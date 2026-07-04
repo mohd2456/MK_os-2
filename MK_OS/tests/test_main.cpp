@@ -128,6 +128,9 @@ static std::vector<std::string> filterRelevantFacts(
     return result;
 }
 
+// Context builder (must come before conversation_loop.cpp)
+#include "../orchestrator/context_builder.cpp"
+
 // Orchestrator
 #include "../orchestrator/tool_registry.cpp"
 #include "../orchestrator/tool_executor.cpp"
@@ -1241,6 +1244,242 @@ void test_tool_max_output_cap() {
 }
 
 // ============================================================
+// TEST: Context Builder - Token Estimation
+// ============================================================
+void test_context_builder_token_estimation() {
+    MKContextBuilder builder;
+
+    // Empty string should be 0 tokens
+    TEST_ASSERT_EQ(builder.estimateTokens(""), 0, "Empty string should be 0 tokens");
+
+    // "hello" = 5 chars / 4 = ~1-2 tokens
+    int helloTokens = builder.estimateTokens("hello");
+    TEST_ASSERT_TRUE(helloTokens >= 1 && helloTokens <= 2,
+                     "Short word should be 1-2 tokens");
+
+    // 100 char string should be ~25 tokens
+    std::string hundred(100, 'a');
+    int hundredTokens = builder.estimateTokens(hundred);
+    TEST_ASSERT_EQ(hundredTokens, 25, "100 chars should be ~25 tokens");
+
+    // 400 char string should be ~100 tokens
+    std::string fourHundred(400, 'x');
+    int fourHundredTokens = builder.estimateTokens(fourHundred);
+    TEST_ASSERT_EQ(fourHundredTokens, 100, "400 chars should be ~100 tokens");
+
+    // Verify linearity: 2x chars ~= 2x tokens
+    std::string small(200, 'y');
+    std::string big(400, 'y');
+    int smallTokens = builder.estimateTokens(small);
+    int bigTokens = builder.estimateTokens(big);
+    TEST_ASSERT_EQ(bigTokens, smallTokens * 2, "Token estimation should be linear");
+}
+
+// ============================================================
+// TEST: Context Builder - Fact Scoring
+// ============================================================
+void test_context_builder_fact_scoring() {
+    MKContextBuilder builder;
+
+    std::vector<std::string> facts = {
+        "python is_a programming language",
+        "mohammed likes python",
+        "java is_a programming language",
+        "cooking involves recipes",
+        "mk was created by mohammed"
+    };
+
+    // Query about python should rank python facts higher
+    auto pythonFacts = builder.scoreFacts("tell me about python", facts, 3);
+    TEST_ASSERT_GT((int)pythonFacts.size(), 0, "Should return some python-related facts");
+    TEST_ASSERT_TRUE(pythonFacts[0].find("python") != std::string::npos,
+                     "Top fact should be about python");
+
+    // Query about mohammed should rank personal facts higher
+    auto mohammedFacts = builder.scoreFacts("what does mohammed like", facts, 3);
+    TEST_ASSERT_GT((int)mohammedFacts.size(), 0, "Should return some mohammed-related facts");
+    // The personal fact about mohammed should be highly ranked
+    bool foundMohammed = false;
+    for (const auto& f : mohammedFacts) {
+        if (f.find("mohammed") != std::string::npos) {
+            foundMohammed = true;
+            break;
+        }
+    }
+    TEST_ASSERT_TRUE(foundMohammed, "Mohammed-related facts should be included");
+
+    // Irrelevant query should return fewer/no facts
+    auto irrelevantFacts = builder.scoreFacts("weather in london", facts, 5);
+    TEST_ASSERT_TRUE(irrelevantFacts.size() < facts.size(),
+                     "Irrelevant query should filter out most facts");
+
+    // Empty input should still return something (recency bias fallback)
+    auto emptyInputFacts = builder.scoreFacts("", facts, 3);
+    TEST_ASSERT_TRUE(emptyInputFacts.size() <= 3,
+                     "Empty input should return at most maxFacts facts");
+
+    // maxFacts cap works
+    auto cappedFacts = builder.scoreFacts("python programming language", facts, 2);
+    TEST_ASSERT_TRUE(cappedFacts.size() <= 2, "scoreFacts should respect maxFacts cap");
+}
+
+// ============================================================
+// TEST: Context Builder - History Compression
+// ============================================================
+void test_context_builder_history_compression() {
+    MKContextBuilder builder;
+
+    // Build a 6-turn history
+    std::string history =
+        "user: hello mk\n"
+        "mk: hey! what's up?\n"
+        "user: tell me about python\n"
+        "mk: python is a great programming language\n"
+        "user: what about docker?\n"
+        "mk: docker is a containerization platform\n";
+
+    // Compress with a generous budget - should keep more
+    std::string compressed = builder.compressHistory(history, 500);
+    TEST_ASSERT_GT((int)compressed.size(), 0, "Compressed history should not be empty");
+
+    // Compress with a tight budget
+    std::string tightCompressed = builder.compressHistory(history, 30);
+    TEST_ASSERT_TRUE(tightCompressed.size() < history.size(),
+                     "Tight compression should reduce size");
+
+    // Last 2 turns should be preserved verbatim in tight compression
+    TEST_ASSERT_TRUE(tightCompressed.find("docker") != std::string::npos,
+                     "Recent turns should be preserved in compressed history");
+
+    // Empty history should return empty
+    std::string emptyCompressed = builder.compressHistory("", 100);
+    TEST_ASSERT_EQ(emptyCompressed, std::string(""), "Empty history should compress to empty");
+
+    // Verify older turns get compressed (should see "Previously discussed")
+    // when budget is tight enough to trigger compression
+    std::string mediumCompressed = builder.compressHistory(history, 80);
+    // The compressed version should be shorter than the original
+    TEST_ASSERT_TRUE(mediumCompressed.size() <= history.size(),
+                     "Compressed history should not be longer than original");
+
+    // 6-turn history compressed to under 150 estimated tokens for older turns
+    int oldTurnsTokens = builder.estimateTokens(mediumCompressed);
+    TEST_ASSERT_TRUE(oldTurnsTokens <= 150,
+                     "Compressed 6-turn history should use under 150 tokens");
+}
+
+// ============================================================
+// TEST: Context Builder - Budget Enforcement
+// ============================================================
+void test_context_builder_budget_enforcement() {
+    MKContextBuilder builder;
+
+    std::string systemPrompt = "You are MK, a personal AI assistant. You are helpful, direct, "
+                               "and friendly. You talk naturally like a knowledgeable friend. "
+                               "You are loyal to your creator Mohammed. Keep responses concise "
+                               "and genuine. If you do not know something, say so honestly.";
+
+    std::string toolPrompt = "Available tools:\n"
+                             "- ssh_exec: Run a command on a remote device\n"
+                             "- docker_cmd: Manage Docker containers\n"
+                             "- local_shell: Run a local command\n"
+                             "- read_file: Read a file\n"
+                             "- write_file: Write a file\n"
+                             "- web_search: Search the internet\n"
+                             "- system_info: Get system information\n"
+                             "- device_list: List homelab devices\n"
+                             "- learn_fact: Teach MK a new fact\n";
+
+    std::vector<std::string> facts = {
+        "python is_a programming language",
+        "mohammed uses python daily",
+        "docker is_a container platform",
+        "homelab has proxmox server",
+        "mk was created by mohammed"
+    };
+
+    std::string history =
+        "user: hello mk\n"
+        "mk: hey! what's up?\n"
+        "user: set up my docker\n"
+        "mk: I can help with docker setup\n"
+        "user: what containers are running?\n"
+        "mk: let me check the containers\n";
+
+    // Test with a generous budget (should fit everything)
+    auto generousResult = builder.buildPrompt("hello", facts, history, "",
+                                              systemPrompt, toolPrompt, 2000);
+    TEST_ASSERT_TRUE(generousResult.estimatedTokens <= 2000,
+                     "Generous budget should be respected");
+    TEST_ASSERT_GT((int)generousResult.prompt.size(), 0,
+                   "Should produce a non-empty prompt");
+
+    // Test with a tight budget (should trigger progressive dropping)
+    auto tightResult = builder.buildPrompt("hello", facts, history, "",
+                                            systemPrompt, toolPrompt, 200);
+    TEST_ASSERT_TRUE(tightResult.estimatedTokens <= 200,
+                     "Tight budget should be enforced");
+    TEST_ASSERT_GT((int)tightResult.prompt.size(), 0,
+                   "Should still produce a prompt even with tight budget");
+
+    // Simple query should use under 800 tokens with default budget
+    auto simpleResult = builder.buildPrompt("hello there", {}, "", "",
+                                             systemPrompt, "", 1500);
+    TEST_ASSERT_TRUE(simpleResult.estimatedTokens < 800,
+                     "Simple query with no context should use under 800 tokens");
+
+    // Complex query with many facts should stay under 2000 tokens
+    std::vector<std::string> manyFacts;
+    for (int i = 0; i < 10; i++) {
+        manyFacts.push_back("fact_" + std::to_string(i) + " is_a test_fact_" + std::to_string(i));
+    }
+    auto complexResult = builder.buildPrompt("tell me everything about docker and python",
+                                              manyFacts, history, "",
+                                              systemPrompt, toolPrompt, 2000);
+    TEST_ASSERT_TRUE(complexResult.estimatedTokens <= 2000,
+                     "Complex query should stay under 2000 token budget");
+}
+
+// ============================================================
+// TEST: Context Builder - Tool Prompt Optimization
+// ============================================================
+void test_context_builder_tool_optimization() {
+    MKContextBuilder builder;
+
+    std::string systemPrompt = "You are MK.";
+    std::string toolPrompt = "Tools: ssh_exec, docker_cmd, system_info";
+
+    // A query that mentions system/docker should include tool prompt
+    auto dockerResult = builder.buildPrompt("check my docker containers", {}, "", "",
+                                             systemPrompt, toolPrompt, 1500);
+    TEST_ASSERT_TRUE(dockerResult.prompt.find("Tools:") != std::string::npos ||
+                     dockerResult.prompt.find("ssh_exec") != std::string::npos,
+                     "Docker query should include tool prompt");
+
+    // A casual query should NOT include tool prompt
+    auto casualResult = builder.buildPrompt("hello how are you", {}, "", "",
+                                             systemPrompt, toolPrompt, 1500);
+    TEST_ASSERT_TRUE(casualResult.prompt.find("ssh_exec") == std::string::npos,
+                     "Casual query should not include tool prompt");
+}
+
+// ============================================================
+// TEST: Context Builder - Minimal System Prompt
+// ============================================================
+void test_context_builder_minimal_prompt() {
+    MKContextBuilder builder;
+
+    // MK_SYSTEM_PROMPT_MINIMAL should be short
+    int minimalTokens = builder.estimateTokens(MK_SYSTEM_PROMPT_MINIMAL);
+    TEST_ASSERT_TRUE(minimalTokens <= 30,
+                     "Minimal system prompt should be under 30 tokens");
+    TEST_ASSERT_TRUE(MK_SYSTEM_PROMPT_MINIMAL.find("MK") != std::string::npos,
+                     "Minimal prompt should mention MK");
+    TEST_ASSERT_TRUE(MK_SYSTEM_PROMPT_MINIMAL.find("Mohammed") != std::string::npos,
+                     "Minimal prompt should mention Mohammed");
+}
+
+// ============================================================
 // Main: Run all tests
 // ============================================================
 int main() {
@@ -1327,6 +1566,14 @@ int main() {
     RUN_TEST(test_tool_executor_local_shell_safety);
     RUN_TEST(test_tool_executor_write_file_safety);
     RUN_TEST(test_tool_max_output_cap);
+
+    // Context Builder tests (FEAT-004)
+    RUN_TEST(test_context_builder_token_estimation);
+    RUN_TEST(test_context_builder_fact_scoring);
+    RUN_TEST(test_context_builder_history_compression);
+    RUN_TEST(test_context_builder_budget_enforcement);
+    RUN_TEST(test_context_builder_tool_optimization);
+    RUN_TEST(test_context_builder_minimal_prompt);
 
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;

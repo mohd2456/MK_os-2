@@ -1046,6 +1046,10 @@ static std::vector<std::string> filterRelevantFacts(
     return filtered;
 }
 
+// Context builder - token-efficient prompt construction
+// Must be included before conversation_loop.cpp because the orchestrator uses it.
+#include "../orchestrator/context_builder.cpp"
+
 // Orchestrator - clean single-LLM-call conversation loop
 // Must be included after sanitizeLLMResponse and filterRelevantFacts are defined,
 // since the orchestrator calls them.

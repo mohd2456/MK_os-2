@@ -183,41 +183,37 @@ private:
 
     // ============================================================
     // buildPrompt() - Construct one tight prompt for the LLM
-    // Includes tool descriptions so the LLM knows what it can call
+    // Uses MKContextBuilder for token-efficient prompt construction
     // ============================================================
     std::string buildPrompt(const std::string& input,
                             const std::vector<std::string>& facts,
                             const std::string& history) {
-        std::string prompt;
-        if (systemPrompt) {
-            prompt = *systemPrompt;
-        }
+        MKContextBuilder builder;
 
-        // Add tool descriptions if the registry is available
+        // Get tool prompt if available
+        std::string toolPromptStr;
         if (toolRegistry && config.enableToolCalls) {
-            prompt += toolRegistry->buildToolPrompt();
+            toolPromptStr = toolRegistry->buildToolPrompt();
         }
 
-        prompt += "\n\n";
-
-        // Add relevant facts (token-efficient: only include if non-empty)
-        if (!facts.empty()) {
-            prompt += "Known facts:\n";
-            for (const auto& f : facts) {
-                prompt += "- " + f + "\n";
-            }
-            prompt += "\n";
+        // Get the system prompt
+        std::string sysPrompt;
+        if (systemPrompt) {
+            sysPrompt = *systemPrompt;
         }
 
-        // Add conversation history (token-efficient: skip if empty)
-        if (!history.empty()) {
-            prompt += "Recent conversation:\n" + history + "\n";
-        }
+        // Build optimized prompt via ContextBuilder
+        MKContextBuilder::PromptResult result = builder.buildPrompt(
+            input,
+            facts,
+            history,
+            "",  // no tool context for initial prompt
+            sysPrompt,
+            toolPromptStr,
+            1500  // default token budget
+        );
 
-        // User message and response marker
-        prompt += "User: " + input + "\nMK:";
-
-        return prompt;
+        return result.prompt;
     }
 
     // ============================================================

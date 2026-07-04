@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "feat",
   "description": "Make MK extremely token-efficient to maximize free API usage. Implement smart context pruning, fact relevance scoring, conversation history compression, and tight prompt construction. The goal: minimize tokens sent per request while maximizing response quality.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create MK_OS/orchestrator/context_builder.cpp that implements the ContextBuilder class. This class is responsible for building the smallest effective prompt for each LLM call. It takes: user input, available facts from pattern_graph, conversation history from brain_memory, tool results, and a max_tokens budget (default 1500 tokens for context). It outputs a single prompt string.",
     "Implement fact pruning in ContextBuilder: use the existing filterRelevantFacts() logic but make it smarter. Score facts by: (a) keyword overlap with user input (existing), (b) recency of access (facts accessed recently are more relevant), (c) biographical relevance (personal facts about Mohammed always rank higher). Cap at 5 most relevant facts. Format them as terse bullet points, not full sentences.",
