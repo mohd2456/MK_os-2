@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "fix",
   "description": "Follow-up fixes from code review: (1) Fix 'now' and 'current' substring false positives in queryMightNeedTools by adding leading spaces, (2) Deduplicate learned_facts.mk, (3) Fix stripToolCallJson global trim that collapses multi-paragraph responses.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "In MK_OS/orchestrator/context_builder.cpp, change 'now' to ' now' and 'current' to ' current' in the toolKeywords vector to avoid substring matches inside words like 'know', 'known', 'currently'.",
     "In MK_OS/ai_core/hre/knowledge_files/learned_facts.mk, remove the 54 duplicate 'mars|is_a|planet|1' lines, keeping only one copy.",
@@ -20,5 +20,5 @@
     "Run: cd MK_OS && g++ -std=c++17 -O2 -Wall -DLINUX -o mk_os_test tests/test_main.cpp -lcurl -lsqlite3 && ./mk_os_test"
   ],
   "blocked_reason": null,
-  "findings": null
+  "findings": "Build compiles cleanly (zero errors, only pre-existing warnings). All 96 tests pass with 508 assertions. The ' check' keyword also got a leading space to prevent matching 'unchecked', 'checkout', etc."
 }
