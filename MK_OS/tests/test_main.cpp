@@ -945,8 +945,8 @@ void test_orchestrator_prompt_includes_facts() {
 // ============================================================
 void test_tool_registry_count() {
     MKToolRegistry registry;
-    TEST_ASSERT_TRUE(registry.toolCount() >= 10,
-                     "Tool registry should have at least 10 default tools");
+    TEST_ASSERT_TRUE(registry.toolCount() >= 11,
+                     "Tool registry should have at least 11 default tools");
     TEST_ASSERT_TRUE(registry.exists("ssh_exec"), "ssh_exec tool should exist");
     TEST_ASSERT_TRUE(registry.exists("docker_cmd"), "docker_cmd tool should exist");
     TEST_ASSERT_TRUE(registry.exists("local_shell"), "local_shell tool should exist");
@@ -957,6 +957,7 @@ void test_tool_registry_count() {
     TEST_ASSERT_TRUE(registry.exists("device_list"), "device_list tool should exist");
     TEST_ASSERT_TRUE(registry.exists("learn_fact"), "learn_fact tool should exist");
     TEST_ASSERT_TRUE(registry.exists("paper_trade"), "paper_trade tool should exist");
+    TEST_ASSERT_TRUE(registry.exists("browse_url"), "browse_url tool should exist");
     TEST_ASSERT_FALSE(registry.exists("nonexistent"), "nonexistent tool should not exist");
 }
 
@@ -2089,6 +2090,11 @@ int main() {
     RUN_TEST(test_tool_ssh_unreachable_host);
     RUN_TEST(test_tool_docker_list_local);
     RUN_TEST(test_tool_call_roundtrip);
+
+    // browse_url tool tests
+    RUN_TEST(test_tool_browse_url_registered);
+    RUN_TEST(test_tool_browse_url_live_fetch);
+    RUN_TEST(test_tool_browse_url_safety);
 
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;

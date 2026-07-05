@@ -1371,4 +1371,91 @@ void test_tool_call_roundtrip() {
                      "Round-trip: result should contain RAM info");
 }
 
+// ============================================================
+// TEST: browse_url - Tool Registration and Live Fetch
+// ============================================================
+void test_tool_browse_url_registered() {
+    MKToolRegistry registry;
+    TEST_ASSERT_TRUE(registry.exists("browse_url"), "browse_url tool should be registered");
+    const MKToolDef* def = registry.lookup("browse_url");
+    TEST_ASSERT_TRUE(def != nullptr, "browse_url lookup should return non-null");
+    if (def) {
+        TEST_ASSERT_TRUE(def->requiresArgs, "browse_url should require args");
+        TEST_ASSERT_TRUE(def->description.find("webpage") != std::string::npos ||
+                         def->description.find("URL") != std::string::npos,
+                         "browse_url description should mention webpage or URL");
+    }
+
+    // Verify tool prompt includes browse_url guidance
+    std::string prompt = registry.buildToolPrompt();
+    TEST_ASSERT_TRUE(prompt.find("browse_url") != std::string::npos,
+                     "Tool prompt should mention browse_url");
+    TEST_ASSERT_TRUE(prompt.find("Read/visit a specific URL") != std::string::npos,
+                     "Tool prompt should explain when to use browse_url");
+}
+
+void test_tool_browse_url_live_fetch() {
+    MKToolExecutor executor;
+
+    // Test with a simple, reliable URL
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "browse_url";
+    call.args["url"] = "http://example.com";
+
+    MKToolResult result = executor.execute(call);
+    TEST_ASSERT_TRUE(result.success, "browse_url should fetch example.com successfully");
+    TEST_ASSERT_TRUE(result.output.find("Example Domain") != std::string::npos,
+                     "browse_url result should contain 'Example Domain'");
+    TEST_ASSERT_TRUE(result.error.empty(), "browse_url should have no error on success");
+}
+
+void test_tool_browse_url_safety() {
+    MKToolExecutor executor;
+
+    // Test private IP rejection
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "browse_url";
+
+    // localhost
+    call.args["url"] = "http://localhost/secret";
+    MKToolResult r1 = executor.execute(call);
+    TEST_ASSERT_FALSE(r1.success, "browse_url should reject localhost");
+    TEST_ASSERT_TRUE(r1.error.find("private") != std::string::npos || r1.error.find("Blocked") != std::string::npos,
+                     "Error should mention private/blocked");
+
+    // 127.0.0.1
+    call.args["url"] = "http://127.0.0.1:8080/admin";
+    MKToolResult r2 = executor.execute(call);
+    TEST_ASSERT_FALSE(r2.success, "browse_url should reject 127.x.x.x");
+
+    // 192.168.x.x
+    call.args["url"] = "http://192.168.1.1/config";
+    MKToolResult r3 = executor.execute(call);
+    TEST_ASSERT_FALSE(r3.success, "browse_url should reject 192.168.x.x");
+
+    // 10.x.x.x
+    call.args["url"] = "http://10.0.0.1/internal";
+    MKToolResult r4 = executor.execute(call);
+    TEST_ASSERT_FALSE(r4.success, "browse_url should reject 10.x.x.x");
+
+    // 172.16.x.x
+    call.args["url"] = "https://172.16.0.1/vpn";
+    MKToolResult r5 = executor.execute(call);
+    TEST_ASSERT_FALSE(r5.success, "browse_url should reject 172.16-31.x.x");
+
+    // Invalid scheme
+    call.args["url"] = "ftp://example.com/file";
+    MKToolResult r6 = executor.execute(call);
+    TEST_ASSERT_FALSE(r6.success, "browse_url should reject non-http(s) URLs");
+    TEST_ASSERT_TRUE(r6.error.find("http://") != std::string::npos || r6.error.find("https://") != std::string::npos,
+                     "Error should mention valid schemes");
+
+    // Missing URL
+    call.args.clear();
+    MKToolResult r7 = executor.execute(call);
+    TEST_ASSERT_FALSE(r7.success, "browse_url should fail with missing url arg");
+}
+
 #endif // MK_TEST_INTEGRATION_CPP

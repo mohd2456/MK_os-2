@@ -138,6 +138,7 @@ public:
         if (call.tool == "device_list") return handleDeviceList(call.args);
         if (call.tool == "learn_fact") return handleLearnFact(call.args);
         if (call.tool == "paper_trade") return handlePaperTrade(call.args);
+        if (call.tool == "browse_url") return handleBrowseUrl(call.args);
 
         return {false, "", "Unknown tool: " + call.tool};
     }
@@ -624,6 +625,170 @@ private:
         }
 
         return {false, "", "Unknown action: " + action + ". Use: buy, sell, portfolio, history, stats"};
+    }
+
+    // ============================================================
+    // browse_url: Fetch a webpage and return plain text
+    // Safety: reject private/local IPs
+    // ============================================================
+
+    // Write callback for browse_url curl with size limit
+    static size_t browseWriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
+        if (!userp) return 0;
+        std::string* buf = static_cast<std::string*>(userp);
+        size_t totalSize = size * nmemb;
+        // Enforce 500KB max download
+        if (buf->size() + totalSize > 512000) {
+            size_t remaining = 512000 - buf->size();
+            if (remaining > 0) buf->append((char*)contents, remaining);
+            return 0; // abort transfer
+        }
+        buf->append((char*)contents, totalSize);
+        return totalSize;
+    }
+
+    // Strip HTML tags and collapse whitespace
+    static std::string stripHtml(const std::string& html) {
+        std::string result;
+        result.reserve(html.size() / 2);
+        bool inTag = false;
+        bool inScript = false;
+        bool inStyle = false;
+        bool lastWasSpace = false;
+
+        for (size_t i = 0; i < html.size(); i++) {
+            if (html[i] == '<') {
+                // Check if this is opening a script or style tag
+                std::string tagCheck;
+                for (size_t j = i + 1; j < html.size() && j < i + 10 && html[j] != '>' && html[j] != ' '; j++) {
+                    tagCheck += std::tolower(html[j]);
+                }
+                if (tagCheck.find("script") == 0) inScript = true;
+                if (tagCheck.find("style") == 0) inStyle = true;
+                if (tagCheck.find("/script") == 0) inScript = false;
+                if (tagCheck.find("/style") == 0) inStyle = false;
+                inTag = true;
+                continue;
+            }
+            if (html[i] == '>') {
+                inTag = false;
+                continue;
+            }
+            if (inTag || inScript || inStyle) continue;
+
+            // Collapse whitespace
+            char c = html[i];
+            if (c == '\n' || c == '\r' || c == '\t') c = ' ';
+            if (c == ' ') {
+                if (!lastWasSpace && !result.empty()) {
+                    result += ' ';
+                    lastWasSpace = true;
+                }
+            } else {
+                result += c;
+                lastWasSpace = false;
+            }
+        }
+
+        // Trim leading/trailing whitespace
+        size_t start = result.find_first_not_of(' ');
+        size_t end = result.find_last_not_of(' ');
+        if (start == std::string::npos) return "";
+        return result.substr(start, end - start + 1);
+    }
+
+    // Check if a hostname resolves to a private/local IP
+    static bool isPrivateUrl(const std::string& url) {
+        // Extract hostname from URL
+        std::string host;
+        size_t schemeEnd = url.find("://");
+        if (schemeEnd == std::string::npos) return true;
+        size_t hostStart = schemeEnd + 3;
+        size_t hostEnd = url.find_first_of(":/", hostStart);
+        if (hostEnd == std::string::npos) hostEnd = url.size();
+        host = url.substr(hostStart, hostEnd - hostStart);
+
+        // Convert to lowercase
+        std::string lower;
+        for (char c : host) lower += std::tolower(c);
+
+        // Block localhost
+        if (lower == "localhost" || lower == "localhost.localdomain") return true;
+
+        // Block private IP ranges
+        // 127.x.x.x
+        if (lower.find("127.") == 0) return true;
+        // 10.x.x.x
+        if (lower.find("10.") == 0) return true;
+        // 192.168.x.x
+        if (lower.find("192.168.") == 0) return true;
+        // 172.16-31.x.x
+        if (lower.find("172.") == 0) {
+            size_t dotPos = lower.find('.', 4);
+            if (dotPos != std::string::npos) {
+                std::string secondOctet = lower.substr(4, dotPos - 4);
+                try {
+                    int octet = std::stoi(secondOctet);
+                    if (octet >= 16 && octet <= 31) return true;
+                } catch (...) {}
+            }
+        }
+        // 169.254.x.x (link-local)
+        if (lower.find("169.254.") == 0) return true;
+        // [::1] or ::1 (IPv6 loopback)
+        if (lower == "::1" || lower == "[::1]") return true;
+        // 0.0.0.0
+        if (lower == "0.0.0.0") return true;
+
+        return false;
+    }
+
+    MKToolResult handleBrowseUrl(const std::map<std::string, std::string>& args) {
+        std::string url = getArg(args, "url");
+        if (url.empty()) return {false, "", "Missing required arg: url"};
+
+        // Validate URL scheme
+        if (url.find("http://") != 0 && url.find("https://") != 0) {
+            return {false, "", "Invalid URL: must start with http:// or https://"};
+        }
+
+        // Safety: reject private/local URLs
+        if (isPrivateUrl(url)) {
+            return {false, "", "Blocked: cannot browse private/local network addresses"};
+        }
+
+        // Fetch the page using libcurl
+        CURL* curl = curl_easy_init();
+        if (!curl) return {false, "", "Failed to initialize HTTP client"};
+
+        std::string responseBody;
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, browseWriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseBody);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 5L);
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, "MK-OS/1.0");
+
+        CURLcode res = curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+
+        if (res != CURLE_OK && responseBody.empty()) {
+            return {false, "", "Failed to fetch URL: " + std::string(curl_easy_strerror(res))};
+        }
+
+        if (responseBody.empty()) {
+            return {false, "", "URL returned empty response"};
+        }
+
+        // Strip HTML and clean up text
+        std::string text = stripHtml(responseBody);
+
+        if (text.empty()) {
+            return {false, "", "Page contained no readable text content"};
+        }
+
+        return {true, capOutput(text), ""};
     }
 };
 

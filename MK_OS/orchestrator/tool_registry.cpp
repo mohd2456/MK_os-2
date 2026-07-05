@@ -101,6 +101,7 @@ public:
         prompt += "WHEN TO USE TOOLS:\n";
         prompt += "- Current time, weather, news, prices → use web_search\n";
         prompt += "- Any real-time or factual question you're unsure about → use web_search\n";
+        prompt += "- Read/visit a specific URL or webpage → use browse_url\n";
         prompt += "- Server/container commands → use ssh_exec or docker_cmd (only if homelab is connected)\n";
         prompt += "- Remember something about the user → use learn_fact\n";
         prompt += "- File operations → use read_file or write_file\n\n";
@@ -122,7 +123,9 @@ public:
         prompt += "User: what time is it in Fort Worth?\n";
         prompt += "{\"tool\": \"web_search\", \"args\": {\"query\": \"current time in Fort Worth Texas\"}}\n\n";
         prompt += "User: search for latest news about AI\n";
-        prompt += "{\"tool\": \"web_search\", \"args\": {\"query\": \"latest AI news 2024\"}}\n";
+        prompt += "{\"tool\": \"web_search\", \"args\": {\"query\": \"latest AI news 2024\"}}\n\n";
+        prompt += "User: go to https://example.com and tell me what it's about\n";
+        prompt += "{\"tool\": \"browse_url\", \"args\": {\"url\": \"https://example.com\"}}\n";
 
         return prompt;
     }
@@ -283,6 +286,11 @@ private:
         registerTool("paper_trade",
                      "Paper trade meme coins with a fake $20 wallet. Actions: buy, sell, portfolio, history, stats.",
                      "{\"action\": \"buy|sell|portfolio|history|stats\", \"symbol\": \"<coingecko-coin-id>\", \"amount\": \"<usd-or-quantity>\"}",
+                     true);
+
+        registerTool("browse_url",
+                     "Fetch a webpage URL and return its text content (HTML stripped).",
+                     "{\"url\": \"<full URL including https://>\"}",
                      true);
     }
 
