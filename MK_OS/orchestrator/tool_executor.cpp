@@ -18,6 +18,7 @@
 #include <climits>
 #include <cstdlib>
 #include <unistd.h>
+#include <sys/wait.h>
 
 // Forward declarations - these classes are defined in files included
 // before this one in mk_entry.cpp:
@@ -89,6 +90,12 @@ static bool isWritePathAllowed(const std::string& path) {
         if (resolvedPath.find(mkDataDir) == 0) return true;
     }
 
+    // Allow ~/.mk_os/tools/
+    if (!homePath.empty()) {
+        std::string mkToolsDir = homePath + "/.mk_os/tools/";
+        if (resolvedPath.find(mkToolsDir) == 0) return true;
+    }
+
     return false;
 }
 
@@ -116,6 +123,7 @@ public:
     MKLearningEngine* learningEngine = nullptr;
     MKPatternGraph* graph = nullptr;
     MKPaperTrading* paperTrading = nullptr;
+    MKToolRegistry* toolRegistry = nullptr;
 
     MKToolExecutor() = default;
 
@@ -139,6 +147,10 @@ public:
         if (call.tool == "learn_fact") return handleLearnFact(call.args);
         if (call.tool == "paper_trade") return handlePaperTrade(call.args);
         if (call.tool == "browse_url") return handleBrowseUrl(call.args);
+        if (call.tool == "create_tool") return handleCreateTool(call.args);
+
+        // Check for custom tools
+        if (toolRegistry && toolRegistry->exists(call.tool)) return handleCustomTool(call.tool, call.args);
 
         return {false, "", "Unknown tool: " + call.tool};
     }
@@ -625,6 +637,295 @@ private:
         }
 
         return {false, "", "Unknown action: " + action + ". Use: buy, sell, portfolio, history, stats"};
+    }
+
+    // ============================================================
+    // create_tool: Create a new custom tool
+    // ============================================================
+    MKToolResult handleCreateTool(const std::map<std::string, std::string>& args) {
+        std::string name = getArg(args, "name");
+        std::string description = getArg(args, "description");
+        std::string language = getArg(args, "language");
+        std::string code = getArg(args, "code");
+        std::string argsStr = getArg(args, "args");
+
+        if (name.empty()) return {false, "", "Missing required arg: name"};
+        if (description.empty()) return {false, "", "Missing required arg: description"};
+        if (language.empty()) return {false, "", "Missing required arg: language"};
+        if (code.empty()) return {false, "", "Missing required arg: code"};
+
+        // Validate name: alphanumeric + underscore, 3-30 chars
+        if (name.size() < 3 || name.size() > 30) {
+            return {false, "", "Tool name must be 3-30 characters long"};
+        }
+        for (char c : name) {
+            if (!std::isalnum(c) && c != '_') {
+                return {false, "", "Tool name must contain only alphanumeric characters and underscores"};
+            }
+        }
+
+        // Validate language
+        if (language != "bash" && language != "python") {
+            return {false, "", "Language must be 'bash' or 'python'"};
+        }
+
+        // Get HOME directory
+        const char* home = std::getenv("HOME");
+        if (!home) return {false, "", "Cannot determine HOME directory"};
+        std::string homePath(home);
+
+        // Create tools directory
+        std::string toolsDir = homePath + "/.mk_os/tools";
+        std::string mkdirCmd = "mkdir -p " + toolsDir;
+        FILE* mkdirPipe = popen(mkdirCmd.c_str(), "r");
+        if (mkdirPipe) pclose(mkdirPipe);
+
+        // Determine script extension and path
+        std::string ext = (language == "bash") ? ".sh" : ".py";
+        std::string scriptPath = toolsDir + "/" + name + ext;
+
+        // Write script file
+        std::ofstream scriptFile(scriptPath);
+        if (!scriptFile.is_open()) {
+            return {false, "", "Cannot write script to: " + scriptPath};
+        }
+        if (language == "bash") {
+            scriptFile << "#!/bin/bash\n" << code << "\n";
+        } else {
+            scriptFile << "#!/usr/bin/env python3\n" << code << "\n";
+        }
+        scriptFile.close();
+
+        // Make it executable
+        std::string chmodCmd = "chmod +x " + scriptPath;
+        FILE* chmodPipe = popen(chmodCmd.c_str(), "r");
+        if (chmodPipe) pclose(chmodPipe);
+
+        // Build paramSchema from args string
+        std::string paramSchema = "{}";
+        if (!argsStr.empty()) {
+            paramSchema = "{";
+            bool first = true;
+            std::string argName;
+            for (size_t i = 0; i <= argsStr.size(); i++) {
+                if (i == argsStr.size() || argsStr[i] == ',') {
+                    // Trim the arg name
+                    size_t as = argName.find_first_not_of(" \t");
+                    size_t ae = argName.find_last_not_of(" \t");
+                    if (as != std::string::npos) {
+                        std::string trimmed = argName.substr(as, ae - as + 1);
+                        if (!trimmed.empty()) {
+                            if (!first) paramSchema += ", ";
+                            paramSchema += "\"" + trimmed + "\": \"<value>\"";
+                            first = false;
+                        }
+                    }
+                    argName.clear();
+                } else {
+                    argName += argsStr[i];
+                }
+            }
+            paramSchema += "}";
+        }
+
+        // Read existing manifest or start fresh
+        std::string manifestPath = toolsDir + "/manifest.json";
+        std::string manifestContent;
+        {
+            std::ifstream mf(manifestPath);
+            if (mf.is_open()) {
+                manifestContent = std::string((std::istreambuf_iterator<char>(mf)),
+                                              std::istreambuf_iterator<char>());
+                mf.close();
+            }
+        }
+
+        // Build new manifest entry
+        std::string newEntry = "{\"name\": \"" + name + "\", \"description\": \"" + description +
+                               "\", \"paramSchema\": \"" + paramSchema + "\", \"language\": \"" +
+                               language + "\", \"scriptPath\": \"" + scriptPath + "\"}";
+
+        // Append to manifest (simple approach: rebuild the array)
+        std::string newManifest;
+        if (manifestContent.empty() || manifestContent.find('[') == std::string::npos) {
+            newManifest = "[\n  " + newEntry + "\n]";
+        } else {
+            // Find the closing bracket and insert before it
+            size_t closeBracket = manifestContent.rfind(']');
+            if (closeBracket == std::string::npos) {
+                newManifest = "[\n  " + newEntry + "\n]";
+            } else {
+                std::string before = manifestContent.substr(0, closeBracket);
+                // Trim trailing whitespace
+                size_t lastContent = before.find_last_not_of(" \t\n\r");
+                if (lastContent != std::string::npos) {
+                    before = before.substr(0, lastContent + 1);
+                }
+                newManifest = before + ",\n  " + newEntry + "\n]";
+            }
+        }
+
+        // Write manifest
+        std::ofstream mfOut(manifestPath);
+        if (!mfOut.is_open()) {
+            return {false, "", "Cannot write manifest.json"};
+        }
+        mfOut << newManifest;
+        mfOut.close();
+
+        // Register in the tool registry
+        if (toolRegistry) {
+            toolRegistry->registerCustomTool(name, description, paramSchema);
+        }
+
+        return {true, "Created custom tool '" + name + "' (" + language + "). Script saved to " +
+                scriptPath + ". You can now call it with {\"tool\": \"" + name + "\", \"args\": {...}}", ""};
+    }
+
+    // ============================================================
+    // handleCustomTool: Execute a custom tool by reading manifest
+    // ============================================================
+    MKToolResult handleCustomTool(const std::string& toolName, const std::map<std::string, std::string>& args) {
+        const char* home = std::getenv("HOME");
+        if (!home) return {false, "", "Cannot determine HOME directory"};
+        std::string homePath(home);
+
+        std::string manifestPath = homePath + "/.mk_os/tools/manifest.json";
+        std::ifstream mf(manifestPath);
+        if (!mf.is_open()) {
+            return {false, "", "Custom tool manifest not found"};
+        }
+        std::string manifestContent((std::istreambuf_iterator<char>(mf)),
+                                     std::istreambuf_iterator<char>());
+        mf.close();
+
+        // Find the tool entry in manifest
+        std::string scriptPath;
+        std::string language;
+
+        size_t pos = 0;
+        while (pos < manifestContent.size()) {
+            size_t objStart = manifestContent.find('{', pos);
+            if (objStart == std::string::npos) break;
+
+            int depth = 0;
+            size_t objEnd = objStart;
+            for (size_t i = objStart; i < manifestContent.size(); i++) {
+                if (manifestContent[i] == '{') depth++;
+                else if (manifestContent[i] == '}') {
+                    depth--;
+                    if (depth == 0) { objEnd = i + 1; break; }
+                }
+            }
+            if (objEnd <= objStart) break;
+
+            std::string obj = manifestContent.substr(objStart, objEnd - objStart);
+
+            // Check if this entry matches our tool name
+            size_t namePos = obj.find("\"name\"");
+            if (namePos != std::string::npos) {
+                // Extract value after "name":
+                size_t valStart = obj.find('"', namePos + 6);
+                if (valStart != std::string::npos) {
+                    valStart++;
+                    size_t colonPos = obj.find(':', namePos + 6);
+                    // Re-find: skip to after colon
+                    size_t afterColon = obj.find('"', colonPos + 1);
+                    if (afterColon != std::string::npos) {
+                        afterColon++;
+                        size_t valEnd = obj.find('"', afterColon);
+                        if (valEnd != std::string::npos) {
+                            std::string foundName = obj.substr(afterColon, valEnd - afterColon);
+                            if (foundName == toolName) {
+                                // Extract scriptPath
+                                size_t spPos = obj.find("\"scriptPath\"");
+                                if (spPos != std::string::npos) {
+                                    size_t spColon = obj.find(':', spPos + 12);
+                                    size_t spValStart = obj.find('"', spColon + 1);
+                                    if (spValStart != std::string::npos) {
+                                        spValStart++;
+                                        size_t spValEnd = obj.find('"', spValStart);
+                                        if (spValEnd != std::string::npos) {
+                                            scriptPath = obj.substr(spValStart, spValEnd - spValStart);
+                                        }
+                                    }
+                                }
+                                // Extract language
+                                size_t lgPos = obj.find("\"language\"");
+                                if (lgPos != std::string::npos) {
+                                    size_t lgColon = obj.find(':', lgPos + 10);
+                                    size_t lgValStart = obj.find('"', lgColon + 1);
+                                    if (lgValStart != std::string::npos) {
+                                        lgValStart++;
+                                        size_t lgValEnd = obj.find('"', lgValStart);
+                                        if (lgValEnd != std::string::npos) {
+                                            language = obj.substr(lgValStart, lgValEnd - lgValStart);
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            pos = objEnd;
+        }
+
+        if (scriptPath.empty()) {
+            return {false, "", "Custom tool '" + toolName + "' not found in manifest"};
+        }
+
+        // Build command with env vars for each arg
+        std::string envPrefix = "env ";
+        for (const auto& kv : args) {
+            // Convert arg name to uppercase for env var
+            std::string envName = "MK_ARG_";
+            for (char c : kv.first) {
+                envName += std::toupper(c);
+            }
+            // Escape single quotes in value
+            std::string escapedVal;
+            for (char c : kv.second) {
+                if (c == '\'') escapedVal += "'\\''";
+                else escapedVal += c;
+            }
+            envPrefix += envName + "='" + escapedVal + "' ";
+        }
+
+        // Build execution command with timeout
+        std::string cmd = "timeout 10 " + envPrefix;
+        if (language == "python") {
+            cmd += "python3 " + scriptPath;
+        } else {
+            cmd += "bash " + scriptPath;
+        }
+        cmd += " 2>&1";
+
+        // Execute with popen
+        std::string output;
+        FILE* pipe = popen(cmd.c_str(), "r");
+        if (!pipe) {
+            return {false, "", "Failed to execute custom tool script"};
+        }
+
+        char buffer[256];
+        while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+            output += buffer;
+            if (output.size() > MK_TOOL_MAX_OUTPUT) break;
+        }
+        int status = pclose(pipe);
+        int exitCode = WEXITSTATUS(status);
+
+        if (exitCode == 124) {
+            return {false, capOutput(output), "Custom tool timed out (10s limit)"};
+        }
+        if (exitCode != 0 && output.empty()) {
+            return {false, "", "Custom tool exited with code " + std::to_string(exitCode)};
+        }
+
+        return {exitCode == 0, capOutput(output), exitCode != 0 ? "Exited with code " + std::to_string(exitCode) : ""};
     }
 
     // ============================================================

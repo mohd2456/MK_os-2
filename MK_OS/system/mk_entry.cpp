@@ -1109,9 +1109,13 @@ static void initOrchestrator(MKSystem& sys) {
     sys.toolExecutor.learningEngine = &sys.learningEngine;
     sys.toolExecutor.graph = &sys.graph;
     sys.toolExecutor.paperTrading = &sys.paperTrading;
+    sys.toolExecutor.toolRegistry = &sys.toolRegistry;
 
     // Wire fact extractor to learning engine for persistence
     sys.factExtractor.setLearningEngine(&sys.learningEngine);
+
+    // Load any previously created custom tools from manifest
+    sys.toolRegistry.loadCustomTools();
 }
 
 // ============================================================

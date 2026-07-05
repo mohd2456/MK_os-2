@@ -1625,4 +1625,200 @@ void test_brain_memory_commit_strips_tool_json() {
                      "stripToolCallJson should preserve text after tool JSON");
 }
 
+// ============================================================
+// FEAT-002 (custom-tools): Custom tool creation and execution tests
+// ============================================================
+
+// ============================================================
+// TEST: create_tool registers successfully
+// ============================================================
+void test_create_tool_registered() {
+    MKToolRegistry registry;
+    MKToolExecutor executor;
+    executor.toolRegistry = &registry;
+
+    int countBefore = registry.toolCount();
+
+    // Call handleCreateTool with valid args via execute()
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "create_tool";
+    call.args["name"] = "my_test_tool";
+    call.args["description"] = "A simple test tool";
+    call.args["language"] = "bash";
+    call.args["code"] = "echo hello from custom tool";
+    call.args["args"] = "msg";
+
+    MKToolResult result = executor.execute(call);
+    TEST_ASSERT_TRUE(result.success, "create_tool should succeed with valid args");
+    TEST_ASSERT_TRUE(result.output.find("Created custom tool") != std::string::npos,
+                     "create_tool output should confirm creation");
+
+    // Registry should now have the tool
+    TEST_ASSERT_TRUE(registry.exists("my_test_tool"),
+                     "Registry should contain the newly created tool");
+    TEST_ASSERT_EQ(registry.toolCount(), countBefore + 1,
+                   "Tool count should increase by 1");
+
+    // Cleanup
+    const char* home = std::getenv("HOME");
+    if (home) {
+        std::string toolsDir = std::string(home) + "/.mk_os/tools";
+        std::remove((toolsDir + "/my_test_tool.sh").c_str());
+        std::remove((toolsDir + "/manifest.json").c_str());
+    }
+}
+
+// ============================================================
+// TEST: create_tool rejects invalid names
+// ============================================================
+void test_create_tool_invalid_name() {
+    MKToolRegistry registry;
+    MKToolExecutor executor;
+    executor.toolRegistry = &registry;
+
+    // Name with spaces
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "create_tool";
+    call.args["name"] = "bad name";
+    call.args["description"] = "test";
+    call.args["language"] = "bash";
+    call.args["code"] = "echo hi";
+    call.args["args"] = "";
+
+    MKToolResult r1 = executor.execute(call);
+    TEST_ASSERT_FALSE(r1.success, "create_tool should reject name with spaces");
+    TEST_ASSERT_TRUE(r1.error.find("alphanumeric") != std::string::npos,
+                     "Error should mention alphanumeric requirement");
+
+    // Name too short
+    call.args["name"] = "ab";
+    MKToolResult r2 = executor.execute(call);
+    TEST_ASSERT_FALSE(r2.success, "create_tool should reject name shorter than 3 chars");
+    TEST_ASSERT_TRUE(r2.error.find("3-30") != std::string::npos,
+                     "Error should mention length requirement");
+
+    // Name with special chars
+    call.args["name"] = "bad!tool@name";
+    MKToolResult r3 = executor.execute(call);
+    TEST_ASSERT_FALSE(r3.success, "create_tool should reject name with special characters");
+
+    // Name too long (31 chars)
+    call.args["name"] = "abcdefghijklmnopqrstuvwxyz12345";
+    MKToolResult r4 = executor.execute(call);
+    TEST_ASSERT_FALSE(r4.success, "create_tool should reject name longer than 30 chars");
+}
+
+// ============================================================
+// TEST: custom tool execution
+// ============================================================
+void test_custom_tool_execution() {
+    MKToolRegistry registry;
+    MKToolExecutor executor;
+    executor.toolRegistry = &registry;
+
+    // First create a tool
+    MKParsedToolCall createCall;
+    createCall.valid = true;
+    createCall.tool = "create_tool";
+    createCall.args["name"] = "echo_test";
+    createCall.args["description"] = "Echoes the msg argument";
+    createCall.args["language"] = "bash";
+    createCall.args["code"] = "echo \"received: $MK_ARG_MSG\"";
+    createCall.args["args"] = "msg";
+
+    MKToolResult createResult = executor.execute(createCall);
+    TEST_ASSERT_TRUE(createResult.success, "Tool creation should succeed");
+
+    // Now call the custom tool
+    MKParsedToolCall execCall;
+    execCall.valid = true;
+    execCall.tool = "echo_test";
+    execCall.args["msg"] = "hello_world";
+
+    MKToolResult execResult = executor.execute(execCall);
+    TEST_ASSERT_TRUE(execResult.success, "Custom tool execution should succeed");
+    TEST_ASSERT_TRUE(execResult.output.find("received: hello_world") != std::string::npos,
+                     "Custom tool output should contain the arg value");
+
+    // Cleanup
+    const char* home = std::getenv("HOME");
+    if (home) {
+        std::string toolsDir = std::string(home) + "/.mk_os/tools";
+        std::remove((toolsDir + "/echo_test.sh").c_str());
+        std::remove((toolsDir + "/manifest.json").c_str());
+    }
+}
+
+// ============================================================
+// TEST: create_tool manifest persistence
+// ============================================================
+void test_create_tool_manifest_persistence() {
+    MKToolRegistry registry;
+    MKToolExecutor executor;
+    executor.toolRegistry = &registry;
+
+    // Create a tool
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "create_tool";
+    call.args["name"] = "persist_test";
+    call.args["description"] = "Tests manifest persistence";
+    call.args["language"] = "python";
+    call.args["code"] = "print('persistent')";
+    call.args["args"] = "";
+
+    MKToolResult result = executor.execute(call);
+    TEST_ASSERT_TRUE(result.success, "create_tool should succeed");
+
+    // Verify manifest.json exists and contains the tool
+    const char* home = std::getenv("HOME");
+    TEST_ASSERT_TRUE(home != nullptr, "HOME should be set");
+    if (home) {
+        std::string manifestPath = std::string(home) + "/.mk_os/tools/manifest.json";
+        std::ifstream mf(manifestPath);
+        TEST_ASSERT_TRUE(mf.is_open(), "manifest.json should exist after creating a tool");
+
+        std::string content((std::istreambuf_iterator<char>(mf)),
+                             std::istreambuf_iterator<char>());
+        mf.close();
+
+        TEST_ASSERT_TRUE(content.find("persist_test") != std::string::npos,
+                         "manifest.json should contain the tool name");
+        TEST_ASSERT_TRUE(content.find("Tests manifest persistence") != std::string::npos,
+                         "manifest.json should contain the tool description");
+        TEST_ASSERT_TRUE(content.find("python") != std::string::npos,
+                         "manifest.json should contain the language");
+        TEST_ASSERT_TRUE(content.find(".py") != std::string::npos,
+                         "manifest.json should contain the script path with .py extension");
+
+        // Verify the script file exists
+        std::string scriptPath = std::string(home) + "/.mk_os/tools/persist_test.py";
+        std::ifstream sf(scriptPath);
+        TEST_ASSERT_TRUE(sf.is_open(), "Script file should exist");
+        if (sf.is_open()) {
+            std::string scriptContent((std::istreambuf_iterator<char>(sf)),
+                                       std::istreambuf_iterator<char>());
+            sf.close();
+            TEST_ASSERT_TRUE(scriptContent.find("print('persistent')") != std::string::npos,
+                             "Script file should contain the provided code");
+        }
+
+        // Test loadCustomTools: create a new registry and load from manifest
+        MKToolRegistry registry2;
+        int countBefore = registry2.toolCount();
+        registry2.loadCustomTools();
+        TEST_ASSERT_TRUE(registry2.exists("persist_test"),
+                         "loadCustomTools should load the tool from manifest");
+        TEST_ASSERT_EQ(registry2.toolCount(), countBefore + 1,
+                       "loadCustomTools should increase tool count");
+
+        // Cleanup
+        std::string toolsDir = std::string(home) + "/.mk_os/tools";
+        std::remove((toolsDir + "/persist_test.py").c_str());
+        std::remove((toolsDir + "/manifest.json").c_str());
+    }
+}
+
 #endif // MK_TEST_INTEGRATION_CPP

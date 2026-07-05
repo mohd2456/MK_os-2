@@ -236,6 +236,72 @@ public:
     }
 
 private:
+public:
+    // Load custom tools from ~/.mk_os/tools/manifest.json (if it exists)
+    void loadCustomTools() {
+        const char* home = std::getenv("HOME");
+        if (!home) return;
+        std::string manifestPath = std::string(home) + "/.mk_os/tools/manifest.json";
+
+        std::ifstream file(manifestPath);
+        if (!file.is_open()) return;
+
+        std::string content((std::istreambuf_iterator<char>(file)),
+                             std::istreambuf_iterator<char>());
+        file.close();
+
+        if (content.empty()) return;
+
+        // Parse JSON array of tool objects manually
+        // Find each object by tracking brace depth
+        size_t pos = content.find('[');
+        if (pos == std::string::npos) return;
+        pos++;
+
+        while (pos < content.size()) {
+            // Find next object opening brace
+            size_t objStart = content.find('{', pos);
+            if (objStart == std::string::npos) break;
+
+            // Find matching close brace
+            int depth = 0;
+            size_t objEnd = objStart;
+            for (size_t i = objStart; i < content.size(); i++) {
+                if (content[i] == '{') depth++;
+                else if (content[i] == '}') {
+                    depth--;
+                    if (depth == 0) {
+                        objEnd = i + 1;
+                        break;
+                    }
+                }
+            }
+            if (objEnd <= objStart) break;
+
+            std::string obj = content.substr(objStart, objEnd - objStart);
+
+            // Extract fields from this object
+            std::string toolName = extractJsonString(obj, "name");
+            std::string toolDesc = extractJsonString(obj, "description");
+            std::string toolSchema = extractJsonString(obj, "paramSchema");
+
+            if (!toolName.empty() && !exists(toolName)) {
+                registerTool(toolName, toolDesc, toolSchema, !toolSchema.empty());
+            }
+
+            pos = objEnd;
+        }
+    }
+
+    // Register a custom tool dynamically (returns true if name is new)
+    bool registerCustomTool(const std::string& name, const std::string& description,
+                            const std::string& paramSchema) {
+        if (exists(name)) return false;
+        registerTool(name, description, paramSchema, !paramSchema.empty());
+        return true;
+    }
+
+private:
     // Register the default set of MK tools
     void registerDefaultTools() {
         registerTool("ssh_exec",
@@ -291,6 +357,11 @@ private:
         registerTool("browse_url",
                      "Fetch a webpage URL and return its text content (HTML stripped).",
                      "{\"url\": \"<full URL including https://>\"}",
+                     true);
+
+        registerTool("create_tool",
+                     "Create a new custom tool. MK writes a bash or python script that becomes callable.",
+                     "{\"name\": \"<tool_name>\", \"description\": \"<what it does>\", \"language\": \"bash|python\", \"code\": \"<script code>\", \"args\": \"<comma-separated arg names>\"}",
                      true);
     }
 

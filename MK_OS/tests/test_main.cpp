@@ -2101,6 +2101,12 @@ int main() {
     RUN_TEST(test_callback_query_skip);
     RUN_TEST(test_brain_memory_commit_strips_tool_json);
 
+    // Custom tool creation tests (FEAT-002 custom-tools)
+    RUN_TEST(test_create_tool_registered);
+    RUN_TEST(test_create_tool_invalid_name);
+    RUN_TEST(test_custom_tool_execution);
+    RUN_TEST(test_create_tool_manifest_persistence);
+
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;
     std::cout << "  RESULTS: " << g_tests_passed << " passed, "
