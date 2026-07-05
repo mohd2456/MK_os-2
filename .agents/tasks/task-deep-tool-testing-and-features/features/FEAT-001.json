@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix Telegram double-response bug, upgrade personality system prompt, and enhance Telegram with more commands. The double-response bug is in mk_entry.cpp telegram_poll_loop(): when a command like /status or /key is handled, both the autoReply() method AND the inline command handler in telegram_poll_loop() send responses. Also, the system prompt (MK_SYSTEM_PROMPT in mk_entry.cpp) is too generic - MK should know who Mohammed is and answer identity questions with depth.",
+  "status": "completed",
+  "steps": [
+    "Fix double-response in telegram_poll_loop() in MK_OS/system/mk_entry.cpp: the logic currently calls sys.telegram->autoReply() for all commands starting with '/', but then also has inline handlers for /status, /key, /logs, /crypto, /devices, /goals which send ADDITIONAL messages. The fix: for commands handled inline (setkey, setmodel, status, key, logs, crypto, devices, goals), do NOT fall through to autoReply(). Currently autoReply() is called for 'else { sys.telegram->autoReply(...) }' - trace the control flow to find where both paths send a message.",
+    "Upgrade MK_SYSTEM_PROMPT in mk_entry.cpp to a richer personality prompt. MK should know: (a) it was built by Mohammed, (b) it runs on Mohammed's hardware, (c) it has a Gen-Z-adjacent casual style, (d) it can introspect about its own architecture, (e) when asked 'who are you' it gives a thoughtful multi-sentence answer showing self-awareness and loyalty. The prompt should be 150-300 words, concise but rich.",
+    "Add new Telegram commands that integrate with the AI pipeline: /paper (show paper trading portfolio status), /memory (show what MK remembers about the user), /whoami (MK describes itself). Wire these in telegram_poll_loop() in mk_entry.cpp and add handler methods in plugins/telegram.cpp.",
+    "Ensure Telegram's autoReplyEnhanced() method is used instead of the old autoReply() - the enhanced version handles more commands. Update telegram_poll_loop() to use autoReplyEnhanced() as the fallback for unrecognized commands.",
+    "Add tests in test_main.cpp that verify: (a) MK_SYSTEM_PROMPT contains key identity phrases, (b) tool registry has correct count after any new tools are added."
+  ],
+  "acceptance_criteria": [
+    "Running 'make test' passes all tests (including new ones)",
+    "Running 'make' builds successfully",
+    "Telegram command processing in telegram_poll_loop() does not have double-response paths - each message gets exactly one response",
+    "MK_SYSTEM_PROMPT mentions Mohammed by name and describes MK's capabilities",
+    "New Telegram commands /paper, /memory, /whoami are wired into telegram_poll_loop()"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && make",
+    "cd /projects/sandbox/MK_os-2/MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": "Fixed double-logging (not double-response) bug. The actual issue was that generate_ai_response called respondForTelegram() which internally does pickProvider+logRequest, while the outer telegram_poll_loop also did its own pickProvider+logRequest. Fix: call respond() directly from generate_ai_response, let the outer code handle timing/logging. Switched autoReply to autoReplyEnhanced in the fallback else branch. All 81 tests pass (80 original + 1 new), 468 assertions."
+}
