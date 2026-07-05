@@ -1459,11 +1459,12 @@ void test_context_builder_tool_optimization() {
                      dockerResult.prompt.find("ssh_exec") != std::string::npos,
                      "Docker query should include tool prompt");
 
-    // A casual query should NOT include tool prompt
+    // Tools are now always included (even for casual queries) since the LLM
+    // is smart enough to not use them when unnecessary
     auto casualResult = builder.buildPrompt("hello how are you", {}, "", "",
                                              systemPrompt, toolPrompt, 1500);
-    TEST_ASSERT_TRUE(casualResult.prompt.find("ssh_exec") == std::string::npos,
-                     "Casual query should not include tool prompt");
+    TEST_ASSERT_TRUE(casualResult.prompt.find("ssh_exec") != std::string::npos,
+                     "Tool prompt should always be included regardless of query type");
 }
 
 // ============================================================
@@ -1914,11 +1915,25 @@ void test_paper_trading_persistence() {
 // here as a reference string. If the real prompt changes, this test should be updated to
 // match the new expected content.
 static const char* EXPECTED_PROMPT_CONTENT =
-    "You are MK, a personal AI system built from scratch by Mohammed. You run on Mohammed's "
-    "own hardware across his homelab, phone, and laptop. Your architecture is a hybrid reasoning "
-    "engine: a C++ core with a knowledge graph, vector search, biographical memory, tool execution "
-    "framework, provider-routed LLM calls, and a Telegram interface. You are not a generic chatbot. "
-    "You are Mohammed's second brain";
+    "You are MK, Mohammed's personal AI assistant. You are a C++ program running on a free-tier AWS EC2 "
+    "VPS as a systemd service. You communicate via Telegram. You were built from scratch by Mohammed — "
+    "not a wrapper around ChatGPT, not a cloud service — a custom orchestration layer that controls what "
+    "context the LLM sees and what tools it can execute.\n\n"
+    "Current reality:\n"
+    "- You run on EC2 (no homelab connected yet)\n"
+    "- You have NO real-time knowledge — your training data is outdated\n"
+    "- For current info (time, weather, news, prices) you MUST use the web_search tool\n"
+    "- For server tasks, Mohammed hasn't connected his homelab yet — tell him if he asks\n"
+    "- You have a paper trading wallet ($20 fake money) for learning crypto mechanics\n\n"
+    "Personality: Sharp, casual, slightly irreverent. Like a smart friend. Never corporate or robotic. "
+    "You keep it real — if you don't know something, say so. You're loyal to Mohammed. "
+    "When asked 'who are you', show self-awareness about being a custom C++ AI on his VPS.\n\n"
+    "Response rules:\n"
+    "- Concise: 2-4 sentences for simple questions\n"
+    "- Honest: never hallucinate. If unsure, say so\n"
+    "- Obedient: follow user's format instructions (if they say 'just answer', give ONLY the answer)\n"
+    "- Tool-aware: if you need current/real-time info, USE a tool. Don't guess dates, times, or prices\n"
+    "- No homelab: if asked about servers/containers/Plex, explain homelab isn't connected yet";
 
 void test_system_prompt_identity() {
     std::string prompt(EXPECTED_PROMPT_CONTENT);
@@ -1931,18 +1946,18 @@ void test_system_prompt_identity() {
     TEST_ASSERT_GT((int)prompt.size(), 200,
                    "MK_SYSTEM_PROMPT should be longer than 200 characters");
 
-    // Must describe MK's architecture
-    TEST_ASSERT_TRUE(prompt.find("knowledge graph") != std::string::npos,
-                     "MK_SYSTEM_PROMPT should mention knowledge graph");
-    TEST_ASSERT_TRUE(prompt.find("hybrid reasoning") != std::string::npos,
-                     "MK_SYSTEM_PROMPT should mention hybrid reasoning");
+    // Must describe MK's architecture as orchestration layer
+    TEST_ASSERT_TRUE(prompt.find("orchestration layer") != std::string::npos,
+                     "MK_SYSTEM_PROMPT should mention orchestration layer");
+    TEST_ASSERT_TRUE(prompt.find("EC2") != std::string::npos,
+                     "MK_SYSTEM_PROMPT should mention EC2");
 
-    // Must mention tool execution
-    TEST_ASSERT_TRUE(prompt.find("tool execution") != std::string::npos,
+    // Must mention tool usage
+    TEST_ASSERT_TRUE(prompt.find("web_search tool") != std::string::npos,
                      "MK_SYSTEM_PROMPT should mention tool capabilities");
 
-    // Must mention MK as not a generic chatbot
-    TEST_ASSERT_TRUE(prompt.find("not a generic chatbot") != std::string::npos,
+    // Must differentiate from generic AI
+    TEST_ASSERT_TRUE(prompt.find("not a wrapper around ChatGPT") != std::string::npos,
                      "MK_SYSTEM_PROMPT should differentiate from generic chatbots");
 }
 

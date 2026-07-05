@@ -95,20 +95,34 @@ public:
         if (tools.empty()) return "";
 
         std::string prompt;
-        prompt += "\n\nYou have access to these tools. To use one, output ONLY a JSON object on its own line:\n";
-        prompt += "{\"tool\": \"<name>\", \"args\": {<arguments>}}\n\n";
+        prompt += "\n\n## TOOLS\n";
+        prompt += "You can call tools by outputting a JSON object. Format:\n";
+        prompt += "{\"tool\": \"tool_name\", \"args\": {\"key\": \"value\"}}\n\n";
+        prompt += "WHEN TO USE TOOLS:\n";
+        prompt += "- Current time, weather, news, prices → use web_search\n";
+        prompt += "- Any real-time or factual question you're unsure about → use web_search\n";
+        prompt += "- Server/container commands → use ssh_exec or docker_cmd (only if homelab is connected)\n";
+        prompt += "- Remember something about the user → use learn_fact\n";
+        prompt += "- File operations → use read_file or write_file\n\n";
+        prompt += "WHEN NOT TO USE TOOLS:\n";
+        prompt += "- General knowledge questions you're confident about\n";
+        prompt += "- Casual conversation, greetings, opinions\n";
+        prompt += "- Math calculations\n\n";
         prompt += "Available tools:\n";
 
         for (const auto& t : tools) {
             prompt += "- " + t.name + ": " + t.description;
             if (!t.paramSchema.empty()) {
-                prompt += " Args: " + t.paramSchema;
+                prompt += " | Args: " + t.paramSchema;
             }
             prompt += "\n";
         }
 
-        prompt += "\nOnly call a tool if it is needed to answer the user. ";
-        prompt += "If you can answer directly from your knowledge, do so without using a tool.\n";
+        prompt += "\nExamples:\n";
+        prompt += "User: what time is it in Fort Worth?\n";
+        prompt += "{\"tool\": \"web_search\", \"args\": {\"query\": \"current time in Fort Worth Texas\"}}\n\n";
+        prompt += "User: search for latest news about AI\n";
+        prompt += "{\"tool\": \"web_search\", \"args\": {\"query\": \"latest AI news 2024\"}}\n";
 
         return prompt;
     }

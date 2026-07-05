@@ -60,12 +60,9 @@ public:
         std::string compressedHistory = compressHistory(fullHistory, historyBudget);
         result.historyTurnsIncluded = countTurns(compressedHistory);
 
-        // Decide whether to include tool prompt
-        // Only include tool descriptions if the query seems like it needs tools
-        std::string activeToolPrompt;
-        if (queryMightNeedTools(userInput)) {
-            activeToolPrompt = toolPrompt;
-        }
+        // Always include tool descriptions - they're short (~200 tokens)
+        // and the LLM is smart enough to not use them when unnecessary
+        std::string activeToolPrompt = toolPrompt;
 
         // Try with full system prompt first
         std::string prompt = assemblePrompt(fullSystemPrompt, activeToolPrompt,
@@ -419,35 +416,12 @@ private:
     }
 
     // ============================================================
-    // queryMightNeedTools() - Heuristic: does the query mention
-    // tool-related concepts?
+    // queryMightNeedTools() - Always returns true since tools are
+    // always included now. Kept for API compatibility.
     // ============================================================
     bool queryMightNeedTools(const std::string& input) {
-        std::string lower = input;
-        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-
-        static const std::vector<std::string> toolKeywords = {
-            "system", "docker", "container", "device", "server",
-            "file", "read", "write", "create", "delete",
-            "search", "look up", "find online", "internet",
-            "ssh", "connect", "remote", "run command",
-            "cpu", "ram", "memory", "disk", "temperature",
-            "homelab", "deploy", "restart", "stop", "start",
-            "learn", "remember", "teach",
-            // Queries about current info (time, weather, prices, etc.)
-            "weather", "news", "time", "price", "crypto",
-            "what is", "who is", "how much", "when is", "where is",
-            " check", "tell me about", "what's", " current", "today", " now",
-            // Crypto/trading related
-            "bitcoin", "coin", "trade", "buy", "sell", "portfolio", "paper"
-        };
-
-        for (const auto& kw : toolKeywords) {
-            if (lower.find(kw) != std::string::npos) {
-                return true;
-            }
-        }
-        return false;
+        (void)input;
+        return true;
     }
 
     // ============================================================
