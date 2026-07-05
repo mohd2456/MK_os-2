@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-003",
+  "type": "fix",
+  "description": "Deep tool testing and hardening: test each tool handler with real commands where possible (file read/write, web search/DuckDuckGo, system info, docker if available), fix graceful error handling on SSH failures (no VPS), ensure nothing crashes. Add integration tests that exercise tool_executor with real I/O.",
+  "status": "in_progress",
+  "steps": [
+    "Add live integration tests in tests/test_integration.cpp that exercise real tool functionality: (a) read_file tool reads an actual file (/tmp/mk_test_file.txt created by the test), (b) write_file tool writes to /tmp/ and verifies content, (c) system_info tool returns valid CPU/RAM data, (d) web_search tool with query 'news' returns non-empty results (calls real HackerNews API), (e) local_shell tool runs 'echo hello' and gets output.",
+    "Add SSH graceful failure tests: ssh_exec on an unregistered device returns error (already tested), ssh_exec on a registered device with unreachable host returns timeout/connection-refused error without crashing. Register a fake device in the test, attempt executeRemote, verify it fails gracefully with a descriptive error.",
+    "Add Docker graceful failure tests: docker_cmd to list containers on localhost - if docker daemon is available, verify output parsing; if not available, verify graceful error. The test should handle both cases (docker present or absent in sandbox).",
+    "Verify web_search tool actually reaches the internet: test that handleWebSearch with query 'weather in new york' calls the open-meteo API and returns weather data. Test with 'news' query hitting HackerNews API. These are real network calls allowed in OPEN_INTERNET mode.",
+    "Audit tool_executor.cpp for potential crashes: ensure all nullptr checks are present, ensure all string operations handle empty input, ensure popen in ssh_controller returns graceful errors on command failure. Fix any issues found.",
+    "Add a test that exercises the tool call parsing round-trip: register a custom tool, create a fake LLM response with a tool call JSON, parse it, execute it, verify the result."
+  ],
+  "acceptance_criteria": [
+    "Running 'make test' passes all tests including new integration tests",
+    "Running 'make' builds successfully",
+    "File read/write tools work with real files in /tmp/",
+    "Web search tool returns real data from HackerNews or weather API",
+    "SSH tool fails gracefully when host is unreachable (no crash, descriptive error)",
+    "Docker tool handles both available and unavailable Docker daemon",
+    "No segfaults or undefined behavior in any tool path"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && make",
+    "cd /projects/sandbox/MK_os-2/MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

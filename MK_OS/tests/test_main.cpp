@@ -2071,6 +2071,17 @@ int main() {
     RUN_TEST(test_paper_trading_trade_history);
     RUN_TEST(test_paper_trading_persistence);
 
+    // FEAT-003: Live integration tests (real I/O)
+    RUN_TEST(test_tool_live_file_read);
+    RUN_TEST(test_tool_live_file_write);
+    RUN_TEST(test_tool_live_local_shell);
+    RUN_TEST(test_tool_live_local_shell_exit_code);
+    RUN_TEST(test_tool_live_web_search_news);
+    RUN_TEST(test_tool_live_system_info);
+    RUN_TEST(test_tool_ssh_unreachable_host);
+    RUN_TEST(test_tool_docker_list_local);
+    RUN_TEST(test_tool_call_roundtrip);
+
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;
     std::cout << "  RESULTS: " << g_tests_passed << " passed, "
