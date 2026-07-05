@@ -115,6 +115,7 @@ public:
     MKRealtimeAPIs* realtimeApis = nullptr;
     MKLearningEngine* learningEngine = nullptr;
     MKPatternGraph* graph = nullptr;
+    MKPaperTrading* paperTrading = nullptr;
 
     MKToolExecutor() = default;
 
@@ -136,6 +137,7 @@ public:
         if (call.tool == "system_info") return handleSystemInfo(call.args);
         if (call.tool == "device_list") return handleDeviceList(call.args);
         if (call.tool == "learn_fact") return handleLearnFact(call.args);
+        if (call.tool == "paper_trade") return handlePaperTrade(call.args);
 
         return {false, "", "Unknown tool: " + call.tool};
     }
@@ -456,6 +458,66 @@ private:
         }
 
         return {true, "Learned: " + subject + " " + relation + " " + object, ""};
+    }
+
+    // ============================================================
+    // paper_trade: Paper trade meme coins
+    // ============================================================
+    MKToolResult handlePaperTrade(const std::map<std::string, std::string>& args) {
+        std::string action = getArg(args, "action");
+        std::string symbol = getArg(args, "symbol");
+        std::string amountStr = getArg(args, "amount");
+
+        if (action.empty()) return {false, "", "Missing required arg: action. Use: buy, sell, portfolio, history, stats"};
+
+        if (!paperTrading) return {false, "", "Paper trading module not available"};
+
+        // Dispatch by action
+        if (action == "buy") {
+            if (symbol.empty()) return {false, "", "Missing arg: symbol (CoinGecko coin ID, e.g. 'dogecoin', 'shiba-inu')"};
+            double amount = 0.0;
+            if (!amountStr.empty()) {
+                try { amount = std::stod(amountStr); } catch (...) {
+                    return {false, "", "Invalid amount: " + amountStr};
+                }
+            }
+            if (amount <= 0.0) return {false, "", "Amount must be positive (USD to spend)"};
+            auto result = paperTrading->buy(symbol, amount);
+            if (result.success) return {true, result.message, ""};
+            return {false, "", result.error};
+        }
+
+        if (action == "sell") {
+            if (symbol.empty()) return {false, "", "Missing arg: symbol (CoinGecko coin ID)"};
+            double amount = 0.0;
+            if (!amountStr.empty()) {
+                try { amount = std::stod(amountStr); } catch (...) {
+                    return {false, "", "Invalid amount: " + amountStr};
+                }
+            }
+            // amount=0 means sell all
+            auto result = paperTrading->sell(symbol, amount);
+            if (result.success) return {true, result.message, ""};
+            return {false, "", result.error};
+        }
+
+        if (action == "portfolio") {
+            return {true, paperTrading->getPortfolio(), ""};
+        }
+
+        if (action == "history") {
+            int n = 10;
+            if (!amountStr.empty()) {
+                try { n = std::stoi(amountStr); } catch (...) { n = 10; }
+            }
+            return {true, paperTrading->getTradeHistory(n), ""};
+        }
+
+        if (action == "stats") {
+            return {true, paperTrading->getStats(), ""};
+        }
+
+        return {false, "", "Unknown action: " + action + ". Use: buy, sell, portfolio, history, stats"};
     }
 };
 

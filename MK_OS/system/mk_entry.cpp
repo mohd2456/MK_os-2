@@ -83,6 +83,7 @@ namespace Color {
 #include "../crypto/exchange_api.cpp"
 #include "../crypto/trading_bot.cpp"
 #include "../crypto/airdrop_farmer.cpp"
+#include "../crypto/paper_trading.cpp"
 
 // LLM subsystem - Local and cloud LLM integration
 #include "../llm/cloud_llm.cpp"
@@ -292,6 +293,7 @@ struct MKSystem {
     MKExchangeAPI cryptoExchangeApi;
     std::unique_ptr<MKTradingBot> cryptoTradingBot;
     MKAirdropFarmer cryptoAirdropFarmer;
+    MKPaperTrading paperTrading;
 
     // Mind subsystem - The cognitive layer
     MKMasteryNetwork masteryNetwork;
@@ -1099,6 +1101,7 @@ static void initOrchestrator(MKSystem& sys) {
     sys.toolExecutor.realtimeApis = &sys.realtimeApis;
     sys.toolExecutor.learningEngine = &sys.learningEngine;
     sys.toolExecutor.graph = &sys.graph;
+    sys.toolExecutor.paperTrading = &sys.paperTrading;
 
     // Wire fact extractor to learning engine for persistence
     sys.factExtractor.setLearningEngine(&sys.learningEngine);

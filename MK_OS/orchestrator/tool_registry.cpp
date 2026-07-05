@@ -231,6 +231,11 @@ private:
                      "Teach MK a new fact to remember permanently.",
                      "{\"subject\": \"<entity>\", \"relation\": \"<relationship>\", \"object\": \"<value>\"}",
                      true);
+
+        registerTool("paper_trade",
+                     "Paper trade meme coins with a fake $20 wallet. Actions: buy, sell, portfolio, history, stats.",
+                     "{\"action\": \"buy|sell|portfolio|history|stats\", \"symbol\": \"<coingecko-coin-id>\", \"amount\": \"<usd-or-quantity>\"}",
+                     true);
     }
 
     // Extract a string value from a JSON object for a given key
