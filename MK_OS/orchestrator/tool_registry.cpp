@@ -235,7 +235,6 @@ public:
         return result;
     }
 
-private:
 public:
     // Load custom tools from ~/.mk_os/tools/manifest.json (if it exists)
     void loadCustomTools() {

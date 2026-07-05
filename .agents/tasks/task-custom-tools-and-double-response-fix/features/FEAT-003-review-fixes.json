@@ -1,0 +1,23 @@
+{
+  "id": "FEAT-003-review-fixes",
+  "type": "fix",
+  "description": "Address 5 code review findings: scriptPath injection, isDangerous bypass, preamble false positives, tool overwrite protection, and public access modifier leak.",
+  "status": "in_progress",
+  "steps": [
+    "Fix issue 1: In handleCustomTool, validate that scriptPath from manifest resolves inside ~/.mk_os/tools/ using realpath() before execution",
+    "Fix issue 2: In handleCustomTool, apply isDangerous-equivalent check on the script content before execution",
+    "Fix issue 3: In synthesizeWithToolResult, replace length+punctuation heuristic with known preamble pattern matching",
+    "Fix issue 4: In handleCreateTool, check if tool already exists in manifest and replace/reject rather than appending a duplicate",
+    "Fix issue 5: In conversation_loop.cpp, remove the public: access modifier on stripToolCallJson and use a friend declaration for tests instead",
+    "Add tests for the new behaviors: path validation rejection, overwrite protection, improved preamble detection"
+  ],
+  "acceptance_criteria": [
+    "handleCustomTool rejects scriptPaths that do not resolve inside ~/.mk_os/tools/",
+    "Custom tool scripts are checked against isDangerous patterns before execution",
+    "The preamble heuristic correctly preserves short legitimate responses like 'Done' while still stripping common preamble phrases",
+    "handleCreateTool rejects or replaces tools with duplicate names rather than appending duplicate manifest entries",
+    "stripToolCallJson is not exposed via public: access modifier - uses friend class for test access",
+    "All existing tests pass plus new tests for the fixed behaviors"
+  ],
+  "blocked_reason": null
+}

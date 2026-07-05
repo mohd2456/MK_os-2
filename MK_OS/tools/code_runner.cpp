@@ -156,6 +156,12 @@ private:
 public:
     MKCodeRunner(int timeout = 10) : timeoutSeconds(timeout) {}
 
+    // Public accessor for dangerous command detection.
+    // Used by custom tool execution to validate script content.
+    bool isDangerousCmd(const std::string& code) const {
+        return isDangerous(code);
+    }
+
     // Auto-detect language and run
     MKRunResult run(const std::string& code) const {
         std::string lang = detectLanguage(code);

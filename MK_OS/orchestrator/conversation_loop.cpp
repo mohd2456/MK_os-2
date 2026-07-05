@@ -185,7 +185,138 @@ public:
         return reply;
     }
 
+    // ============================================================
+    // stripToolCallJson() - Remove any raw tool-call JSON from text
+    // Looks for {"tool": ...} patterns and removes the entire JSON object.
+    // This prevents debug/tool JSON from leaking to the user or memory.
+    // ============================================================
+    std::string stripToolCallJson(const std::string& text) {
+        std::string result = text;
+
+        // Repeatedly find and remove tool-call JSON objects
+        while (true) {
+            // Find any tool-call pattern
+            size_t pos = result.find("{\"tool\":");
+            if (pos == std::string::npos) pos = result.find("{ \"tool\":");
+            if (pos == std::string::npos) pos = result.find("{\"tool\" :");
+            if (pos == std::string::npos) pos = result.find("{  \"tool\":");
+            if (pos == std::string::npos) pos = result.find("{\n\"tool\":");
+            if (pos == std::string::npos) pos = result.find("{\n  \"tool\":");
+            if (pos == std::string::npos) break;
+
+            // Find the matching closing brace by tracking depth
+            int braceDepth = 0;
+            size_t endPos = pos;
+            bool found = false;
+            for (size_t i = pos; i < result.size(); i++) {
+                if (result[i] == '{') braceDepth++;
+                else if (result[i] == '}') {
+                    braceDepth--;
+                    if (braceDepth == 0) {
+                        endPos = i + 1;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!found) break; // Malformed JSON, stop trying
+
+            // Remove the JSON object and any surrounding whitespace/newlines
+            result.erase(pos, endPos - pos);
+
+            // Clean up any leftover whitespace at the removal point
+            while (pos < result.size() && (result[pos] == ' ' || result[pos] == '\t' || result[pos] == '\n' || result[pos] == '\r')) {
+                result.erase(pos, 1);
+            }
+        }
+
+        // Also strip markdown code fences that may have wrapped tool calls
+        // e.g. ```json\n...\n```
+        while (true) {
+            size_t fenceStart = result.find("```json");
+            if (fenceStart == std::string::npos) fenceStart = result.find("```");
+            if (fenceStart == std::string::npos) break;
+
+            size_t contentStart = result.find('\n', fenceStart);
+            if (contentStart == std::string::npos) break;
+            contentStart++;
+
+            size_t fenceEnd = result.find("```", contentStart);
+            if (fenceEnd == std::string::npos) break;
+
+            // Check if the content between fences looks like a tool call
+            std::string fenceContent = result.substr(contentStart, fenceEnd - contentStart);
+            if (fenceContent.find("\"tool\"") != std::string::npos) {
+                // Remove the entire fenced block
+                size_t removeEnd = fenceEnd + 3;
+                // Skip trailing newline
+                if (removeEnd < result.size() && result[removeEnd] == '\n') removeEnd++;
+                result.erase(fenceStart, removeEnd - fenceStart);
+            } else {
+                break; // Not a tool call fence, stop
+            }
+        }
+
+        // Return result without global trimming to preserve multi-paragraph whitespace
+        return result;
+    }
+
 private:
+    // ============================================================
+    // isPreamblePhrase() - Check if text is a known LLM preamble
+    // Matches common patterns like "Let me check that", "Sure, one sec",
+    // "I'll look into that" without false-positiving on legitimate
+    // short responses like "Done", "5 items found", or "Here you go".
+    // ============================================================
+    bool isPreamblePhrase(const std::string& text) const {
+        if (text.empty()) return false;
+        // Only consider short text as potential preamble
+        if (text.size() > 80) return false;
+
+        // Convert to lowercase for pattern matching
+        std::string lower;
+        lower.reserve(text.size());
+        for (char c : text) lower += (char)std::tolower((unsigned char)c);
+
+        // Known preamble patterns (phrases LLMs typically emit before tool calls)
+        static const std::vector<std::string> preambleStarts = {
+            "let me ",
+            "i'll ",
+            "i will ",
+            "sure, let me",
+            "sure, i'll",
+            "sure, one ",
+            "one moment",
+            "one sec",
+            "just a moment",
+            "just a sec",
+            "allow me to",
+            "i'm going to",
+            "i can ",
+            "let's ",
+            "hang on",
+            "give me a ",
+            "checking ",
+            "looking ",
+            "searching ",
+            "fetching ",
+            "getting "
+        };
+
+        for (const auto& prefix : preambleStarts) {
+            if (lower.find(prefix) == 0) return true;
+        }
+
+        // Also check for phrases that end with colon or ellipsis (common preamble endings)
+        if (!text.empty()) {
+            if (text.back() == ':') return true;
+            if (text.size() >= 3 && text.substr(text.size() - 3) == "...") return true;
+        }
+
+        return false;
+    }
+
     // ============================================================
     // gatherPersonalFacts() - Query learning engine for personal facts
     // Returns top personal facts about Mohammed/user for prompt injection
@@ -405,12 +536,11 @@ private:
                 cleaned = "";
             }
             if (!cleaned.empty()) {
-                // If the cleaned text is a short preamble (under 60 chars, no period
-                // or question mark), it is not substantive content - just return
-                // the tool result alone to avoid echoing things like "Let me check that"
-                if (cleaned.size() < 60 &&
-                    cleaned.find('.') == std::string::npos &&
-                    cleaned.find('?') == std::string::npos) {
+                // Check if the cleaned text is a common LLM preamble phrase.
+                // Instead of a broad length+punctuation heuristic, match known
+                // preamble patterns to avoid false positives on legitimate short
+                // responses like "Done", "5 items", or "Here you go".
+                if (isPreamblePhrase(cleaned)) {
                     return toolResult;
                 }
                 return cleaned + "\n\n" + toolResult;
@@ -439,84 +569,6 @@ private:
                "properly. Try again in a moment, or check /status for provider health.";
     }
 
-    // ============================================================
-    // stripToolCallJson() - Remove any raw tool-call JSON from text
-    // Looks for {"tool": ...} patterns and removes the entire JSON object.
-    // This prevents debug/tool JSON from leaking to the user.
-    // Public so tests can verify stripping behavior directly.
-    // ============================================================
-    public:
-    std::string stripToolCallJson(const std::string& text) {
-        std::string result = text;
-
-        // Repeatedly find and remove tool-call JSON objects
-        while (true) {
-            // Find any tool-call pattern
-            size_t pos = result.find("{\"tool\":");
-            if (pos == std::string::npos) pos = result.find("{ \"tool\":");
-            if (pos == std::string::npos) pos = result.find("{\"tool\" :");
-            if (pos == std::string::npos) pos = result.find("{  \"tool\":");
-            if (pos == std::string::npos) pos = result.find("{\n\"tool\":");
-            if (pos == std::string::npos) pos = result.find("{\n  \"tool\":");
-            if (pos == std::string::npos) break;
-
-            // Find the matching closing brace by tracking depth
-            int braceDepth = 0;
-            size_t endPos = pos;
-            bool found = false;
-            for (size_t i = pos; i < result.size(); i++) {
-                if (result[i] == '{') braceDepth++;
-                else if (result[i] == '}') {
-                    braceDepth--;
-                    if (braceDepth == 0) {
-                        endPos = i + 1;
-                        found = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!found) break; // Malformed JSON, stop trying
-
-            // Remove the JSON object and any surrounding whitespace/newlines
-            result.erase(pos, endPos - pos);
-
-            // Clean up any leftover whitespace at the removal point
-            while (pos < result.size() && (result[pos] == ' ' || result[pos] == '\t' || result[pos] == '\n' || result[pos] == '\r')) {
-                result.erase(pos, 1);
-            }
-        }
-
-        // Also strip markdown code fences that may have wrapped tool calls
-        // e.g. ```json\n...\n```
-        while (true) {
-            size_t fenceStart = result.find("```json");
-            if (fenceStart == std::string::npos) fenceStart = result.find("```");
-            if (fenceStart == std::string::npos) break;
-
-            size_t contentStart = result.find('\n', fenceStart);
-            if (contentStart == std::string::npos) break;
-            contentStart++;
-
-            size_t fenceEnd = result.find("```", contentStart);
-            if (fenceEnd == std::string::npos) break;
-
-            // Check if the content between fences looks like a tool call
-            std::string fenceContent = result.substr(contentStart, fenceEnd - contentStart);
-            if (fenceContent.find("\"tool\"") != std::string::npos) {
-                // Remove the entire fenced block
-                size_t removeEnd = fenceEnd + 3;
-                // Skip trailing newline
-                if (removeEnd < result.size() && result[removeEnd] == '\n') removeEnd++;
-                result.erase(fenceStart, removeEnd - fenceStart);
-            } else {
-                break; // Not a tool call fence, stop
-            }
-        }
-
-        // Return result without global trimming to preserve multi-paragraph whitespace
-        return result;
-    }
 };
 
 #endif // MK_ORCHESTRATOR_CPP

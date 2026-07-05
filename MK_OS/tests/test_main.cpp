@@ -2107,6 +2107,12 @@ int main() {
     RUN_TEST(test_custom_tool_execution);
     RUN_TEST(test_create_tool_manifest_persistence);
 
+    // Review fix tests (code review follow-up)
+    RUN_TEST(test_preamble_preserves_short_responses);
+    RUN_TEST(test_create_tool_duplicate_rejected);
+    RUN_TEST(test_custom_tool_path_validation);
+    RUN_TEST(test_custom_tool_dangerous_script_blocked);
+
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;
     std::cout << "  RESULTS: " << g_tests_passed << " passed, "

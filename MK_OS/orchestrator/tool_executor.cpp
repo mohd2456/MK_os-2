@@ -669,6 +669,11 @@ private:
             return {false, "", "Language must be 'bash' or 'python'"};
         }
 
+        // Check for duplicate: if tool already exists in registry, reject
+        if (toolRegistry && toolRegistry->exists(name)) {
+            return {false, "", "Tool '" + name + "' already exists. Choose a different name."};
+        }
+
         // Get HOME directory
         const char* home = std::getenv("HOME");
         if (!home) return {false, "", "Cannot determine HOME directory"};
@@ -784,6 +789,8 @@ private:
 
     // ============================================================
     // handleCustomTool: Execute a custom tool by reading manifest
+    // Safety: validates scriptPath resolves inside ~/.mk_os/tools/
+    //         and checks script content against isDangerous patterns
     // ============================================================
     MKToolResult handleCustomTool(const std::string& toolName, const std::map<std::string, std::string>& args) {
         const char* home = std::getenv("HOME");
@@ -875,6 +882,38 @@ private:
 
         if (scriptPath.empty()) {
             return {false, "", "Custom tool '" + toolName + "' not found in manifest"};
+        }
+
+        // Safety check 1: Validate scriptPath resolves inside ~/.mk_os/tools/
+        // This prevents a corrupted manifest or symlink attack from executing
+        // arbitrary paths outside the tools directory.
+        std::string allowedDir = homePath + "/.mk_os/tools/";
+        {
+            char resolvedBuf[PATH_MAX];
+            char* resolved = realpath(scriptPath.c_str(), resolvedBuf);
+            if (!resolved) {
+                return {false, "", "Custom tool script not found: " + scriptPath};
+            }
+            std::string resolvedPath(resolved);
+            if (resolvedPath.find(allowedDir) != 0) {
+                return {false, "", "Blocked: custom tool script path resolves outside ~/.mk_os/tools/"};
+            }
+        }
+
+        // Safety check 2: Read script content and check against dangerous patterns
+        // Custom tools bypass codeRunner->runBash() so we replicate the isDangerous check.
+        {
+            std::ifstream scriptFile(scriptPath);
+            if (!scriptFile.is_open()) {
+                return {false, "", "Cannot read custom tool script: " + scriptPath};
+            }
+            std::string scriptContent((std::istreambuf_iterator<char>(scriptFile)),
+                                       std::istreambuf_iterator<char>());
+            scriptFile.close();
+
+            if (codeRunner && codeRunner->isDangerousCmd(scriptContent)) {
+                return {false, "", "Blocked: custom tool script contains dangerous commands"};
+            }
         }
 
         // Build command with env vars for each arg
