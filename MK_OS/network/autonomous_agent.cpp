@@ -1,3 +1,6 @@
+// LEGACY: This file is not included in the main build or test suite.
+// It was part of the old autonomous agent architecture before the
+// unified mk_entry.cpp compilation model was adopted.
 #ifndef MK_AUTONOMOUS_AGENT_CPP
 #define MK_AUTONOMOUS_AGENT_CPP
 

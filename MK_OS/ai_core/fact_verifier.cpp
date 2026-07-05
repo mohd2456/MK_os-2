@@ -1,3 +1,6 @@
+// LEGACY: This file is not included in the main build or test suite.
+// Only referenced by network/autonomous_agent.cpp (also legacy).
+// Fact validation is now handled by mind/knowledge_validator.cpp.
 #ifndef MK_FACT_VERIFIER_CPP
 #define MK_FACT_VERIFIER_CPP
 

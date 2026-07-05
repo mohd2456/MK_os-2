@@ -1,3 +1,6 @@
+// LEGACY: This file is not included in the main build or test suite.
+// It was part of the old network updater module before the
+// unified mk_entry.cpp compilation model was adopted.
 #ifndef MK_UPDATE_CPP
 #define MK_UPDATE_CPP
 

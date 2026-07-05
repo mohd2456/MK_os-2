@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-004",
+  "type": "chore",
+  "description": "Dead code cleanup and final build validation. Identify and remove any .cpp files in the MK_OS tree that are never #included by mk_entry.cpp or test_main.cpp. Verify final build is clean.",
+  "status": "in_progress",
+  "steps": [
+    "Scan MK_OS/ for all .cpp files. Cross-reference against #include directives in system/mk_entry.cpp and tests/test_main.cpp. Identify files that are NOT included by either (they are dead code or standalone tools).",
+    "Check the standalone tools (tools/knowledge_ingest.cpp, tools/telegram_bridge.cpp, tools/llm_eater.cpp, tools/knowledge_sync.cpp) - these are built separately by 'make tools' target and are NOT dead code.",
+    "Check network/main_network.cpp, network/mk_network.cpp, network/parser.cpp, network/autonomous_agent.cpp, network/update.cpp - determine if these are #included anywhere. If not included by mk_entry.cpp or test_main.cpp or any file that IS included, they are dead code (leftover from old architecture).",
+    "Check similar potentially dead files: tools/image_analyzer.cpp, any files in io_routing/, memory_mgmt/, Kernel/, bootloader/ directories.",
+    "For confirmed dead files: leave them in place but document in a comment at the top that they are legacy/unused. Do NOT delete files without being certain they are dead - the Makefile 'tools' target builds some standalone binaries.",
+    "Run 'make' and 'make test' to confirm nothing is broken after any changes."
+  ],
+  "acceptance_criteria": [
+    "Running 'make' builds successfully",
+    "Running 'make test' passes all tests",
+    "Dead code analysis is documented (list of dead vs active files)",
+    "No files deleted unless explicitly confirmed dead and not built by any make target"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && make clean && make",
+    "cd /projects/sandbox/MK_os-2/MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
