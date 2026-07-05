@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "fix",
   "description": "Deep tool testing and hardening: test each tool handler with real commands where possible (file read/write, web search/DuckDuckGo, system info, docker if available), fix graceful error handling on SSH failures (no VPS), ensure nothing crashes. Add integration tests that exercise tool_executor with real I/O.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Add live integration tests in tests/test_integration.cpp that exercise real tool functionality: (a) read_file tool reads an actual file (/tmp/mk_test_file.txt created by the test), (b) write_file tool writes to /tmp/ and verifies content, (c) system_info tool returns valid CPU/RAM data, (d) web_search tool with query 'news' returns non-empty results (calls real HackerNews API), (e) local_shell tool runs 'echo hello' and gets output.",
     "Add SSH graceful failure tests: ssh_exec on an unregistered device returns error (already tested), ssh_exec on a registered device with unreachable host returns timeout/connection-refused error without crashing. Register a fake device in the test, attempt executeRemote, verify it fails gracefully with a descriptive error.",
@@ -25,5 +25,5 @@
     "cd /projects/sandbox/MK_os-2/MK_OS && make test"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 9 new integration tests pass. SSH unreachable host test completes in about 2-3 seconds (timeout works). Docker is available in the sandbox and docker ps works. HackerNews API is live and returns data. System info reads /proc on Linux successfully. Total test suite is now 96 tests, 510 assertions."
 }
