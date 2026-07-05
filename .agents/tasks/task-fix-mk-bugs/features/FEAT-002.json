@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "fix",
   "description": "Fix queryMightNeedTools() to include more trigger words so queries like 'what time in Fort Worth' get tool descriptions in the prompt. Also fix parseToolCall() to handle markdown code fences and more whitespace variations. Also add stripping of raw tool-call JSON from the final response shown to users.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "In MK_OS/orchestrator/context_builder.cpp, locate queryMightNeedTools() method (around line 425). Add the following keywords to the toolKeywords vector: 'weather', 'news', 'time', 'price', 'crypto', 'what is', 'who is', 'how much', 'when is', 'where is', 'check', 'tell me about', 'what\\'s', 'current', 'today', 'now', 'look up', 'bitcoin', 'coin', 'trade', 'buy', 'sell', 'portfolio', 'paper'. This ensures time/weather/crypto queries trigger tool descriptions.",
     "In MK_OS/orchestrator/tool_registry.cpp, locate parseToolCall() method (around line 120). Before the existing pattern search logic, add preprocessing to strip markdown code fences. If the response contains ```json or ``` markers, extract content between the fences. Also add additional search patterns: '{\\n  \"tool\":', '{\\n\"tool\":', and '{ \"tool\" :'. This makes parsing more robust against LLM formatting variations.",
@@ -18,5 +18,5 @@
     "Run: cd MK_OS && g++ -std=c++17 -O2 -Wall -DLINUX -o mk_os system/mk_entry.cpp -lcurl -lsqlite3"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Build compiles cleanly (zero errors, only pre-existing warnings). All 96 tests pass. The parseToolCall() now operates on a pre-processed 'cleaned' copy of the response (after stripping markdown fences) rather than the raw response directly. The stripToolCallJson() method handles both inline JSON and fenced code blocks containing tool calls."
 }
