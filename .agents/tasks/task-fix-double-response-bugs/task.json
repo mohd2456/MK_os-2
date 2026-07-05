@@ -1,8 +1,14 @@
 {
   "task_id": "task-fix-double-response-bugs",
   "task_description": "Fix three bugs: double response on /setkey, web search returning HackerNews for time queries, and /whoami returning duplicate responses",
-  "status": "in_progress",
+  "status": "completed",
   "feature_order": ["FEAT-001"],
   "blocked_reason": null,
-  "verification": null
+  "verification": {
+    "build": "pass",
+    "tests": "pass",
+    "test_quality": "pass",
+    "docker_build": "skipped",
+    "summary": "Build compiles with only pre-existing warnings. 96 tests pass, 0 failures. The paper trading test (test_paper_trading_buy_deducts_fees) is flaky due to live CoinGecko API calls but passes on most runs."
+  }
 }

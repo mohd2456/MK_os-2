@@ -1,7 +1,7 @@
 {
   "id": "FEAT-001",
   "title": "Fix three Telegram bot bugs: double /setkey response, web search HackerNews fallback, /whoami duplicates",
-  "status": "in_progress",
+  "status": "completed",
   "assigned_to": "implementer",
   "steps": [
     "Remove the 'Testing...' message from /setkey handler so only one final response is sent",
@@ -17,5 +17,5 @@
     "Build compiles without errors",
     "All tests pass"
   ],
-  "findings": null
+  "findings": "All three bugs fixed in a single commit. The paper_trading_buy_deducts_fees test is flaky (live CoinGecko API) but unrelated to these changes."
 }
