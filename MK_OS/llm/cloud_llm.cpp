@@ -210,7 +210,7 @@ private:
             "\"messages\":["
             "{\"role\":\"system\",\"content\":\"" + escapedSystem + "\"},"
             "{\"role\":\"user\",\"content\":\"" + escapedPrompt + "\"}"
-            "],\"max_tokens\":512,\"temperature\":0.7}";
+            "],\"max_tokens\":1024,\"temperature\":0.7}";
 
         return body;
     }

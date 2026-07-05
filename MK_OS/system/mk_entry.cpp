@@ -573,7 +573,7 @@ static void cmd_search(MKSystem& sys, const std::string& query) {
             response = sanitizeLLMResponse(response, query);
         }
         if (response.empty() && sys.cloudLLM.isAvailable()) {
-            response = sys.cloudLLM.generateWithContext(query, {}, history, "", MK_SYSTEM_PROMPT);
+            response = sys.cloudLLM.generate("respond", prompt);
             response = sanitizeLLMResponse(response, query);
         }
         if (!response.empty()) {
@@ -781,7 +781,7 @@ static void cmd_think(MKSystem& sys, const std::string& topic) {
             response = sanitizeLLMResponse(response, topic);
         }
         if (response.empty() && sys.cloudLLM.isAvailable()) {
-            response = sys.cloudLLM.generateWithContext(topic, facts, history, "", MK_SYSTEM_PROMPT);
+            response = sys.cloudLLM.generate("respond", prompt);
             response = sanitizeLLMResponse(response, topic);
         }
     }

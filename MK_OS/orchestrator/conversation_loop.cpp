@@ -310,7 +310,7 @@ private:
         // prompt is sent as-is, avoiding double-assembly of facts/history.
         if (cloudLLM && cloudLLM->isAvailable()) {
             auto genStart = std::chrono::steady_clock::now();
-            response = cloudLLM->generate(input, prompt);
+            response = cloudLLM->generate("respond", prompt);
             auto genEnd = std::chrono::steady_clock::now();
             float genLatency = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
                 genEnd - genStart).count();
@@ -378,7 +378,7 @@ private:
         if (response.empty() && cloudLLM && cloudLLM->isAvailable()) {
             // Use generate() directly with the already-assembled prompt as systemPrompt.
             // This avoids double-assembly of facts/history that generateWithContext() does.
-            response = cloudLLM->generate(input, prompt);
+            response = cloudLLM->generate("respond", prompt);
         }
 
         if (!response.empty()) {
