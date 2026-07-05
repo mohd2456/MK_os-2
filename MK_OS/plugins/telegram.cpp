@@ -343,21 +343,14 @@ public:
 
         std::string msg =
             "<b>Crypto Dashboard</b>\n\n"
-            "<b>Portfolio Summary:</b>\n"
-            "<code>Total Value:   $----.--</code>\n"
-            "<code>24h Change:    +--.--%</code>\n"
-            "<code>Total P/L:     +$----.--</code>\n\n"
-            "<b>Top Holdings:</b>\n"
-            "1. BTC - <code>$--,---</code>\n"
-            "2. ETH - <code>$-,---</code>\n"
-            "3. SOL - <code>$---</code>\n\n"
-            "<b>Active Signals:</b>\n"
-            "Monitoring markets for opportunities...\n\n"
-            "<i>Use inline buttons for more detail:</i>";
+            "No real portfolio connected.\n\n"
+            "MK uses a <b>$20 paper trading wallet</b> for practice.\n"
+            "Use /paper to view your paper trading portfolio.\n\n"
+            "<i>Paper trading = zero risk, real market data, learning mechanics.</i>";
 
         std::vector<std::vector<std::pair<std::string, std::string>>> buttons = {
             {{"Prices", "crypto_prices"}, {"Signals", "crypto_signals"}},
-            {{"Portfolio", "crypto_portfolio"}, {"Airdrops", "crypto_airdrops"}}
+            {{"Paper Portfolio", "crypto_paper"}, {"Airdrops", "crypto_airdrops"}}
         };
 
         return sendMessageWithKeyboard(chatId, msg, buttons);

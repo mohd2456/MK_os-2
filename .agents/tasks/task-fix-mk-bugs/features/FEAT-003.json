@@ -1,23 +1,22 @@
 {
   "id": "FEAT-003",
   "type": "fix",
-  "description": "Remove SMALL_TALK from early intercept guards in mk_entry.cpp to avoid swallowing short imperative commands and bare math via Telegram",
-  "status": "completed",
+  "description": "Fix the /crypto command to show real paper trading data instead of fake placeholders. Fix the system prompt to include an instruction that MK must always follow user's explicit instructions about response format/length/style. Fix humidity always being 0% in weather data.",
+  "status": "in_progress",
   "steps": [
-    "Step 1 - Remove '|| inputType == MKInputType::SMALL_TALK' from the early intercept condition in handle_natural_query (around line 1234) in mk_entry.cpp",
-    "Step 2 - Remove '|| inputType == MKInputType::SMALL_TALK' from the early intercept condition in generate_ai_response (around line 1774) in mk_entry.cpp"
+    "In MK_OS/plugins/telegram.cpp, replace the handleCryptoCommand() method. Instead of hardcoded placeholder strings ($----.-- etc.), show a message that says the user has no real portfolio and directs them to use /paper for practice trading. The message should be something like: '<b>Crypto Dashboard</b>\\n\\nNo real portfolio detected.\\nMK uses a <b>$20 paper trading wallet</b> for practice.\\n\\nUse /paper to see your paper trading portfolio.\\nUse the paper_trade tool to buy/sell meme coins.\\n\\n<i>Paper trading helps MK learn market mechanics with zero real money risk.</i>'",
+    "In MK_OS/system/mk_entry.cpp, locate the MK_SYSTEM_PROMPT string (around line 210). Add the following instruction at the end (before the closing quote): '\\n\\nIMPORTANT: Always follow the user\\'s explicit instructions about response format, length, and style. If the user says \"just answer\" or \"don\\'t explain\", give only the direct answer without elaboration or explanation. Respect their preferences.'",
+    "In MK_OS/network/realtime_apis.cpp, locate the getWeather() method. The current API call uses '&current_weather=true' which returns temperature, windspeed, and weathercode but NOT humidity. Open-meteo's current_weather object does not include relative_humidity_2m. To fix this, change the API URL to also request the 'current' endpoint with 'relative_humidity_2m' variable. Change the URL to use: '&current=temperature_2m,wind_speed_10m,relative_humidity_2m,weather_code' instead of (or in addition to) '&current_weather=true'. Then parse the 'current' object from the response for humidity. The JSON path would be something like response[\"current\"][\"relative_humidity_2m\"]. Update the parsing section to look for a 'current' key and extract 'relative_humidity_2m' from it."
   ],
   "acceptance_criteria": [
-    "Both early intercept blocks only check GREETING, GOODBYE, and VAGUE_RESPONSE",
-    "Build succeeds with make",
-    "Tests pass with make test",
-    "Short imperative commands like 'tell me about docker' are no longer swallowed by casual response",
-    "Bare math like '5 times 3' via Telegram path is no longer intercepted"
+    "handleCryptoCommand() no longer shows $----.- placeholders; it shows a message directing to /paper for practice trading",
+    "MK_SYSTEM_PROMPT includes instruction to respect user's explicit formatting/style instructions",
+    "getWeather() requests humidity data from the open-meteo API and parses it correctly (using the 'current' endpoint with relative_humidity_2m)",
+    "The project compiles cleanly with the build command"
   ],
   "verification": [
-    "cd /projects/sandbox/MK_os-2/MK_OS && make",
-    "cd /projects/sandbox/MK_os-2/MK_OS && make test"
+    "Run: cd MK_OS && g++ -std=c++17 -O2 -Wall -DLINUX -o mk_os system/mk_entry.cpp -lcurl -lsqlite3"
   ],
   "blocked_reason": null,
-  "findings": "SMALL_TALK removed from both intercept guards. Build: 0 errors (15 pre-existing warnings). Tests: 67 passed, 0 failed, 484 assertions. Short imperative commands and bare math via Telegram are no longer swallowed."
+  "findings": ""
 }

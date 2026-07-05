@@ -289,10 +289,10 @@ public:
             return data;
         }
 
-        // Step 2: Fetch current weather
+        // Step 2: Fetch current weather (include current=relative_humidity_2m for humidity)
         std::string weatherUrl = "https://api.open-meteo.com/v1/forecast?latitude="
                                + std::to_string(lat) + "&longitude=" + std::to_string(lon)
-                               + "&current_weather=true";
+                               + "&current_weather=true&current=relative_humidity_2m";
         std::string weatherResponse = http.get(weatherUrl);
 
         if (weatherResponse.empty()) {
@@ -315,6 +315,17 @@ public:
                       << data.temperature << "C, " << data.description << "\n";
         } else {
             failedRequests++;
+        }
+
+        // Parse "current" object for humidity (separate from current_weather)
+        size_t curPos = weatherResponse.find("\"current\"");
+        if (curPos != std::string::npos) {
+            // Make sure we are not matching "current_weather" - find standalone "current"
+            // Check that the character after "current" + quote is not an underscore
+            std::string curSection = weatherResponse.substr(curPos);
+            if (curSection.size() > 9 && curSection[9] != '_') {
+                data.humidity = jsonGetInt(curSection, "relative_humidity_2m");
+            }
         }
 
         return data;
