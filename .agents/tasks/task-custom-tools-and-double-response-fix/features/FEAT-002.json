@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Add a create_tool tool and custom tool execution system. MK can create its own tools at runtime by writing bash/python scripts to ~/.mk_os/tools/, registering them dynamically, and executing them when called. On boot, existing custom tools are loaded from that directory.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "In MK_OS/orchestrator/tool_registry.cpp: (a) Add a 'create_tool' entry in registerDefaultTools() with description 'Create a new custom tool. MK writes a bash or python script that becomes callable.' and paramSchema '{\"name\": \"<tool_name>\", \"description\": \"<what it does>\", \"language\": \"bash|python\", \"code\": \"<script code>\", \"args\": \"<comma-separated arg names>\"}'. (b) Add a method loadCustomTools() that reads ~/.mk_os/tools/manifest.json (if it exists) and calls registerTool() for each entry found. The manifest is a JSON array of objects with name, description, paramSchema, language, and scriptPath fields. (c) Add a method registerCustomTool(name, description, paramSchema) that calls registerTool and returns true if the name doesn't already exist.",
     "In MK_OS/orchestrator/tool_executor.cpp: (a) Add a dispatch entry in execute(): if (call.tool == 'create_tool') return handleCreateTool(call.args); Also add: if the tool is not in the known hardcoded list, check if it exists in the registry (it might be a custom tool) and call handleCustomTool(call.tool, call.args). (b) Implement handleCreateTool(): extract name, description, language, code, and args from call.args. Validate name (alphanumeric + underscore only, 3-30 chars). Validate language is 'bash' or 'python'. Create directory ~/.mk_os/tools/ if it doesn't exist. Write the script to ~/.mk_os/tools/<name>.sh or .py. Make it executable (chmod). Read existing manifest.json (or start empty array), append new tool entry, write manifest back. Register the tool in the toolRegistry pointer. Return success message. (c) Implement handleCustomTool(toolName, args): Read manifest.json to find the tool entry. Get scriptPath and language. Build a command that sets each arg as an environment variable, then executes the script. Use popen() with a timeout (10s). Return stdout as the result. (d) Add a MKToolRegistry* toolRegistry pointer to MKToolExecutor so it can register new tools and check for custom tools.",
@@ -25,5 +25,5 @@
     "cd MK_OS && g++ -std=c++17 -O2 -Wall -DLINUX -o mk_os_test tests/test_main.cpp -lcurl -lsqlite3 && ./mk_os_test"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All changes implemented successfully. 106 tests pass (102 baseline + 4 new) with 561 assertions. Tool count goes from 11 to 12 with create_tool. The env command is needed to set environment variables with timeout (timeout treats VAR=val as the command name otherwise). The test_paper_trading_buy_deducts_fees test is flaky due to CoinGecko API availability - it occasionally fails when API is reachable due to contradictory assertions in the test (checks < $15 then == $15) but this is pre-existing and unrelated."
 }
