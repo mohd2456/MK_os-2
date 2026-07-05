@@ -2,7 +2,7 @@
   "id": "FEAT-005-review-fixes",
   "type": "fix",
   "description": "Fix issues identified in semantic review: SQL injection in saveHolding(), /paper command returns hardcoded text, system prompt test duplicates constant, no URL-encoding on symbol in fetchPrice().",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Fix SQL injection in saveHolding() in crypto/paper_trading.cpp: use sqlite3_prepare_v2 + sqlite3_bind_text for both DELETE and INSERT statements, matching saveTrade() pattern.",
     "Fix /paper Telegram command in system/mk_entry.cpp: call sys.paperTrading.getPortfolio() and sys.paperTrading.getStats() to get real data instead of hardcoded HTML.",
@@ -22,5 +22,5 @@
     "cd /projects/sandbox/MK_os-2/MK_OS && make test"
   ],
   "blocked_reason": null,
-  "findings": null
+  "findings": "All 4 review issues fixed. Build passes with same 6 pre-existing warnings. All 96 tests pass with 508 assertions (2 fewer than before due to removing redundant assertions that tested the duplicate prompt string for 'loyal' and 'who are you'). The paper_trading_persistence test confirms SQLite round-trip still works correctly with the new parameterized queries."
 }
