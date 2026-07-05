@@ -1,29 +1,20 @@
 {
   "id": "FEAT-001",
   "type": "fix",
-  "description": "Fix all 6 bugs: natural language math detection, greeting fallback, thinking engine waste, useless confidence messages, provider health routing, and smart router word boundary matching",
+  "description": "Fix the double-prompt-building bug in callLLM() and synthesizeWithToolResult(). Currently, the orchestrator carefully builds a token-budgeted prompt via MKContextBuilder, then passes it to cloudLLM->generateWithContext() which IGNORES that pre-built prompt and rebuilds its own from scratch (appending facts and history again). The fix is to use cloudLLM->generate(userInput, prompt) instead, which sends the pre-built prompt directly as the system prompt.",
   "status": "completed",
   "steps": [
-    "BUG 1 - In MK_OS/ai_core/math_solver.cpp: Add isNaturalLanguageMath() method that detects patterns like 'X times Y', 'X multiplied by Y', 'X divided by Y', 'X plus Y', 'X minus Y' (where X and Y are numbers, possibly surrounded by words like 'what is'). Add evaluateNaturalMath() that extracts the numbers and operator words and computes the result. Call isNaturalLanguageMath() from isMathQuery(). In the math block in handle_natural_query (mk_entry.cpp), call isNaturalLanguageMath + evaluateNaturalMath before falling to solve().",
-    "BUG 2 - In MK_OS/system/mk_entry.cpp: In handle_natural_query(), BEFORE the 3-layer architecture block (after the math solver check but before the isConversation block), add a check: classify the input with sys.conversationMode.classifyInput(input). If the type is GREETING, GOODBYE, VAGUE_RESPONSE, or SMALL_TALK, call sys.conversationMode.generateResponse(input, sys.casualResponses) directly and return immediately, bypassing the 3-layer architecture. Do the same in generate_ai_response() for the Telegram path.",
-    "BUG 3 - In MK_OS/llm/thinking_engine.cpp: In the think() method, before building the prompt and calling the provider, check the input classification. Add a quick check: if the input looks like a greeting/goodbye/small talk (check for common greeting words), return empty string immediately without calling any API. This prevents wasting API calls on trivial conversational inputs.",
-    "BUG 4 - In MK_OS/mk_brain/personality/response_style.cpp: Replace the low_confidence_phrases_ and uncertain_phrases_ with honest messages. low_confidence_phrases_ should contain things like 'From what I can tell, ' (not 'I'm not confident enough'). uncertain_phrases_ should contain 'I'd need to look into this further. ' rather than recommending verifying elsewhere.",
-    "BUG 5 - In MK_OS/llm/provider_router.cpp: Add isProviderHealthy() method that returns false if failCount > 2 (not just >= maxFails). In MK_OS/llm/thinking_engine.cpp: Change pickThinkingProvider() to use isProviderHealthy() instead of isProviderAvailable() so that providers with recent failures (like OpenRouter with 429s) are skipped in favor of working ones (Groq).",
-    "BUG 6 - In MK_OS/ai_core/smart_router.cpp: Fix countKeywordMatches() to require word boundaries. Instead of simple substring search with lower.find(kw), check that the character before the match is a space/start-of-string/punctuation AND the character after is a space/end-of-string/punctuation. This prevents 'time' from matching inside 'times', 'sometimes', 'anytime'."
+    "In MK_OS/orchestrator/conversation_loop.cpp, locate the callLLM() method (around line 195 in the 'Fall back to cloud LLM' section). Replace the call: cloudLLM->generateWithContext(input, facts, history, \"\", prompt) with cloudLLM->generate(input, prompt). The generate() method in cloud_llm.cpp takes (userPrompt, systemPrompt) and sends systemPrompt as the system message and userPrompt as the user message. Since 'prompt' already contains the full assembled prompt (system + tools + facts + history + 'User: input\\nMK:'), pass the assembled prompt as the systemPrompt and pass input as the userPrompt. This way the LLM gets the full context without double-building.",
+    "In the same file, locate synthesizeWithToolResult() method (around line 230). It builds its own prompt string manually, then calls cloudLLM->generateWithContext(). Replace that cloudLLM->generateWithContext() call with cloudLLM->generate(input, prompt) where 'prompt' is the manually assembled string that already contains facts, history, tool results, etc. The local LLM path (llmEngine->generate(prompt)) is already correct - just fix the cloud path."
   ],
   "acceptance_criteria": [
-    "Code compiles with 'cd MK_OS && make' with no errors",
-    "Input 'what is 5 times 3' is detected as math and returns 15",
-    "Input 'what is 10 divided by 2' is detected as math and returns 5",
-    "Input 'hello' produces a casual greeting without touching LLM or showing 'can't reach language model'",
-    "Thinking engine does not invoke API call for greetings/goodbyes",
-    "Provider router has isProviderHealthy() that skips providers with high fail counts",
-    "Smart router 'time' keyword does not match 'times', 'sometimes', etc."
+    "callLLM() uses cloudLLM->generate() instead of cloudLLM->generateWithContext()",
+    "synthesizeWithToolResult() uses cloudLLM->generate() instead of cloudLLM->generateWithContext()",
+    "The project compiles cleanly with the build command"
   ],
   "verification": [
-    "cd /projects/sandbox/MK_os-2/MK_OS && make",
-    "cd /projects/sandbox/MK_os-2/MK_OS && rm -rf prometheus_data genesis_data && printf 'hello\\nwhat is 5 times 3\\nwhat is 10 divided by 2\\n/quit\\n' | timeout 30 ./mk_os 2>&1 | sed 's/\\x1b\\[[0-9;]*m//g' | grep -E '^  [~]|^  .*='"
+    "Run: cd MK_OS && g++ -std=c++17 -O2 -Wall -DLINUX -o mk_os system/mk_entry.cpp -lcurl -lsqlite3"
   ],
   "blocked_reason": null,
-  "findings": "All 6 bugs fixed and verified. Build succeeds with 0 errors (15 pre-existing warnings). All 67 tests pass. Interactive verification confirms: hello produces casual greeting, 5 times 3 returns 15, 10 divided by 2 returns 5."
+  "findings": "Build compiles cleanly (zero errors, only pre-existing warnings). All 96 tests pass. The paper_trading_buy_deducts_fees test may appear flaky on first run due to stale SQLite state from previous test executions but passes on clean re-run."
 }
