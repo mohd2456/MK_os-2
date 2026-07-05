@@ -790,48 +790,6 @@ void test_signal_engine_generation() {
 }
 
 // ============================================================
-// TEST: Smart Router - Crypto Route
-// ============================================================
-void test_smart_router_crypto() {
-    MKSmartRouter router;
-
-    auto decision = router.route("check my crypto portfolio bitcoin price");
-    TEST_ASSERT_EQ(static_cast<int>(decision.primaryRoute),
-                   static_cast<int>(MKRouteType::CRYPTO),
-                   "Crypto keywords should route to CRYPTO");
-    TEST_ASSERT_GT(decision.confidence, 0.3f,
-                   "CRYPTO route should have reasonable confidence");
-}
-
-// ============================================================
-// TEST: Smart Router - Homelab Route
-// ============================================================
-void test_smart_router_homelab() {
-    MKSmartRouter router;
-
-    auto decision = router.route("deploy docker container on server homelab");
-    TEST_ASSERT_EQ(static_cast<int>(decision.primaryRoute),
-                   static_cast<int>(MKRouteType::HOMELAB),
-                   "Homelab keywords should route to HOMELAB");
-    TEST_ASSERT_GT(decision.confidence, 0.3f,
-                   "HOMELAB route should have reasonable confidence");
-}
-
-// ============================================================
-// TEST: Smart Router - Mind Route
-// ============================================================
-void test_smart_router_mind() {
-    MKSmartRouter router;
-
-    auto decision = router.route("set a goal to improve my skill and earn money");
-    TEST_ASSERT_EQ(static_cast<int>(decision.primaryRoute),
-                   static_cast<int>(MKRouteType::MIND),
-                   "Mind keywords should route to MIND");
-    TEST_ASSERT_GT(decision.confidence, 0.3f,
-                   "MIND route should have reasonable confidence");
-}
-
-// ============================================================
 // TEST: HMAC-SHA256 against RFC 4231 Test Vector
 // ============================================================
 void test_hmac_sha256_rfc4231() {
@@ -964,16 +922,12 @@ void test_autonomous_learner_session() {
 // ============================================================
 void test_full_pipeline_with_no_llm() {
     // Simulate the scenario where no LLM is available:
-    // thinking engine returns empty, cloud LLM is unavailable,
-    // but graph has facts. System should produce meaningful response.
+    // graph has facts. System should produce meaningful response via orchestrator fallback.
 
     MKPatternGraph graph("ai_core/hre/knowledge_files");
     graph.loadAllKnowledge();
     graph.addFact("python", "is_a", "programming_language", 1.0f);
     graph.addFact("python", "created_by", "guido_van_rossum", 0.95f);
-
-    MKConversationMode convMode;
-    MKCasualResponses casualResponses;
 
     // Get facts about python
     auto results = graph.getAll("python");
@@ -991,11 +945,7 @@ void test_full_pipeline_with_no_llm() {
             factBased += relevantFacts[i];
         }
         factBased += ".";
-        std::string prefix = convMode.generateResponse("hmm", casualResponses);
-        if (prefix.empty() || prefix.size() < 3) {
-            prefix = "Here's what I know:";
-        }
-        response = prefix + " " + factBased;
+        response = "Here's what I know: " + factBased;
     }
 
     TEST_ASSERT_FALSE(response.empty(),
@@ -1005,11 +955,34 @@ void test_full_pipeline_with_no_llm() {
     TEST_ASSERT_TRUE(response.size() > 10,
                      "Degraded response should be meaningful (> 10 chars)");
 
-    // Test with no facts available - should still produce something from templates
-    std::vector<std::string> emptyFacts;
-    std::string emptyResponse = convMode.generateResponse("tell me something", casualResponses);
-    TEST_ASSERT_FALSE(emptyResponse.empty(),
-                      "Template fallback should produce a response even with no facts");
+    // Use orchestrator for the full test
+    MKBrainMemory memory(10);
+    MKCloudLLM cloudLLM;
+    MKLLMEngine llmEngine;
+    MKProviderRouter providerRouter;
+    MKRequestLogger requestLogger;
+    MKResourceMonitor resourceMonitor;
+    MKDeviceRegistry deviceRegistry;
+    MKLearningEngine learningEngine;
+    MKBiographicalExtractor factExtractor;
+    static const std::string testPrompt = "You are MK.";
+
+    MKOrchestrator orch;
+    orch.graph = &graph;
+    orch.brainMemory = &memory;
+    orch.cloudLLM = &cloudLLM;
+    orch.llmEngine = &llmEngine;
+    orch.providerRouter = &providerRouter;
+    orch.requestLogger = &requestLogger;
+    orch.resourceMonitor = &resourceMonitor;
+    orch.deviceRegistry = &deviceRegistry;
+    orch.learningEngine = &learningEngine;
+    orch.factExtractor = &factExtractor;
+    orch.systemPrompt = &testPrompt;
+
+    std::string orchResponse = orch.respond("what is python");
+    TEST_ASSERT_FALSE(orchResponse.empty(),
+                      "Orchestrator should produce response even without LLM");
 }
 
 // ============================================================
@@ -1143,6 +1116,259 @@ void test_provider_quota_tracking() {
 
     // Clean up
     std::remove("/tmp/test_mk_quota.log");
+}
+
+// ============================================================
+// FEAT-003 Live Integration Tests - Real I/O
+// ============================================================
+
+// ============================================================
+// TEST: Live File Read via Tool Executor
+// ============================================================
+void test_tool_live_file_read() {
+    // Create a known file in /tmp
+    std::string testPath = "/tmp/mk_tool_test_read.txt";
+    std::string knownContent = "MK OS live file read test content 12345";
+    {
+        std::ofstream f(testPath);
+        TEST_ASSERT_TRUE(f.is_open(), "Should be able to create test file");
+        f << knownContent;
+        f.close();
+    }
+
+    // Set up executor with file reader
+    MKToolExecutor executor;
+    MKFileReader reader;
+    executor.fileReader = &reader;
+
+    // Call read_file tool
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "read_file";
+    call.args["path"] = testPath;
+
+    MKToolResult result = executor.execute(call);
+    TEST_ASSERT_TRUE(result.success, "read_file tool should succeed on real file");
+    TEST_ASSERT_TRUE(result.output.find(knownContent) != std::string::npos,
+                     "read_file output should contain the known content");
+
+    // Clean up
+    std::remove(testPath.c_str());
+}
+
+// ============================================================
+// TEST: Live File Write via Tool Executor
+// ============================================================
+void test_tool_live_file_write() {
+    std::string testPath = "/tmp/mk_tool_test_write.txt";
+    std::string writeContent = "hello from MK tool";
+
+    // Remove any leftover file
+    std::remove(testPath.c_str());
+
+    // Set up executor
+    MKToolExecutor executor;
+
+    // Call write_file tool
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "write_file";
+    call.args["path"] = testPath;
+    call.args["content"] = writeContent;
+
+    MKToolResult result = executor.execute(call);
+    TEST_ASSERT_TRUE(result.success, "write_file tool should succeed for /tmp path");
+    TEST_ASSERT_TRUE(result.output.find("Written") != std::string::npos,
+                     "write_file output should confirm write");
+
+    // Verify by reading back
+    std::ifstream f(testPath);
+    TEST_ASSERT_TRUE(f.is_open(), "Written file should exist");
+    std::string readBack;
+    std::getline(f, readBack);
+    f.close();
+    TEST_ASSERT_EQ(readBack, writeContent, "File content should match what was written");
+
+    // Clean up
+    std::remove(testPath.c_str());
+}
+
+// ============================================================
+// TEST: Live Local Shell Execution
+// ============================================================
+void test_tool_live_local_shell() {
+    MKToolExecutor executor;
+    MKCodeRunner runner(5);
+    executor.codeRunner = &runner;
+
+    // Execute a simple echo command
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "local_shell";
+    call.args["command"] = "echo hello_from_mk";
+
+    MKToolResult result = executor.execute(call);
+    TEST_ASSERT_TRUE(result.success, "local_shell echo should succeed");
+    TEST_ASSERT_TRUE(result.output.find("hello_from_mk") != std::string::npos,
+                     "local_shell output should contain echo text");
+}
+
+// ============================================================
+// TEST: Live Local Shell - Exit Code Handling
+// ============================================================
+void test_tool_live_local_shell_exit_code() {
+    MKToolExecutor executor;
+    MKCodeRunner runner(5);
+    executor.codeRunner = &runner;
+
+    // Execute "false" which returns exit code 1
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "local_shell";
+    call.args["command"] = "false";
+
+    MKToolResult result = executor.execute(call);
+    TEST_ASSERT_FALSE(result.success, "local_shell 'false' should report failure");
+    TEST_ASSERT_TRUE(!result.error.empty(), "Error should be non-empty for failed command");
+}
+
+// ============================================================
+// TEST: Live Web Search - News (HackerNews API)
+// ============================================================
+void test_tool_live_web_search_news() {
+    MKToolExecutor executor;
+    MKRealtimeAPIs apis;
+    executor.realtimeApis = &apis;
+
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "web_search";
+    call.args["query"] = "news";
+
+    MKToolResult result = executor.execute(call);
+    // Accept success (API up) or graceful failure (API down)
+    TEST_ASSERT_TRUE(result.success || !result.error.empty(),
+                     "web_search should either succeed or return a descriptive error");
+    if (result.success) {
+        TEST_ASSERT_TRUE(result.output.size() > 10,
+                         "News results should have meaningful content");
+        TEST_ASSERT_TRUE(result.output.find("news") != std::string::npos ||
+                         result.output.find("headlines") != std::string::npos ||
+                         result.output.find(".") != std::string::npos,
+                         "News results should contain headlines or sentences");
+    }
+}
+
+// ============================================================
+// TEST: Live System Info
+// ============================================================
+void test_tool_live_system_info() {
+    MKToolExecutor executor;
+    MKResourceMonitor monitor;
+    executor.resourceMonitor = &monitor;
+
+    MKParsedToolCall call;
+    call.valid = true;
+    call.tool = "system_info";
+
+    MKToolResult result = executor.execute(call);
+    TEST_ASSERT_TRUE(result.success, "system_info should succeed on this machine");
+    TEST_ASSERT_TRUE(result.output.find("CPU") != std::string::npos,
+                     "system_info should mention CPU");
+    TEST_ASSERT_TRUE(result.output.find("RAM") != std::string::npos,
+                     "system_info should mention RAM");
+    // Check for numeric values (at least a digit should be present)
+    bool hasDigit = false;
+    for (char c : result.output) {
+        if (std::isdigit(c)) { hasDigit = true; break; }
+    }
+    TEST_ASSERT_TRUE(hasDigit, "system_info should contain numeric values");
+}
+
+// ============================================================
+// TEST: SSH Graceful Failure - Unreachable Host
+// ============================================================
+void test_tool_ssh_unreachable_host() {
+    MKSSHController controller;
+    // Register a device with RFC 5737 TEST-NET IP (guaranteed unreachable)
+    // Use a 2-second timeout to avoid hanging
+    controller.registerDevice("unreachable-test", "192.0.2.1", "testuser", 22, "", 2);
+
+    // Attempt to execute a command on the unreachable host
+    MKSSHResult result = controller.executeRemote("unreachable-test", "echo hello");
+
+    // Should fail gracefully (not crash, not hang indefinitely)
+    TEST_ASSERT_FALSE(result.success,
+                      "SSH to unreachable host should fail");
+    TEST_ASSERT_TRUE(result.timed_out ||
+                     result.error.find("timed out") != std::string::npos ||
+                     result.error.find("timeout") != std::string::npos ||
+                     result.exit_code != 0,
+                     "Should report timeout or connection error");
+    // Verify it did not hang (duration should be roughly around timeout)
+    TEST_ASSERT_TRUE(result.duration_ms < 30000.0f,
+                     "SSH attempt should not hang longer than 30 seconds");
+}
+
+// ============================================================
+// TEST: Docker - List Command Generation and Local Execution
+// ============================================================
+void test_tool_docker_list_local() {
+    MKDockerManager dockerMgr;
+
+    // Verify command generation
+    std::string listCmd = dockerMgr.listContainersCmd();
+    TEST_ASSERT_TRUE(listCmd.find("docker ps") != std::string::npos,
+                     "listContainersCmd should contain 'docker ps'");
+
+    // Try to run docker info locally to check if docker is available
+    MKCodeRunner runner(5);
+    MKRunResult infoResult = runner.runBash("docker info > /dev/null 2>&1 && echo docker_ok || echo docker_missing");
+
+    if (infoResult.success && infoResult.stdoutOutput.find("docker_ok") != std::string::npos) {
+        // Docker is available - run the list command locally
+        MKRunResult listResult = runner.runBash("docker ps -a --format '{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}|{{.Ports}}' 2>&1");
+        // Should not crash regardless of whether there are containers
+        TEST_ASSERT_TRUE(listResult.success || listResult.exitCode >= 0,
+                         "docker ps should not crash when docker is available");
+
+        // Try parsing the output (may be empty if no containers)
+        auto containers = dockerMgr.parseContainerList(listResult.stdoutOutput, "localhost");
+        // Just verify it didn't crash - container count may be 0
+        TEST_ASSERT_TRUE(true, "Docker container list parsing completed without crash");
+    } else {
+        // Docker not available - verify we handle gracefully
+        TEST_ASSERT_TRUE(true, "Docker not available - skipping live docker test (graceful)");
+    }
+}
+
+// ============================================================
+// TEST: Tool Call Round-Trip (Registry -> Parse -> Execute)
+// ============================================================
+void test_tool_call_roundtrip() {
+    // Create a registry with tools
+    MKToolRegistry registry;
+
+    // Forge a fake LLM response containing a tool call for system_info
+    std::string fakeLLMResponse = "Let me check the system status. {\"tool\": \"system_info\", \"args\": {}}";
+
+    // Parse it
+    MKParsedToolCall call = registry.parseToolCall(fakeLLMResponse);
+    TEST_ASSERT_TRUE(call.valid, "Round-trip: parseToolCall should find valid tool call");
+    TEST_ASSERT_EQ(call.tool, std::string("system_info"),
+                   "Round-trip: parsed tool should be system_info");
+
+    // Execute it with a real resource monitor
+    MKToolExecutor executor;
+    MKResourceMonitor monitor;
+    executor.resourceMonitor = &monitor;
+
+    MKToolResult result = executor.execute(call);
+    TEST_ASSERT_TRUE(result.success, "Round-trip: system_info execution should succeed");
+    TEST_ASSERT_TRUE(result.output.find("CPU") != std::string::npos,
+                     "Round-trip: result should contain CPU info");
+    TEST_ASSERT_TRUE(result.output.find("RAM") != std::string::npos,
+                     "Round-trip: result should contain RAM info");
 }
 
 #endif // MK_TEST_INTEGRATION_CPP

@@ -22,19 +22,24 @@ LLM_EATER := mk_llm_eater
 # No need for separate .o files - this avoids multiple-definition linker errors
 # Modules included via mk_entry.cpp:
 #   system/ - diagnostics, daemon, shell, service_manager
-#   ai_core/ - smart_router, persistent_memory, knowledge_integrator, self_improver,
-#              neural_net, conversation_mode, mce, cxn, prometheus, genesis, idea_engine
-#   ai_core/hre/ - pattern_graph, deep_reasoner, reasoning_chains, composer
+#   orchestrator/ - conversation_loop (single LLM call architecture)
+#   ai_core/hre/ - pattern_graph (knowledge store, KEPT)
+#   ai_core/ - persistent_memory, math_solver
 #   mk_brain/ - learning_engine, brain_memory, embeddings, ann_search, cache_mgr,
-#               daily_briefing, fact_extractor, reasoning_engine, personality
+#               daily_briefing, fact_extractor, personality/response_style
 #   network/ - realtime_apis
 #   plugins/ - telegram, pc_helper
+#   llm/ - cloud_llm, llm_engine, provider_router, request_logger
+#   security/ - key_encryption
 #   crypto/ - market_data, technical_analysis, signal_engine, portfolio_manager,
 #             risk_manager, exchange_api, trading_bot, airdrop_farmer
-#   mind/ - mastery_network, goal_engine, strategy_planner, self_funding
+#   mind/ - mastery_network, goal_engine, strategy_planner, self_funding,
+#           knowledge_validator, autonomous_learner
 #   homelab/ - device_registry, resource_monitor, ssh_controller, docker_manager,
 #              service_orchestrator
 #   sync/ - knowledge_sync, device_comm, memory_sync
+#   linux/ - gpu_monitor, network_interface, storage_monitor
+#   config/ - mk_config
 
 # Install location
 PREFIX    := /usr/local/bin

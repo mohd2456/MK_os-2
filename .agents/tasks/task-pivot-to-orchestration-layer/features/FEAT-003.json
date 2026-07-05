@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Build the tool-use framework that lets the LLM invoke real tools (SSH, Docker, file ops, system info, web search) through structured JSON tool calls in its response. Make tools reliable with proper error handling, timeouts, and result formatting. The system prompt tells the LLM what tools are available and the format to call them.",
+  "status": "completed",
+  "steps": [
+    "Create MK_OS/orchestrator/tool_registry.cpp that defines a ToolRegistry class. Each tool has: name, description, parameter schema (as a string for the LLM prompt), and an execute function. Register these tools: 'ssh_exec' (run command on a remote device via SSH), 'docker_cmd' (manage containers), 'local_shell' (run local command with safety checks from code_runner.cpp), 'read_file' (read file contents), 'write_file' (write/create a file), 'web_search' (search DuckDuckGo via realtime_apis), 'system_info' (get CPU/RAM/temp from resource_monitor), 'device_list' (list homelab devices), 'learn_fact' (teach MK a new fact via learning_engine).",
+    "Create MK_OS/orchestrator/tool_executor.cpp that takes a parsed tool call (tool name + JSON args) and dispatches to the appropriate handler. Each handler wraps the existing module (MKSSHController, MKDockerManager, MKCodeRunner, MKRealtimeAPIs, etc.) with proper error handling: catch exceptions, enforce timeouts, limit output size to 2000 chars (to stay token-efficient), and return a structured result string.",
+    "Update the system prompt in MKOrchestrator (from FEAT-002) to include available tools and their calling format. The format should be: when the LLM wants to use a tool, it outputs a JSON block like {\"tool\": \"ssh_exec\", \"args\": {\"device\": \"server1\", \"command\": \"docker ps\"}}. The orchestrator detects this, executes the tool, and sends the result back in a follow-up message.",
+    "Implement the tool-call parsing in MKOrchestrator::respond(). After receiving LLM output, scan for JSON tool-call blocks. If found: extract tool name and args, call tool_executor, get the result, then make a second LLM call with the tool result appended as context ('Tool result: ...'). Limit to 3 tool calls per turn to prevent infinite loops.",
+    "Add safety guards: the 'ssh_exec' tool should only allow execution on registered devices (from device_registry), the 'local_shell' tool uses the existing MKCodeRunner::isDangerous() check, 'write_file' is limited to specific directories (~/.mk_os/data/ and /tmp/).",
+    "Update tests to verify tool registration, tool parsing from LLM output, and safety guards (e.g., dangerous command rejection)."
+  ],
+  "acceptance_criteria": [
+    "'make' succeeds with the new tool framework files included",
+    "'make test' passes including new tool tests",
+    "Tool registry contains at least 8 registered tools",
+    "Tool calls are correctly parsed from LLM-style JSON output",
+    "Safety checks prevent dangerous shell commands and file writes outside allowed paths"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": "Build passes with 6 warnings (all pre-existing in crypto/homelab modules). Tests: 65 passed, 0 failed, 401 assertions. Tool framework is fully wired: MKToolRegistry registers 9 tools with JSON schemas, MKToolExecutor dispatches to real subsystems. Safety guards verified: SSH rejects unregistered devices, local_shell rejects dangerous commands via isDangerous(), write_file blocks writes outside /tmp and ~/.mk_os/data/. Output capping works at 2000 chars. The system prompt now includes tool descriptions so the LLM knows what tools it can call. The tool_registry and tool_executor includes must come after tools/code_runner.cpp, tools/file_reader.cpp but before conversation_loop.cpp due to the single compilation unit pattern. Tests that call persistNewFact generate side effects in learned_facts.mk - this is expected and those changes should not be committed. MKRealtimeAPIs needed to be included in the test build for the tool_executor to compile."
+}

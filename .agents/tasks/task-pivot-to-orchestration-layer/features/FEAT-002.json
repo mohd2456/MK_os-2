@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-002",
+  "type": "refactor",
+  "description": "Implement Option B - restructure the conversation loop to use ONE clean LLM call per user message. Remove all competing generation engines (Genesis, Prometheus, HRE deep_reasoner used for response generation, MKNeuralNet, MKIdeaEngine brainstorm responses). The new flow: (1) receive user input, (2) gather relevant context from memory/knowledge graph, (3) build a tight system prompt with only relevant facts, (4) send ONE call to LLM, (5) return response. Delete dead code from ai_core/ that tried to 'think' independently.",
+  "status": "completed",
+  "steps": [
+    "Create a new file MK_OS/orchestrator/conversation_loop.cpp that implements the clean single-LLM-call architecture. This file defines class MKOrchestrator with method 'std::string respond(const std::string& userInput)' that: gathers context from brain_memory (short-term history), queries pattern_graph for relevant facts (using filterRelevantFacts), checks if tools are needed, builds the prompt with MK_SYSTEM_PROMPT + relevant facts + history, makes ONE LLM call via cloud_llm or llm_engine, sanitizes response, and returns it.",
+    "In the new MKOrchestrator class, implement a tool-call detection system: after getting the LLM response, check if it contains tool-call markers (JSON blocks with 'tool' and 'args' fields). If yes, parse the tool call, execute it (SSH, Docker, file ops, web search), and feed the result back in a second LLM call for synthesis. This is the 'tool use' loop.",
+    "Simplify mk_entry.cpp: replace the complex handle_natural_query() function and the generate_ai_response() function with calls to MKOrchestrator::respond(). Remove the MKSmartRouter routing logic (GRAPH/SEARCH/REASON/GENERATE/CRYPTO/HOMELAB/MIND routes) since the LLM now decides what tools to use. Keep command handlers (/ask, /weather, etc.) as direct shortcuts.",
+    "Remove dead engines from mk_entry.cpp includes and MKSystem struct: Remove MKDeepReasoner (used for response generation), MKReasoningChains (used for response generation), MKComposer, MKNeuralNet, MKConversationMode, MKIdeaEngine, MKSmartRouter, MKSelfImprover, MKKnowledgeIntegrator. Keep MKPatternGraph (knowledge store), MKBrainMemory, MKLearningEngine, MKCasualResponses (for offline fallback), MKResponseStyle (for offline formatting).",
+    "Remove or gut the corresponding source files that are no longer included: ai_core/smart_router.cpp (delete), ai_core/neural_net.cpp (delete), ai_core/conversation_mode.cpp (delete), ai_core/idea_engine.cpp (delete), ai_core/self_improver.cpp (delete), ai_core/knowledge_integrator.cpp (delete), ai_core/hre/deep_reasoner.cpp (delete), ai_core/hre/reasoning_chains.cpp (delete), ai_core/hre/composer.cpp (delete), mk_brain/reasoning/reasoning_engine.cpp (delete). Note: pattern_graph.cpp is KEPT because it stores the knowledge graph.",
+    "Update the Makefile comments to reflect the new architecture. The comment block listing included modules should be updated.",
+    "Update tests/test_main.cpp to remove tests for deleted modules (test_reasoning_chains, test_deep_reasoner, test_smart_router, test_conversation_mode, test_idea_engine, test_neural_net, etc.) and add tests for the new MKOrchestrator class: test that respond() returns non-empty for a simple greeting, test that tool calls are detected in LLM output, test prompt building includes relevant facts.",
+    "Ensure build succeeds and remaining tests pass after all removals."
+  ],
+  "acceptance_criteria": [
+    "'make' from MK_OS/ succeeds with no errors",
+    "'make test' passes all remaining/new tests",
+    "The MKOrchestrator class exists and handles the full conversation flow",
+    "No references to deleted engines remain in mk_entry.cpp",
+    "The binary size should be smaller (fewer modules compiled in)"
+  ],
+  "verification": [
+    "cd MK_OS && make clean && make",
+    "cd MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": "Build passes with 7 warnings (all pre-existing unused parameter/field warnings in crypto and homelab modules). Tests: 52 passed, 0 failed, 343 assertions. Binary went from including 11 dead engines to using a single clean MKOrchestrator class. The orchestrator is included after helper functions (sanitizeLLMResponse, filterRelevantFacts) due to the single-compilation-unit pattern. MKOrchestrator is stored as unique_ptr in MKSystem because of forward-declaration constraints. initOrchestrator() is called in main() after construction. Key design: cmd_search and cmd_think call LLM directly (not through orchestrator) because they are defined before the orchestrator include - this avoids incomplete type errors while maintaining the same behavior."
+}

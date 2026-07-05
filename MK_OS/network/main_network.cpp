@@ -1,3 +1,6 @@
+// LEGACY: This file is not included in the main build or test suite.
+// It was part of the old standalone network architecture before the
+// unified mk_entry.cpp compilation model was adopted.
 #ifndef MK_MAIN_NETWORK_CPP
 #define MK_MAIN_NETWORK_CPP
 

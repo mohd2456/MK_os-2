@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-005-review-fixes",
+  "type": "fix",
+  "description": "Fix issues identified in semantic review: SQL injection in saveHolding(), /paper command returns hardcoded text, system prompt test duplicates constant, no URL-encoding on symbol in fetchPrice().",
+  "status": "completed",
+  "steps": [
+    "Fix SQL injection in saveHolding() in crypto/paper_trading.cpp: use sqlite3_prepare_v2 + sqlite3_bind_text for both DELETE and INSERT statements, matching saveTrade() pattern.",
+    "Fix /paper Telegram command in system/mk_entry.cpp: call sys.paperTrading.getPortfolio() and sys.paperTrading.getStats() to get real data instead of hardcoded HTML.",
+    "Fix system prompt test in tests/test_main.cpp: remove the duplicate MK_SYSTEM_PROMPT_TEST constant and instead test expected substrings directly using a comment explaining the test validates expected prompt content.",
+    "Add URL-encoding for coinId in fetchPrice() in crypto/paper_trading.cpp: sanitize special characters before inserting into URL."
+  ],
+  "acceptance_criteria": [
+    "saveHolding() uses parameterized queries for both DELETE and INSERT",
+    "/paper command shows real portfolio data from sys.paperTrading",
+    "System prompt test does not duplicate the full prompt string",
+    "fetchPrice() URL-encodes the coinId parameter",
+    "make builds successfully",
+    "make test passes all tests"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && make",
+    "cd /projects/sandbox/MK_os-2/MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": "All 4 review issues fixed. Build passes with same 6 pre-existing warnings. All 96 tests pass with 508 assertions (2 fewer than before due to removing redundant assertions that tested the duplicate prompt string for 'loyal' and 'who are you'). The paper_trading_persistence test confirms SQLite round-trip still works correctly with the new parameterized queries."
+}

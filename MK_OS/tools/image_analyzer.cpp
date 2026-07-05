@@ -1,3 +1,6 @@
+// LEGACY: This file is not included in the main build or test suite.
+// It is not built by any Makefile target. Image analysis functionality
+// has not been integrated into the unified mk_entry.cpp compilation model.
 #ifndef MK_IMAGE_ANALYZER_CPP
 #define MK_IMAGE_ANALYZER_CPP
 

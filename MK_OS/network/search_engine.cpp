@@ -1,3 +1,6 @@
+// LEGACY: This file is not included in the main build or test suite.
+// Only referenced by network/autonomous_agent.cpp (also legacy).
+// The active web search functionality uses MKRealtimeAPIs in realtime_apis.cpp.
 #ifndef MK_SEARCH_ENGINE_CPP
 #define MK_SEARCH_ENGINE_CPP
 

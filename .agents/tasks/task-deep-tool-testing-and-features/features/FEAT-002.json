@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Build meme coin paper trading module with $20 fake wallet, realistic mechanics (gas fees, slippage, DEX fees), CoinGecko price data, SQLite portfolio tracking, and P/L reporting. Integrate as an LLM-invokable tool.",
+  "status": "completed",
+  "steps": [
+    "Create MK_OS/crypto/paper_trading.cpp with class MKPaperTrading. Core state: starting balance $20.00 USD, holdings map (symbol->quantity), trade history vector, SQLite db path for persistence. Include realistic fee model: gas_fee = random $0.50-$2.00 per trade, slippage = random 1-5% on meme coins, dex_fee = 0.3% of trade value.",
+    "Implement buy(symbol, amount_usd) and sell(symbol, amount_or_all) methods. Buy: deduct gas+dex fees from amount, apply slippage to price, record trade. Sell: calculate proceeds after fees and slippage, update balance. Both methods use CoinGecko free API (api.coingecko.com/api/v3/simple/price?ids=<coin>&vs_currencies=usd) for current price. If API fails, return error (do not simulate prices).",
+    "Implement SQLite persistence: trades table (id, symbol, side, quantity, price, fees, slippage_pct, timestamp, pnl), portfolio table (symbol, quantity, avg_cost). Load on construction, save on each trade. Use the same sqlite3 library already linked.",
+    "Implement getPortfolio() returning current holdings with unrealized P/L (queries CoinGecko for current prices), getTradeHistory() returning last N trades, getStats() returning total P/L, win rate, best/worst trade.",
+    "Register 'paper_trade' tool in MK_OS/orchestrator/tool_registry.cpp with params: {action: buy|sell|portfolio|history|stats, symbol: <coin-id>, amount: <usd-amount>}. Add handler in tool_executor.cpp that dispatches to MKPaperTrading.",
+    "Wire MKPaperTrading into MKSystem in mk_entry.cpp: add member, add #include, connect to tool_executor in initOrchestrator().",
+    "Add tests in test_main.cpp: (a) buy with insufficient funds fails gracefully, (b) buy deducts correct fees from balance, (c) sell non-held coin fails, (d) portfolio starts at $20, (e) trade history records correctly, (f) SQLite persistence round-trip works."
+  ],
+  "acceptance_criteria": [
+    "Running 'make test' passes all tests including new paper trading tests",
+    "Running 'make' builds successfully",
+    "Paper trading starts with exactly $20.00 balance",
+    "Each trade deducts realistic fees (gas $0.50-$2, slippage 1-5%, DEX 0.3%)",
+    "CoinGecko API is used for real prices (with graceful fallback on failure)",
+    "Portfolio is persisted to SQLite and survives restarts",
+    "The LLM can invoke paper_trade tool via the tool framework"
+  ],
+  "verification": [
+    "cd /projects/sandbox/MK_os-2/MK_OS && make",
+    "cd /projects/sandbox/MK_os-2/MK_OS && make test"
+  ],
+  "blocked_reason": null,
+  "findings": "Implementation complete. All 87 tests pass (81 base + 6 new paper trading tests), 481 assertions. CoinGecko API works for real price fetches during tests - bitcoin prices fetched successfully. The buy test confirms balance deduction is exact ($5 deducted from $20 = $15 remaining, fees come out of the $5 spent not from balance additionally). Tool registry now has 10 tools. No build warnings from paper_trading.cpp after fixing unused variables."
+}
