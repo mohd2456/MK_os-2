@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "fix",
   "description": "Fix the /crypto command to show real paper trading data instead of fake placeholders. Fix the system prompt to include an instruction that MK must always follow user's explicit instructions about response format/length/style. Fix humidity always being 0% in weather data.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "In MK_OS/plugins/telegram.cpp, replace the handleCryptoCommand() method. Instead of hardcoded placeholder strings ($----.-- etc.), show a message that says the user has no real portfolio and directs them to use /paper for practice trading. The message should be something like: '<b>Crypto Dashboard</b>\\n\\nNo real portfolio detected.\\nMK uses a <b>$20 paper trading wallet</b> for practice.\\n\\nUse /paper to see your paper trading portfolio.\\nUse the paper_trade tool to buy/sell meme coins.\\n\\n<i>Paper trading helps MK learn market mechanics with zero real money risk.</i>'",
     "In MK_OS/system/mk_entry.cpp, locate the MK_SYSTEM_PROMPT string (around line 210). Add the following instruction at the end (before the closing quote): '\\n\\nIMPORTANT: Always follow the user\\'s explicit instructions about response format, length, and style. If the user says \"just answer\" or \"don\\'t explain\", give only the direct answer without elaboration or explanation. Respect their preferences.'",
@@ -18,5 +18,5 @@
     "Run: cd MK_OS && g++ -std=c++17 -O2 -Wall -DLINUX -o mk_os system/mk_entry.cpp -lcurl -lsqlite3"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Build compiles cleanly (zero errors, only pre-existing warnings). All 96 tests pass. The humidity fix uses a check to ensure 'current' is not matching 'current_weather' by verifying the character after the closing quote is not an underscore."
 }
