@@ -141,7 +141,10 @@ public:
         // Step 8: Record interaction in memory
         if (brainMemory) {
             brainMemory->commitToShortTerm("user", userInput);
-            brainMemory->commitToShortTerm("mk", response);
+            // Strip any residual tool-call JSON before committing to memory
+            // so old tool fragments don't trigger re-execution on the next turn
+            std::string cleanedResponse = stripToolCallJson(response);
+            brainMemory->commitToShortTerm("mk", cleanedResponse);
         }
 
         // Step 9: Passively extract biographical facts
@@ -402,6 +405,14 @@ private:
                 cleaned = "";
             }
             if (!cleaned.empty()) {
+                // If the cleaned text is a short preamble (under 60 chars, no period
+                // or question mark), it is not substantive content - just return
+                // the tool result alone to avoid echoing things like "Let me check that"
+                if (cleaned.size() < 60 &&
+                    cleaned.find('.') == std::string::npos &&
+                    cleaned.find('?') == std::string::npos) {
+                    return toolResult;
+                }
                 return cleaned + "\n\n" + toolResult;
             }
             return toolResult;
@@ -432,7 +443,9 @@ private:
     // stripToolCallJson() - Remove any raw tool-call JSON from text
     // Looks for {"tool": ...} patterns and removes the entire JSON object.
     // This prevents debug/tool JSON from leaking to the user.
+    // Public so tests can verify stripping behavior directly.
     // ============================================================
+    public:
     std::string stripToolCallJson(const std::string& text) {
         std::string result = text;
 

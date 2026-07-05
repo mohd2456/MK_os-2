@@ -1237,6 +1237,12 @@ static void telegram_poll_loop(MKSystem& sys) {
                 }
             }
 
+            // Skip callback_query updates (inline button presses) to avoid double-response
+            if (updateSlice.find("\"callback_query\"") != std::string::npos) {
+                searchPos = updateBoundary;
+                continue;
+            }
+
             // Extract chat id: look for "chat":{"id": within this update boundary
             std::string chatId;
             size_t chatPos = response.find("\"chat\"", numEnd);

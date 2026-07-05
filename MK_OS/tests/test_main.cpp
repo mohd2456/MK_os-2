@@ -2096,6 +2096,11 @@ int main() {
     RUN_TEST(test_tool_browse_url_live_fetch);
     RUN_TEST(test_tool_browse_url_safety);
 
+    // Double-response bug fix tests (FEAT-001 custom-tools-fix)
+    RUN_TEST(test_double_response_preamble_stripped);
+    RUN_TEST(test_callback_query_skip);
+    RUN_TEST(test_brain_memory_commit_strips_tool_json);
+
     std::cout << std::endl;
     std::cout << "================================================" << std::endl;
     std::cout << "  RESULTS: " << g_tests_passed << " passed, "

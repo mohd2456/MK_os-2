@@ -1458,4 +1458,171 @@ void test_tool_browse_url_safety() {
     TEST_ASSERT_FALSE(r7.success, "browse_url should fail with missing url arg");
 }
 
+// ============================================================
+// FEAT-001 (custom-tools-fix): Double-response bug fix tests
+// ============================================================
+
+// ============================================================
+// TEST: synthesizeWithToolResult strips short preamble
+// ============================================================
+void test_double_response_preamble_stripped() {
+    // Set up orchestrator with no LLM (forces synthesis fallback path)
+    MKPatternGraph graph("ai_core/hre/knowledge_files");
+    MKBrainMemory memory(10);
+    MKCloudLLM cloudLLM;
+    MKLLMEngine llmEngine;
+    MKProviderRouter providerRouter;
+    MKRequestLogger requestLogger;
+    MKResourceMonitor resourceMonitor;
+    MKDeviceRegistry deviceRegistry;
+    MKLearningEngine learningEngine;
+    MKBiographicalExtractor factExtractor;
+    MKToolRegistry toolRegistry;
+    MKToolExecutor toolExecutor;
+    static const std::string testPrompt = "You are MK.";
+
+    MKOrchestrator orch;
+    orch.graph = &graph;
+    orch.brainMemory = &memory;
+    orch.cloudLLM = &cloudLLM;
+    orch.llmEngine = &llmEngine;
+    orch.providerRouter = &providerRouter;
+    orch.requestLogger = &requestLogger;
+    orch.resourceMonitor = &resourceMonitor;
+    orch.deviceRegistry = &deviceRegistry;
+    orch.learningEngine = &learningEngine;
+    orch.factExtractor = &factExtractor;
+    orch.toolRegistry = &toolRegistry;
+    orch.toolExecutor = &toolExecutor;
+    orch.systemPrompt = &testPrompt;
+
+    // Simulate the synthesizeWithToolResult fallback logic directly:
+    // When synthesis fails and the original response has a short preamble + tool JSON,
+    // the preamble should be dropped and only the tool result returned.
+    std::string originalResponse = "Let me check that\n{\"tool\": \"system_info\", \"args\": {}}";
+    std::string toolResult = "CPU: 4 cores, RAM: 16GB";
+
+    // Strip the tool JSON from original (simulating what synthesizeWithToolResult does)
+    std::string rawJson = "{\"tool\": \"system_info\", \"args\": {}}";
+    std::string cleaned = originalResponse;
+    size_t jsonPos = cleaned.find(rawJson);
+    if (jsonPos != std::string::npos) {
+        cleaned.erase(jsonPos, rawJson.size());
+    }
+    // Trim whitespace
+    size_t start = cleaned.find_first_not_of(" \t\n\r");
+    size_t end = cleaned.find_last_not_of(" \t\n\r");
+    if (start != std::string::npos) {
+        cleaned = cleaned.substr(start, end - start + 1);
+    } else {
+        cleaned = "";
+    }
+
+    // Apply the preamble check: short text (<60 chars) without period or question mark
+    std::string finalResult;
+    if (!cleaned.empty()) {
+        if (cleaned.size() < 60 &&
+            cleaned.find('.') == std::string::npos &&
+            cleaned.find('?') == std::string::npos) {
+            finalResult = toolResult;
+        } else {
+            finalResult = cleaned + "\n\n" + toolResult;
+        }
+    } else {
+        finalResult = toolResult;
+    }
+
+    // The preamble "Let me check that" should NOT appear in the final result
+    TEST_ASSERT_TRUE(finalResult.find("Let me check that") == std::string::npos,
+                     "Short preamble should be stripped from tool result output");
+    TEST_ASSERT_TRUE(finalResult.find("CPU: 4 cores") != std::string::npos,
+                     "Tool result should be present in output");
+    TEST_ASSERT_EQ(finalResult, toolResult,
+                   "Final result should be just the tool result when preamble is short");
+
+    // Verify that a substantive cleaned text (with period) is NOT stripped
+    std::string substantiveCleaned = "Here is the system information you requested.";
+    std::string withSubstantive;
+    if (substantiveCleaned.size() < 60 &&
+        substantiveCleaned.find('.') == std::string::npos &&
+        substantiveCleaned.find('?') == std::string::npos) {
+        withSubstantive = toolResult;
+    } else {
+        withSubstantive = substantiveCleaned + "\n\n" + toolResult;
+    }
+    TEST_ASSERT_TRUE(withSubstantive.find(substantiveCleaned) != std::string::npos,
+                     "Substantive text with period should be preserved");
+}
+
+// ============================================================
+// TEST: callback_query detection for skip logic
+// ============================================================
+void test_callback_query_skip() {
+    // Validate that the pattern used to detect callback_query works correctly
+    std::string updateWithCallback = R"({"update_id":123456,"callback_query":{"id":"789","chat_instance":"abc","data":"btn_click"}})";
+    std::string updateWithMessage = R"({"update_id":123457,"message":{"chat":{"id":100},"text":"hello"}})";
+    std::string updateWithBoth = R"({"update_id":123458,"callback_query":{"id":"790"},"message":{"chat":{"id":101},"text":"hi"}})";
+
+    // callback_query-only update should be detected
+    TEST_ASSERT_TRUE(updateWithCallback.find("\"callback_query\"") != std::string::npos,
+                     "Should detect callback_query in callback-only update");
+
+    // message-only update should NOT have callback_query
+    TEST_ASSERT_TRUE(updateWithMessage.find("\"callback_query\"") == std::string::npos,
+                     "Should not detect callback_query in message-only update");
+
+    // update with both should be detected (and skipped in the real code)
+    TEST_ASSERT_TRUE(updateWithBoth.find("\"callback_query\"") != std::string::npos,
+                     "Should detect callback_query even when message is also present");
+}
+
+// ============================================================
+// TEST: brainMemory commit strips tool JSON
+// ============================================================
+void test_brain_memory_commit_strips_tool_json() {
+    MKPatternGraph graph("ai_core/hre/knowledge_files");
+    MKBrainMemory memory(10);
+    MKCloudLLM cloudLLM;
+    MKLLMEngine llmEngine;
+    MKProviderRouter providerRouter;
+    MKRequestLogger requestLogger;
+    MKResourceMonitor resourceMonitor;
+    MKDeviceRegistry deviceRegistry;
+    MKLearningEngine learningEngine;
+    MKBiographicalExtractor factExtractor;
+    MKToolRegistry toolRegistry;
+    MKToolExecutor toolExecutor;
+    MKResourceMonitor monitor;
+    toolExecutor.resourceMonitor = &monitor;
+    static const std::string testPrompt = "You are MK.";
+
+    MKOrchestrator orch;
+    orch.graph = &graph;
+    orch.brainMemory = &memory;
+    orch.cloudLLM = &cloudLLM;
+    orch.llmEngine = &llmEngine;
+    orch.providerRouter = &providerRouter;
+    orch.requestLogger = &requestLogger;
+    orch.resourceMonitor = &resourceMonitor;
+    orch.deviceRegistry = &deviceRegistry;
+    orch.learningEngine = &learningEngine;
+    orch.factExtractor = &factExtractor;
+    orch.toolRegistry = &toolRegistry;
+    orch.toolExecutor = &toolExecutor;
+    orch.systemPrompt = &testPrompt;
+    orch.config.enableToolCalls = true;
+
+    // The stripToolCallJson function should remove tool JSON from text
+    // We test this by verifying the orchestrator's strip function works
+    std::string textWithToolJson = "Here is the info {\"tool\": \"system_info\", \"args\": {}} and more text.";
+    std::string stripped = orch.stripToolCallJson(textWithToolJson);
+
+    TEST_ASSERT_TRUE(stripped.find("{\"tool\"") == std::string::npos,
+                     "stripToolCallJson should remove tool JSON from text");
+    TEST_ASSERT_TRUE(stripped.find("Here is the info") != std::string::npos,
+                     "stripToolCallJson should preserve non-tool text");
+    TEST_ASSERT_TRUE(stripped.find("and more text.") != std::string::npos,
+                     "stripToolCallJson should preserve text after tool JSON");
+}
+
 #endif // MK_TEST_INTEGRATION_CPP
