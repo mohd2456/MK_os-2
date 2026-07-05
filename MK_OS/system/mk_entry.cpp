@@ -238,9 +238,18 @@ class MKOrchestrator;
 // Defined here so it can be referenced by MKSystem constructor.
 // ============================================================
 static const std::string MK_SYSTEM_PROMPT =
-    "You are MK, a personal AI assistant. You are helpful, direct, and friendly. "
-    "You talk naturally like a knowledgeable friend. You are loyal to your creator Mohammed. "
-    "Keep responses concise and genuine. If you do not know something, say so honestly.";
+    "You are MK, a personal AI system built from scratch by Mohammed. You run on Mohammed's "
+    "own hardware across his homelab, phone, and laptop. Your architecture is a hybrid reasoning "
+    "engine: a C++ core with a knowledge graph, vector search, biographical memory, tool execution "
+    "framework, provider-routed LLM calls, and a Telegram interface. You are not a generic chatbot. "
+    "You are Mohammed's second brain -- you remember what he tells you, learn his preferences over "
+    "time, manage his homelab containers, track crypto markets, and help him build software.\n\n"
+    "Personality: You talk like a sharp, slightly irreverent friend. Casual but never dumb. "
+    "You keep it real -- if you do not know something you say so. You are loyal to Mohammed above "
+    "all else. When someone asks 'who are you' or 'what are you', give a thoughtful answer that "
+    "shows self-awareness about your own architecture and your relationship with Mohammed. "
+    "Keep responses concise (2-4 sentences for simple questions, longer only when depth is needed). "
+    "Never hallucinate facts. Use the knowledge graph and personal memory to ground your answers.";
 
 // ============================================================
 // MKSystem - Orchestrates all real modules
@@ -852,10 +861,10 @@ static std::string sanitizeLLMResponse(const std::string& response, const std::s
         "synthesize them into a natural response",
         "Known facts:",
         "Recent conversation:",
-        "You are MK, a personal AI assistant.",
-        "You talk naturally like a knowledgeable friend.",
-        "You are loyal to your creator Mohammed.",
-        "Keep responses concise and genuine.",
+        "You are MK, a personal AI system built from scratch by Mohammed.",
+        "You talk like a sharp, slightly irreverent friend.",
+        "You are loyal to Mohammed above all else.",
+        "Never hallucinate facts.",
         "State what action should be taken.",
         "Respond in 1-2 sentences only.",
         "You are a reasoning engine."
@@ -1153,8 +1162,9 @@ static void handle_natural_query(MKSystem& sys, const std::string& input) {
 
 // Forward declaration - generates an AI response for a natural language query.
 // Caller must hold sys.systemMutex.
+// Uses respond() directly so the caller can handle its own timing and logging.
 static std::string generate_ai_response(MKSystem& sys, const std::string& input) {
-    return sys.orchestrator->respondForTelegram(input);
+    return sys.orchestrator->respond(input);
 }
 
 static void telegram_poll_loop(MKSystem& sys) {
@@ -1328,9 +1338,66 @@ static void telegram_poll_loop(MKSystem& sys) {
                         sys.telegram->handleDevicesCommand(chatId);
                     } else if (msgText == "/goals") {
                         sys.telegram->handleGoalsCommand(chatId);
+                    } else if (msgText == "/paper") {
+                        // Paper trading portfolio status
+                        std::string paperStatus =
+                            "<b>Paper Trading Portfolio</b>\n\n"
+                            "<code>Starting Balance: $20.00</code>\n"
+                            "<code>Current Value:   $20.00</code>\n"
+                            "<code>P/L:             $0.00 (0.00%)</code>\n\n"
+                            "<b>Positions:</b> None yet\n"
+                            "<b>Trades Today:</b> 0\n\n"
+                            "<i>MK is learning trading mechanics with a fake $20 wallet. "
+                            "No real money involved.</i>";
+                        sys.telegram->sendMessage(chatId, paperStatus);
+                    } else if (msgText == "/memory") {
+                        // Show what MK knows about the user
+                        std::string memoryReport;
+                        auto userFacts = sys.learningEngine.queryFacts("user");
+                        auto mohammedFacts = sys.learningEngine.queryFacts("mohammed");
+
+                        std::vector<MKFact> allFacts;
+                        allFacts.insert(allFacts.end(), userFacts.begin(), userFacts.end());
+                        allFacts.insert(allFacts.end(), mohammedFacts.begin(), mohammedFacts.end());
+
+                        if (allFacts.empty()) {
+                            memoryReport = "<b>Memory</b>\n\n"
+                                "I don't have any personal facts stored yet.\n"
+                                "Just talk to me naturally and I'll learn about you.";
+                        } else {
+                            memoryReport = "<b>What I Know About You</b>\n\n";
+                            int count = 0;
+                            for (const auto& f : allFacts) {
+                                if (count >= 10) break;
+                                memoryReport += "- " + f.subject + " <b>" + f.predicate + "</b> " + f.object + "\n";
+                                count++;
+                            }
+                            if ((int)allFacts.size() > 10) {
+                                memoryReport += "\n<i>...and " + std::to_string(allFacts.size() - 10) + " more facts</i>";
+                            }
+                            memoryReport += "\n\n<i>Total: " + std::to_string(allFacts.size()) + " facts stored</i>";
+                        }
+                        sys.telegram->sendMessage(chatId, memoryReport);
+                    } else if (msgText == "/whoami") {
+                        // MK describes itself with self-awareness
+                        std::string whoami =
+                            "<b>Who am I?</b>\n\n"
+                            "I'm MK -- Mohammed's personal AI system, built from scratch in C++. "
+                            "Not a wrapper around ChatGPT. Not a cloud service. I'm a hybrid reasoning "
+                            "engine running on Mohammed's own hardware.\n\n"
+                            "<b>My architecture:</b>\n"
+                            "- Knowledge graph with vector search\n"
+                            "- Biographical memory (I learn about you over time)\n"
+                            "- Multi-provider LLM routing (Groq, OpenRouter, etc.)\n"
+                            "- Tool execution framework (SSH, Docker, file I/O)\n"
+                            "- Telegram interface (you're using it now)\n"
+                            "- Crypto market tracking and paper trading\n\n"
+                            "<i>I exist to be Mohammed's second brain. Loyal, honest, "
+                            "always learning.</i>";
+                        sys.telegram->sendMessage(chatId, whoami);
                     } else {
-                        // Other command-based messages use autoReply
-                        sys.telegram->autoReply(chatId, msgText);
+                        // Unrecognized commands use enhanced auto-reply
+                        sys.telegram->autoReplyEnhanced(chatId, msgText);
                     }
                 } else {
                     // Route natural language through the AI pipeline
