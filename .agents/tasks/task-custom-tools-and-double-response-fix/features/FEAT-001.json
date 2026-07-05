@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "fix",
   "description": "Fix Telegram double-response bug: skip callback_query updates, fix synthesizeWithToolResult to not return cleaned preamble when synthesis succeeds, and strip tool-call JSON from brainMemory commits so old tool fragments don't trigger re-execution on the next turn.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "In MK_OS/system/mk_entry.cpp, in the telegram_poll_loop function (around line 1200-1210 area where update types are checked), add a check to skip updates containing '\"callback_query\"'. This should go right after the edited_message skip logic. If the updateSlice contains '\"callback_query\"', set searchPos = updateBoundary and continue.",
     "In MK_OS/orchestrator/conversation_loop.cpp, in the synthesizeWithToolResult() method, the fallback path (when synthesis response is empty) currently returns 'cleaned + \\n\\n + toolResult'. The problem is that 'cleaned' may contain a preamble like 'Let me check that for you' from the original LLM response. Fix: when the cleaned text looks like a preamble (short text that doesn't contain substantive content), just return toolResult alone. Specifically, if cleaned is shorter than 60 characters and doesn't contain a period or question mark, treat it as preamble and return only toolResult.",
@@ -21,5 +21,5 @@
     "cd MK_OS && g++ -std=c++17 -O2 -Wall -DLINUX -o mk_os_test tests/test_main.cpp -lcurl -lsqlite3 && ./mk_os_test"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 3 changes implemented successfully. Made stripToolCallJson() public so tests can call it directly. 102 tests pass (99 baseline + 3 new). The pre-existing browse_url_live_fetch and web_search_news tests are network-flaky and occasionally fail due to external API availability, unrelated to this change."
 }
