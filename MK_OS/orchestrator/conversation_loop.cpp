@@ -300,9 +300,11 @@ private:
 
         // Fall back to cloud LLM
         // Use the same prompt that MKContextBuilder assembled (respects token budget)
+        // We call generate(userPrompt, systemPrompt) directly so the pre-built
+        // prompt is sent as-is, avoiding double-assembly of facts/history.
         if (cloudLLM && cloudLLM->isAvailable()) {
             auto genStart = std::chrono::steady_clock::now();
-            response = cloudLLM->generateWithContext(input, facts, history, "", prompt);
+            response = cloudLLM->generate(input, prompt);
             auto genEnd = std::chrono::steady_clock::now();
             float genLatency = (float)std::chrono::duration_cast<std::chrono::milliseconds>(
                 genEnd - genStart).count();
@@ -368,11 +370,9 @@ private:
             response = llmEngine->generate(prompt);
         }
         if (response.empty() && cloudLLM && cloudLLM->isAvailable()) {
-            std::string contextStr = "Tool '" + call.tool + "' returned: " + toolResult;
-            response = cloudLLM->generateWithContext(
-                input + "\n" + contextStr,
-                facts, history, toolResult,
-                systemPrompt ? *systemPrompt : "");
+            // Use generate() directly with the already-assembled prompt as systemPrompt.
+            // This avoids double-assembly of facts/history that generateWithContext() does.
+            response = cloudLLM->generate(input, prompt);
         }
 
         if (!response.empty()) {
