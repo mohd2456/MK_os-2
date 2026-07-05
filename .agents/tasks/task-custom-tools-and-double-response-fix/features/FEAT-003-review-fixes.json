@@ -2,7 +2,7 @@
   "id": "FEAT-003-review-fixes",
   "type": "fix",
   "description": "Address 5 code review findings: scriptPath injection, isDangerous bypass, preamble false positives, tool overwrite protection, and public access modifier leak.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Fix issue 1: In handleCustomTool, validate that scriptPath from manifest resolves inside ~/.mk_os/tools/ using realpath() before execution",
     "Fix issue 2: In handleCustomTool, apply isDangerous-equivalent check on the script content before execution",
