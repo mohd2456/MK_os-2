@@ -433,7 +433,13 @@ private:
             "ssh", "connect", "remote", "run command",
             "cpu", "ram", "memory", "disk", "temperature",
             "homelab", "deploy", "restart", "stop", "start",
-            "learn", "remember", "teach"
+            "learn", "remember", "teach",
+            // Queries about current info (time, weather, prices, etc.)
+            "weather", "news", "time", "price", "crypto",
+            "what is", "who is", "how much", "when is", "where is",
+            "check", "tell me about", "what's", "current", "today", "now",
+            // Crypto/trading related
+            "bitcoin", "coin", "trade", "buy", "sell", "portfolio", "paper"
         };
 
         for (const auto& kw : toolKeywords) {

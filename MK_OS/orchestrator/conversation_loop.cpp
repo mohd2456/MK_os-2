@@ -127,6 +127,12 @@ public:
             }
         }
 
+        // Step 6b: Strip any remaining raw tool-call JSON from the response
+        // This prevents leaking {"tool": ...} output to the user
+        if (!response.empty()) {
+            response = stripToolCallJson(response);
+        }
+
         // Step 7: If LLM failed entirely, use honest fallback
         if (response.empty()) {
             response = buildFallbackResponse(relevantFacts);
@@ -420,6 +426,86 @@ private:
 
         return "I can't reach my language model right now, so I can't answer that "
                "properly. Try again in a moment, or check /status for provider health.";
+    }
+
+    // ============================================================
+    // stripToolCallJson() - Remove any raw tool-call JSON from text
+    // Looks for {"tool": ...} patterns and removes the entire JSON object.
+    // This prevents debug/tool JSON from leaking to the user.
+    // ============================================================
+    std::string stripToolCallJson(const std::string& text) {
+        std::string result = text;
+
+        // Repeatedly find and remove tool-call JSON objects
+        while (true) {
+            // Find any tool-call pattern
+            size_t pos = result.find("{\"tool\":");
+            if (pos == std::string::npos) pos = result.find("{ \"tool\":");
+            if (pos == std::string::npos) pos = result.find("{\"tool\" :");
+            if (pos == std::string::npos) pos = result.find("{  \"tool\":");
+            if (pos == std::string::npos) pos = result.find("{\n\"tool\":");
+            if (pos == std::string::npos) pos = result.find("{\n  \"tool\":");
+            if (pos == std::string::npos) break;
+
+            // Find the matching closing brace by tracking depth
+            int braceDepth = 0;
+            size_t endPos = pos;
+            bool found = false;
+            for (size_t i = pos; i < result.size(); i++) {
+                if (result[i] == '{') braceDepth++;
+                else if (result[i] == '}') {
+                    braceDepth--;
+                    if (braceDepth == 0) {
+                        endPos = i + 1;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!found) break; // Malformed JSON, stop trying
+
+            // Remove the JSON object and any surrounding whitespace/newlines
+            result.erase(pos, endPos - pos);
+
+            // Clean up any leftover whitespace at the removal point
+            while (pos < result.size() && (result[pos] == ' ' || result[pos] == '\t' || result[pos] == '\n' || result[pos] == '\r')) {
+                result.erase(pos, 1);
+            }
+        }
+
+        // Also strip markdown code fences that may have wrapped tool calls
+        // e.g. ```json\n...\n```
+        while (true) {
+            size_t fenceStart = result.find("```json");
+            if (fenceStart == std::string::npos) fenceStart = result.find("```");
+            if (fenceStart == std::string::npos) break;
+
+            size_t contentStart = result.find('\n', fenceStart);
+            if (contentStart == std::string::npos) break;
+            contentStart++;
+
+            size_t fenceEnd = result.find("```", contentStart);
+            if (fenceEnd == std::string::npos) break;
+
+            // Check if the content between fences looks like a tool call
+            std::string fenceContent = result.substr(contentStart, fenceEnd - contentStart);
+            if (fenceContent.find("\"tool\"") != std::string::npos) {
+                // Remove the entire fenced block
+                size_t removeEnd = fenceEnd + 3;
+                // Skip trailing newline
+                if (removeEnd < result.size() && result[removeEnd] == '\n') removeEnd++;
+                result.erase(fenceStart, removeEnd - fenceStart);
+            } else {
+                break; // Not a tool call fence, stop
+            }
+        }
+
+        // Trim leading/trailing whitespace from result
+        size_t start = result.find_first_not_of(" \t\n\r");
+        size_t end = result.find_last_not_of(" \t\n\r");
+        if (start == std::string::npos) return "";
+        return result.substr(start, end - start + 1);
     }
 };
 

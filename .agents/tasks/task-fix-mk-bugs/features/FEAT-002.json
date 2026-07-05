@@ -1,25 +1,22 @@
 {
   "id": "FEAT-002",
   "type": "fix",
-  "description": "Address review findings: fix HTML escaping bypass, remove entity strings from safeTags, reference MK_SYSTEM_PROMPT in sanitizer",
-  "status": "completed",
+  "description": "Fix queryMightNeedTools() to include more trigger words so queries like 'what time in Fort Worth' get tool descriptions in the prompt. Also fix parseToolCall() to handle markdown code fences and more whitespace variations. Also add stripping of raw tool-call JSON from the final response shown to users.",
+  "status": "in_progress",
   "steps": [
-    "Step 1 - Fix HTML escaping bypass: Remove escapeForUser call from sendMessage in telegram.cpp so it becomes a pass-through. Instead, add an explicit escapeHtml call on the LLM reply in mk_entry.cpp right after the empty guard and before sendMessage. This ensures only LLM output gets escaped, while MK's own pre-formatted messages remain intact.",
-    "Step 2 - Remove entity strings from safeTags: Remove '&lt;', '&gt;', '&amp;' from the safeTags vector in shouldEscapeHtml. Those are HTML entities, not tags.",
-    "Step 3 - Reference MK_SYSTEM_PROMPT in sanitizer: Replace the hardcoded sysPrompt string in sanitizeLLMResponse with a reference to the actual MK_SYSTEM_PROMPT constant."
+    "In MK_OS/orchestrator/context_builder.cpp, locate queryMightNeedTools() method (around line 425). Add the following keywords to the toolKeywords vector: 'weather', 'news', 'time', 'price', 'crypto', 'what is', 'who is', 'how much', 'when is', 'where is', 'check', 'tell me about', 'what\\'s', 'current', 'today', 'now', 'look up', 'bitcoin', 'coin', 'trade', 'buy', 'sell', 'portfolio', 'paper'. This ensures time/weather/crypto queries trigger tool descriptions.",
+    "In MK_OS/orchestrator/tool_registry.cpp, locate parseToolCall() method (around line 120). Before the existing pattern search logic, add preprocessing to strip markdown code fences. If the response contains ```json or ``` markers, extract content between the fences. Also add additional search patterns: '{\\n  \"tool\":', '{\\n\"tool\":', and '{ \"tool\" :'. This makes parsing more robust against LLM formatting variations.",
+    "In MK_OS/orchestrator/conversation_loop.cpp, in the respond() method, after the tool call loop (Step 6) completes but before the fallback (Step 7), add code to strip any remaining tool-call JSON from the response. Search for patterns like '{\"tool\":' in the final response and remove the entire JSON object (tracking brace depth). This prevents raw tool JSON from leaking to the user."
   ],
   "acceptance_criteria": [
-    "sendMessage no longer auto-escapes via escapeForUser",
-    "LLM reply in telegram_poll_loop is explicitly escaped before sendMessage",
-    "safeTags does not contain entity strings",
-    "sanitizeLLMResponse uses MK_SYSTEM_PROMPT directly instead of a hardcoded paraphrase",
-    "Build succeeds with make",
-    "Tests pass with make test"
+    "queryMightNeedTools() returns true for inputs containing 'time', 'weather', 'price', 'crypto', 'what is', 'current', 'today', 'now'",
+    "parseToolCall() can find tool calls inside markdown code fences (```json ... ```)",
+    "The respond() method strips leftover tool-call JSON from the final response text",
+    "The project compiles cleanly with the build command"
   ],
   "verification": [
-    "Run 'cd /projects/sandbox/MK_os-2/MK_OS && make' and confirm 0 errors",
-    "Run 'cd /projects/sandbox/MK_os-2/MK_OS && make test' and confirm all tests pass"
+    "Run: cd MK_OS && g++ -std=c++17 -O2 -Wall -DLINUX -o mk_os system/mk_entry.cpp -lcurl -lsqlite3"
   ],
   "blocked_reason": null,
-  "findings": "All three review issues fixed successfully. Build: 0 errors (13 pre-existing warnings). Tests: 67 passed, 0 failed, 484 assertions. The MK_SYSTEM_PROMPT constant was moved above sanitizeLLMResponse to satisfy C++ forward reference requirements."
+  "findings": ""
 }

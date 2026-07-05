@@ -120,22 +120,56 @@ public:
     MKParsedToolCall parseToolCall(const std::string& response) const {
         MKParsedToolCall result;
 
-        // Look for tool call pattern
-        size_t toolStart = response.find("{\"tool\":");
+        // Preprocess: strip markdown code fences if present
+        // LLMs often wrap tool calls in ```json ... ``` blocks
+        std::string cleaned = response;
+        {
+            size_t fenceStart = cleaned.find("```json");
+            if (fenceStart == std::string::npos) {
+                fenceStart = cleaned.find("```");
+            }
+            if (fenceStart != std::string::npos) {
+                // Find the content start (after the opening fence line)
+                size_t contentStart = cleaned.find('\n', fenceStart);
+                if (contentStart != std::string::npos) {
+                    contentStart++; // skip the newline
+                    // Find the closing fence
+                    size_t fenceEnd = cleaned.find("```", contentStart);
+                    if (fenceEnd != std::string::npos) {
+                        // Extract just the content between fences
+                        cleaned = cleaned.substr(0, fenceStart) +
+                                  cleaned.substr(contentStart, fenceEnd - contentStart) +
+                                  cleaned.substr(fenceEnd + 3);
+                    }
+                }
+            }
+        }
+
+        // Look for tool call pattern (various whitespace combinations)
+        size_t toolStart = cleaned.find("{\"tool\":");
         if (toolStart == std::string::npos) {
-            toolStart = response.find("{ \"tool\":");
+            toolStart = cleaned.find("{ \"tool\":");
         }
         if (toolStart == std::string::npos) {
-            toolStart = response.find("{\"tool\" :");
+            toolStart = cleaned.find("{\"tool\" :");
+        }
+        if (toolStart == std::string::npos) {
+            toolStart = cleaned.find("{  \"tool\":");
+        }
+        if (toolStart == std::string::npos) {
+            toolStart = cleaned.find("{\n\"tool\":");
+        }
+        if (toolStart == std::string::npos) {
+            toolStart = cleaned.find("{\n  \"tool\":");
         }
         if (toolStart == std::string::npos) return result;
 
         // Find matching closing brace
         int braceDepth = 0;
         size_t toolEnd = toolStart;
-        for (size_t i = toolStart; i < response.size(); i++) {
-            if (response[i] == '{') braceDepth++;
-            else if (response[i] == '}') {
+        for (size_t i = toolStart; i < cleaned.size(); i++) {
+            if (cleaned[i] == '{') braceDepth++;
+            else if (cleaned[i] == '}') {
                 braceDepth--;
                 if (braceDepth == 0) {
                     toolEnd = i + 1;
@@ -146,7 +180,7 @@ public:
 
         if (toolEnd <= toolStart) return result;
 
-        std::string json = response.substr(toolStart, toolEnd - toolStart);
+        std::string json = cleaned.substr(toolStart, toolEnd - toolStart);
         result.rawJson = json;
 
         // Extract tool name
