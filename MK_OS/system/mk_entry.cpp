@@ -1342,16 +1342,15 @@ static void telegram_poll_loop(MKSystem& sys) {
                     } else if (msgText == "/goals") {
                         sys.telegram->handleGoalsCommand(chatId);
                     } else if (msgText == "/paper") {
-                        // Paper trading portfolio status
-                        std::string paperStatus =
-                            "<b>Paper Trading Portfolio</b>\n\n"
-                            "<code>Starting Balance: $20.00</code>\n"
-                            "<code>Current Value:   $20.00</code>\n"
-                            "<code>P/L:             $0.00 (0.00%)</code>\n\n"
-                            "<b>Positions:</b> None yet\n"
-                            "<b>Trades Today:</b> 0\n\n"
-                            "<i>MK is learning trading mechanics with a fake $20 wallet. "
-                            "No real money involved.</i>";
+                        // Paper trading portfolio status - use real data
+                        std::string portfolio = sys.paperTrading.getPortfolio();
+                        std::string stats = sys.paperTrading.getStats();
+                        
+                        std::string paperStatus = "<b>Paper Trading Portfolio</b>\n\n";
+                        paperStatus += "<code>" + portfolio + "</code>\n\n";
+                        paperStatus += "<b>Stats:</b>\n<code>" + stats + "</code>\n\n";
+                        paperStatus += "<i>MK is learning trading mechanics with a fake $20 wallet. "
+                                       "No real money involved.</i>";
                         sys.telegram->sendMessage(chatId, paperStatus);
                     } else if (msgText == "/memory") {
                         // Show what MK knows about the user

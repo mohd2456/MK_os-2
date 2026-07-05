@@ -102,11 +102,32 @@ private:
         return min + r * (max - min);
     }
 
+    // URL-encode a string for safe inclusion in query parameters.
+    // Handles special characters: space, &, ?, =, +, #, %, and non-ASCII.
+    static std::string urlEncode(const std::string& input) {
+        std::string encoded;
+        encoded.reserve(input.size() * 2);
+        for (unsigned char c : input) {
+            // Allow unreserved characters per RFC 3986
+            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == '~') {
+                encoded += (char)c;
+            } else {
+                // Percent-encode everything else
+                char hex[4];
+                snprintf(hex, sizeof(hex), "%%%02X", c);
+                encoded += hex;
+            }
+        }
+        return encoded;
+    }
+
     // Fetch current price from CoinGecko
     // Returns -1.0 on failure
     double fetchPrice(const std::string& coinId) {
+        std::string encodedId = urlEncode(coinId);
         std::string url = "https://api.coingecko.com/api/v3/simple/price?ids=" 
-                          + coinId + "&vs_currencies=usd";
+                          + encodedId + "&vs_currencies=usd";
 
         std::string readBuffer;
         CURL* curl = curl_easy_init();
@@ -276,14 +297,27 @@ private:
 
         auto hIt = holdings_.find(symbol);
         if (hIt == holdings_.end() || hIt->second <= 0.0) {
-            // Remove from portfolio
-            std::string sql = "DELETE FROM paper_portfolio WHERE symbol = '" + symbol + "';";
-            sqlite3_exec(db_, sql.c_str(), nullptr, nullptr, nullptr);
+            // Remove from portfolio using parameterized query
+            sqlite3_stmt* stmt = nullptr;
+            const char* sql = "DELETE FROM paper_portfolio WHERE symbol = ?;";
+            int rc = sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr);
+            if (rc == SQLITE_OK) {
+                sqlite3_bind_text(stmt, 1, symbol.c_str(), -1, SQLITE_TRANSIENT);
+                sqlite3_step(stmt);
+            }
+            if (stmt) sqlite3_finalize(stmt);
         } else {
             double avg = avgCosts_.count(symbol) ? avgCosts_[symbol] : 0.0;
-            std::string sql = "INSERT OR REPLACE INTO paper_portfolio (symbol, quantity, avg_cost) VALUES ('" 
-                              + symbol + "', " + std::to_string(hIt->second) + ", " + std::to_string(avg) + ");";
-            sqlite3_exec(db_, sql.c_str(), nullptr, nullptr, nullptr);
+            sqlite3_stmt* stmt = nullptr;
+            const char* sql = "INSERT OR REPLACE INTO paper_portfolio (symbol, quantity, avg_cost) VALUES (?, ?, ?);";
+            int rc = sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr);
+            if (rc == SQLITE_OK) {
+                sqlite3_bind_text(stmt, 1, symbol.c_str(), -1, SQLITE_TRANSIENT);
+                sqlite3_bind_double(stmt, 2, hIt->second);
+                sqlite3_bind_double(stmt, 3, avg);
+                sqlite3_step(stmt);
+            }
+            if (stmt) sqlite3_finalize(stmt);
         }
     }
 
