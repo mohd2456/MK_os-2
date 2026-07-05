@@ -501,11 +501,8 @@ private:
             }
         }
 
-        // Trim leading/trailing whitespace from result
-        size_t start = result.find_first_not_of(" \t\n\r");
-        size_t end = result.find_last_not_of(" \t\n\r");
-        if (start == std::string::npos) return "";
-        return result.substr(start, end - start + 1);
+        // Return result without global trimming to preserve multi-paragraph whitespace
+        return result;
     }
 };
 

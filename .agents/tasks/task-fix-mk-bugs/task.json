@@ -1,7 +1,7 @@
 {
   "task_id": "task-fix-mk-bugs",
   "task_description": "Fix 8 interconnected bugs in MK OS: double-prompt building in callLLM/synthesize, missing tool trigger words, strict JSON parsing, tool JSON leaking to user, crypto showing fake placeholders, MK not respecting user instructions, and humidity always 0%",
-  "status": "completed",
-  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004"],
   "blocked_reason": null
 }

@@ -1,0 +1,24 @@
+{
+  "id": "FEAT-004",
+  "type": "fix",
+  "description": "Follow-up fixes from code review: (1) Fix 'now' and 'current' substring false positives in queryMightNeedTools by adding leading spaces, (2) Deduplicate learned_facts.mk, (3) Fix stripToolCallJson global trim that collapses multi-paragraph responses.",
+  "status": "in_progress",
+  "steps": [
+    "In MK_OS/orchestrator/context_builder.cpp, change 'now' to ' now' and 'current' to ' current' in the toolKeywords vector to avoid substring matches inside words like 'know', 'known', 'currently'.",
+    "In MK_OS/ai_core/hre/knowledge_files/learned_facts.mk, remove the 54 duplicate 'mars|is_a|planet|1' lines, keeping only one copy.",
+    "In MK_OS/orchestrator/conversation_loop.cpp, remove the final global trim logic in stripToolCallJson() (the find_first_not_of / find_last_not_of applied to the entire string at the end). Only local trimming at removal sites should remain."
+  ],
+  "acceptance_criteria": [
+    "queryMightNeedTools returns false for 'I know that' (no substring match on 'now' inside 'know')",
+    "queryMightNeedTools returns true for 'what time is it now' (matches ' now' with leading space)",
+    "learned_facts.mk contains exactly one 'mars|is_a|planet|1' line",
+    "stripToolCallJson does not apply global trim to the entire result string",
+    "The project compiles cleanly and tests pass"
+  ],
+  "verification": [
+    "Run: cd MK_OS && g++ -std=c++17 -O2 -Wall -DLINUX -o mk_os system/mk_entry.cpp -lcurl -lsqlite3",
+    "Run: cd MK_OS && g++ -std=c++17 -O2 -Wall -DLINUX -o mk_os_test tests/test_main.cpp -lcurl -lsqlite3 && ./mk_os_test"
+  ],
+  "blocked_reason": null,
+  "findings": null
+}

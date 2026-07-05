@@ -437,7 +437,7 @@ private:
             // Queries about current info (time, weather, prices, etc.)
             "weather", "news", "time", "price", "crypto",
             "what is", "who is", "how much", "when is", "where is",
-            "check", "tell me about", "what's", "current", "today", "now",
+            " check", "tell me about", "what's", " current", "today", " now",
             // Crypto/trading related
             "bitcoin", "coin", "trade", "buy", "sell", "portfolio", "paper"
         };
