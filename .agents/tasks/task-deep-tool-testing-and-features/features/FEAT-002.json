@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Build meme coin paper trading module with $20 fake wallet, realistic mechanics (gas fees, slippage, DEX fees), CoinGecko price data, SQLite portfolio tracking, and P/L reporting. Integrate as an LLM-invokable tool.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create MK_OS/crypto/paper_trading.cpp with class MKPaperTrading. Core state: starting balance $20.00 USD, holdings map (symbol->quantity), trade history vector, SQLite db path for persistence. Include realistic fee model: gas_fee = random $0.50-$2.00 per trade, slippage = random 1-5% on meme coins, dex_fee = 0.3% of trade value.",
     "Implement buy(symbol, amount_usd) and sell(symbol, amount_or_all) methods. Buy: deduct gas+dex fees from amount, apply slippage to price, record trade. Sell: calculate proceeds after fees and slippage, update balance. Both methods use CoinGecko free API (api.coingecko.com/api/v3/simple/price?ids=<coin>&vs_currencies=usd) for current price. If API fails, return error (do not simulate prices).",
@@ -26,5 +26,5 @@
     "cd /projects/sandbox/MK_os-2/MK_OS && make test"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Implementation complete. All 87 tests pass (81 base + 6 new paper trading tests), 481 assertions. CoinGecko API works for real price fetches during tests - bitcoin prices fetched successfully. The buy test confirms balance deduction is exact ($5 deducted from $20 = $15 remaining, fees come out of the $5 spent not from balance additionally). Tool registry now has 10 tools. No build warnings from paper_trading.cpp after fixing unused variables."
 }
