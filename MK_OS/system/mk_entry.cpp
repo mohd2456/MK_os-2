@@ -1213,6 +1213,23 @@ static void telegram_poll_loop(MKSystem& sys) {
             }
             lastUpdateId = updateId + 1;
 
+            // Skip edited_message updates to avoid duplicate processing
+            std::string updateSlice = response.substr(uidPos, updateBoundary - uidPos);
+            if (updateSlice.find("\"edited_message\"") != std::string::npos &&
+                updateSlice.find("\"message\"") == std::string::npos) {
+                searchPos = updateBoundary;
+                continue;
+            }
+            // Also skip if the update contains edited_message before message
+            {
+                size_t emPos = updateSlice.find("\"edited_message\"");
+                size_t mPos = updateSlice.find("\"message\"");
+                if (emPos != std::string::npos && (mPos == std::string::npos || emPos < mPos)) {
+                    searchPos = updateBoundary;
+                    continue;
+                }
+            }
+
             // Extract chat id: look for "chat":{"id": within this update boundary
             std::string chatId;
             size_t chatPos = response.find("\"chat\"", numEnd);
@@ -1232,9 +1249,13 @@ static void telegram_poll_loop(MKSystem& sys) {
                 }
             }
 
-            // Extract message text: look for "text":" within this update boundary
+            // Extract message text: look for "text":" AFTER the "chat" block
+            // In Telegram JSON, "text" appears after "chat" in the message object.
+            // This avoids matching "text" fields in nested objects like entities.
             std::string msgText;
-            size_t textPos = response.find("\"text\":\"", numEnd);
+            size_t textSearchStart = (chatPos != std::string::npos && chatPos < updateBoundary)
+                                     ? chatPos : numEnd;
+            size_t textPos = response.find("\"text\":\"", textSearchStart);
             if (textPos != std::string::npos && textPos < updateBoundary) {
                 size_t txtStart = textPos + 8;
                 size_t txtEnd = txtStart;
@@ -1275,18 +1296,17 @@ static void telegram_poll_loop(MKSystem& sys) {
                             sys.providerRouter.setProviderKey(provider, key);
 
                             // Test the key with a minimal API call
-                            sys.telegram->sendMessage(chatId,
-                                "Testing <b>" + provider + "</b> key...");
                             bool testOk = sys.providerRouter.testProvider(provider);
 
+                            // Send a single response with the result
                             if (testOk) {
                                 sys.telegram->sendMessage(chatId,
-                                    "✅ <b>" + provider + "</b> key verified and saved!\n"
+                                    "✅ <b>" + provider + "</b> key saved and verified! "
                                     "Provider is now active.");
                             } else {
                                 sys.telegram->sendMessage(chatId,
-                                    "⚠️ Key saved but test failed for <b>" + provider + "</b>.\n"
-                                    "The key may be invalid or the provider may be down.\n"
+                                    "⚠️ <b>" + provider + "</b> key saved but test failed. "
+                                    "The key may be invalid or the provider may be down. "
                                     "It will be retried automatically.");
                             }
                         }

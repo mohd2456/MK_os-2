@@ -1,0 +1,7 @@
+{
+  "project_type": "C++ AI system (MK OS)",
+  "language": "C++17",
+  "build_command": "cd /projects/sandbox/MK_os-2/MK_OS && g++ -std=c++17 -O2 -Wall -DLINUX -o mk_os system/mk_entry.cpp -lcurl -lsqlite3",
+  "test_command": "cd /projects/sandbox/MK_os-2/MK_OS && make test",
+  "verification_instructions": "1. Run build command. 2. Run make test. 3. Confirm 0 failures."
+}

@@ -1,0 +1,21 @@
+{
+  "id": "FEAT-001",
+  "title": "Fix three Telegram bot bugs: double /setkey response, web search HackerNews fallback, /whoami duplicates",
+  "status": "in_progress",
+  "assigned_to": "implementer",
+  "steps": [
+    "Remove the 'Testing...' message from /setkey handler so only one final response is sent",
+    "Expand the time zone city map in tool_executor.cpp to include many more US cities and add DuckDuckGo fallback for generic queries",
+    "Fix /whoami duplicate responses by skipping edited_message updates and improving text extraction specificity"
+  ],
+  "acceptance_criteria": [
+    "/setkey sends only a single message with the test result",
+    "Time queries for cities like Fort Worth resolve to correct timezone",
+    "Generic web search queries try DuckDuckGo before returning error",
+    "edited_message updates are skipped in telegram polling",
+    "Text extraction uses more specific matching after the chat block",
+    "Build compiles without errors",
+    "All tests pass"
+  ],
+  "findings": null
+}

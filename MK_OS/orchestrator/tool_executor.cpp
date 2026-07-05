@@ -346,16 +346,69 @@ private:
         }
 
         if (lower.find("time") != std::string::npos) {
-            std::string tz = "UTC";
-            // Try to extract timezone from query
-            if (lower.find("new york") != std::string::npos) tz = "America/New_York";
+            std::string tz = "";
+            // Comprehensive city-to-timezone mapping
+            // US cities
+            if (lower.find("new york") != std::string::npos || lower.find("nyc") != std::string::npos) tz = "America/New_York";
+            else if (lower.find("fort worth") != std::string::npos) tz = "America/Chicago";
+            else if (lower.find("dallas") != std::string::npos) tz = "America/Chicago";
+            else if (lower.find("houston") != std::string::npos) tz = "America/Chicago";
+            else if (lower.find("san antonio") != std::string::npos) tz = "America/Chicago";
+            else if (lower.find("austin") != std::string::npos) tz = "America/Chicago";
+            else if (lower.find("chicago") != std::string::npos) tz = "America/Chicago";
+            else if (lower.find("los angeles") != std::string::npos || lower.find("la") != std::string::npos) tz = "America/Los_Angeles";
+            else if (lower.find("san francisco") != std::string::npos) tz = "America/Los_Angeles";
+            else if (lower.find("seattle") != std::string::npos) tz = "America/Los_Angeles";
+            else if (lower.find("portland") != std::string::npos) tz = "America/Los_Angeles";
+            else if (lower.find("denver") != std::string::npos) tz = "America/Denver";
+            else if (lower.find("phoenix") != std::string::npos) tz = "America/Phoenix";
+            else if (lower.find("miami") != std::string::npos) tz = "America/New_York";
+            else if (lower.find("atlanta") != std::string::npos) tz = "America/New_York";
+            else if (lower.find("boston") != std::string::npos) tz = "America/New_York";
+            else if (lower.find("philadelphia") != std::string::npos) tz = "America/New_York";
+            else if (lower.find("washington") != std::string::npos || lower.find("d.c.") != std::string::npos) tz = "America/New_York";
+            else if (lower.find("detroit") != std::string::npos) tz = "America/Detroit";
+            else if (lower.find("minneapolis") != std::string::npos) tz = "America/Chicago";
+            else if (lower.find("nashville") != std::string::npos) tz = "America/Chicago";
+            else if (lower.find("las vegas") != std::string::npos) tz = "America/Los_Angeles";
+            else if (lower.find("salt lake") != std::string::npos) tz = "America/Denver";
+            else if (lower.find("anchorage") != std::string::npos) tz = "America/Anchorage";
+            else if (lower.find("honolulu") != std::string::npos || lower.find("hawaii") != std::string::npos) tz = "Pacific/Honolulu";
+            // International cities
             else if (lower.find("london") != std::string::npos) tz = "Europe/London";
-            else if (lower.find("tokyo") != std::string::npos) tz = "Asia/Tokyo";
             else if (lower.find("paris") != std::string::npos) tz = "Europe/Paris";
+            else if (lower.find("berlin") != std::string::npos) tz = "Europe/Berlin";
+            else if (lower.find("madrid") != std::string::npos) tz = "Europe/Madrid";
+            else if (lower.find("rome") != std::string::npos) tz = "Europe/Rome";
+            else if (lower.find("moscow") != std::string::npos) tz = "Europe/Moscow";
+            else if (lower.find("dubai") != std::string::npos) tz = "Asia/Dubai";
+            else if (lower.find("mumbai") != std::string::npos || lower.find("india") != std::string::npos) tz = "Asia/Kolkata";
+            else if (lower.find("tokyo") != std::string::npos || lower.find("japan") != std::string::npos) tz = "Asia/Tokyo";
+            else if (lower.find("shanghai") != std::string::npos || lower.find("beijing") != std::string::npos || lower.find("china") != std::string::npos) tz = "Asia/Shanghai";
+            else if (lower.find("sydney") != std::string::npos) tz = "Australia/Sydney";
+            else if (lower.find("melbourne") != std::string::npos) tz = "Australia/Melbourne";
+            else if (lower.find("toronto") != std::string::npos) tz = "America/Toronto";
+            else if (lower.find("vancouver") != std::string::npos) tz = "America/Vancouver";
+            else if (lower.find("mexico") != std::string::npos) tz = "America/Mexico_City";
+            else if (lower.find("sao paulo") != std::string::npos || lower.find("brazil") != std::string::npos) tz = "America/Sao_Paulo";
+            else if (lower.find("singapore") != std::string::npos) tz = "Asia/Singapore";
+            else if (lower.find("hong kong") != std::string::npos) tz = "Asia/Hong_Kong";
+            else if (lower.find("seoul") != std::string::npos || lower.find("korea") != std::string::npos) tz = "Asia/Seoul";
+            else if (lower.find("bangkok") != std::string::npos) tz = "Asia/Bangkok";
+            else if (lower.find("cairo") != std::string::npos) tz = "Africa/Cairo";
+            else if (lower.find("lagos") != std::string::npos) tz = "Africa/Lagos";
+            else if (lower.find("johannesburg") != std::string::npos) tz = "Africa/Johannesburg";
+
+            // If no city matched, default to UTC
+            if (tz.empty()) tz = "UTC";
 
             auto data = realtimeApis->getCurrentTime(tz);
             if (data.valid) {
-                return {true, "Current time (" + data.timezone + "): " + data.datetime, ""};
+                std::string result = "Current time (" + data.timezone + "): " + data.datetime;
+                if (tz == "UTC") {
+                    result += "\n(Note: city not recognized in timezone database. Showing UTC. Try specifying a known city or timezone.)";
+                }
+                return {true, result, ""};
             }
             return {false, "", "Could not fetch time data"};
         }
@@ -375,18 +428,71 @@ private:
             return {false, "", "Could not fetch news"};
         }
 
-        // Generic: try news as fallback since we lack a full web search engine
-        auto data = realtimeApis->getTechNews(3);
-        if (data.valid && !data.headlines.empty()) {
-            std::string result = "Recent tech headlines (no full web search available):\n";
-            int i = 1;
-            for (const auto& item : data.headlines) {
-                result += std::to_string(i++) + ". " + item.title + "\n";
+        // Generic: try DuckDuckGo Instant Answer API for factual queries
+        {
+            MKHTTP ddgHttp;
+            // URL encode the query
+            std::string encodedQuery;
+            for (char c : query) {
+                if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+                    encodedQuery += c;
+                } else if (c == ' ') {
+                    encodedQuery += '+';
+                } else {
+                    char hex[4];
+                    std::snprintf(hex, sizeof(hex), "%%%02X", (unsigned char)c);
+                    encodedQuery += hex;
+                }
             }
-            return {true, capOutput(result), ""};
+            std::string ddgUrl = "https://api.duckduckgo.com/?q=" + encodedQuery + "&format=json&no_html=1";
+            std::string ddgResponse = ddgHttp.get(ddgUrl);
+
+            if (!ddgResponse.empty()) {
+                // Parse DuckDuckGo response - look for "AbstractText" or "Answer" fields
+                std::string abstractText;
+                std::string answer;
+
+                // Extract "AbstractText" value
+                size_t atPos = ddgResponse.find("\"AbstractText\"");
+                if (atPos != std::string::npos) {
+                    size_t valStart = ddgResponse.find("\"", atPos + 14);
+                    if (valStart != std::string::npos) {
+                        valStart++;
+                        size_t valEnd = valStart;
+                        while (valEnd < ddgResponse.size() && ddgResponse[valEnd] != '"') {
+                            if (ddgResponse[valEnd] == '\\') valEnd++;
+                            valEnd++;
+                        }
+                        abstractText = ddgResponse.substr(valStart, valEnd - valStart);
+                    }
+                }
+
+                // Extract "Answer" value
+                size_t ansPos = ddgResponse.find("\"Answer\"");
+                if (ansPos != std::string::npos) {
+                    size_t valStart = ddgResponse.find("\"", ansPos + 8);
+                    if (valStart != std::string::npos) {
+                        valStart++;
+                        size_t valEnd = valStart;
+                        while (valEnd < ddgResponse.size() && ddgResponse[valEnd] != '"') {
+                            if (ddgResponse[valEnd] == '\\') valEnd++;
+                            valEnd++;
+                        }
+                        answer = ddgResponse.substr(valStart, valEnd - valStart);
+                    }
+                }
+
+                // Prefer Answer, then AbstractText
+                if (!answer.empty()) {
+                    return {true, capOutput("DuckDuckGo: " + answer), ""};
+                }
+                if (!abstractText.empty()) {
+                    return {true, capOutput("DuckDuckGo: " + abstractText), ""};
+                }
+            }
         }
 
-        return {false, "", "Web search not available for this query type. Try asking about weather, time, or news."};
+        return {false, "", "Web search could not find an answer for this query. Try asking about weather, time, or news."};
     }
 
     // ============================================================
